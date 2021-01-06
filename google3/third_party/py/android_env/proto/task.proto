@@ -49,6 +49,12 @@ message AdbCall {
     string flag = 3;
   }
 
+  message StartIntent {
+    string data_uri = 1;
+    string action = 2;
+    string package_name = 3;
+  }
+
   // Starts and wait for a randomly chosen activity in the list.
   message StartRandomActivity {
     repeated string activity_list = 1;
@@ -136,6 +142,7 @@ message AdbCall {
     ForceStopRandomActivity force_stop_random_activity = 12;
     ClearCacheRandomActivity clear_cache_random_activity = 13;
     DisableAnimations disable_animations = 14;
+    StartIntent start_intent = 15;
   }
 }
 
@@ -169,7 +176,12 @@ message WaitForAppScreen {
 
 message CheckInstall {
   string package_name = 1;
-  // Maximum time in seconds to wait for the activity to become the current one.
+  // Maximum time in seconds to wait.
+  float timeout_sec = 2;
+}
+
+message WaitForMessage {
+  string message = 1;
   float timeout_sec = 2;
 }
 
@@ -188,6 +200,7 @@ message SuccessCondition {
   oneof check {
     WaitForAppScreen wait_for_app_screen = 2;
     CheckInstall check_install = 3;
+    WaitForMessage wait_for_message = 4;
   }
 }
 
@@ -286,4 +299,8 @@ message Task {
   // definition will be passed to the agent, everything else is excluded.
   // The name of an extra must be unique across all extras.
   repeated ArraySpec extras_spec = 11;
+
+  // Optional prefix used to filter logcat outputs. This prefix will be expected
+  // to follow the log_tag in logcat's output.
+  string log_prefix = 12;
 }
