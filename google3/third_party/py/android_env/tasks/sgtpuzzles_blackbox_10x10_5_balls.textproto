@@ -1,0 +1,91 @@
+# proto-file: google3/third_party/py/android_env/proto/task.proto
+# proto-message: android_env.Task
+
+id: "sgtpuzzles_blackbox_10x10_5_balls"
+name: "Simon Tatham's puzzle - Blackbox - 10x10 - 5 Balls"
+description: "Determine where the hidden balls are in the box, by observing the behaviour of light beams fired into the box from the sides. Click in a square around the edge of the box to send a beam into the box."
+package_name: "name.boyle.chris.sgtpuzzles"
+full_activity_name: "name.boyle.chris.sgtpuzzles/.SGTPuzzles"
+
+setup_steps: [
+  {
+    adb_call: {
+      install_apk: {
+        apk_source: BUILT_INTERNALLY
+        mpm: {
+          package_name: "learning/deepmind/research/xgames/android/apks/sgtpuzzles"
+          label: "0.14"
+          path: "2020.07.08-sgtpuzzles-debug.apk"
+        }
+      }
+    }
+    success_condition: {
+      check_install: {
+        package_name: "name.boyle.chris.sgtpuzzles"
+        timeout_sec: 10.0
+      }
+    }
+  },
+  { adb_call: { rotate: { orientation: PORTRAIT_0 } } }
+]
+
+reset_steps: [
+  { adb_call: { force_stop: { package_name: "name.boyle.chris.sgtpuzzles" } } },
+  { adb_call: { clear_cache: { package_name: "name.boyle.chris.sgtpuzzles" } } },
+  {
+    adb_call: {
+      start_activity: {
+        full_activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.SGTPuzzles"
+        extra_args: [
+            "--ez", '"RL_TASK_ENABLED"', '"true"',
+            # params: w{width}h{height}m{minimum}M{maximum}
+            "--es", '"RL_TASK_GAME_CONFIG"', '"{ \\"gameId\\":\\"blackbox\\\",\\"params\\":\\"w10h10m5M5\\"}"'
+        ]
+      }
+    }
+    success_condition: {
+      wait_for_app_screen: {
+        app_screen: {
+          activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+          view_hierarchy_path: [
+          ]
+        }
+        timeout_sec: 10.0
+      }
+      num_retries: 10
+    }
+  },
+  {
+    adb_call: {
+      start_screen_pinning: {
+        full_activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+      }
+    }
+  }
+]
+
+expected_app_screen: {
+  activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+  view_hierarchy_path: [
+  ]
+}
+
+max_duration_sec: 300  # 5 minutes.
+
+extras_spec: [
+  # All of these a returned when the grid is changed
+  # The number of balls in the game arena
+  { name: "balls" shape: [1], dtype: INT32 },
+  # The number of guessed balls made by the agent
+  { name: "guesses" shape: [1], dtype: INT32 },
+  # 1 if the guesses are wrong, 0 otherwise
+  { name: "wrong" shape: [1], dtype: INT32 },
+  # The number of lasers in the grid
+  { name: "lasers" shape: [1], dtype: INT32 },
+  # The grid cells:
+  # - In the arena: 'G'=guessed ball ' '=empty
+  # - In the range: [0-9]=the number of lasers, 'H'=beam hit, 'R'=beam reflected,
+  # '?' unknown
+  # - ' ' for the corners
+  { name: "grid" shape: [12, 12], dtype: STRING_U1 }
+]

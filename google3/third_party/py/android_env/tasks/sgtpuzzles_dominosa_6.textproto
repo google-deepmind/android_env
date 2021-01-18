@@ -1,0 +1,83 @@
+# proto-file: google3/third_party/py/android_env/proto/task.proto
+# proto-message: android_env.Task
+
+id: "sgtpuzzles_dominosa_6"
+name: "Simon Tatham's puzzle - Dominosa - Up to double-6"
+description: "Tile the rectangle with dominoes (1&times;2 rectangles) so that every possible domino appears exactly once."
+package_name: "name.boyle.chris.sgtpuzzles"
+full_activity_name: "name.boyle.chris.sgtpuzzles/.SGTPuzzles"
+
+setup_steps: [
+  {
+    adb_call: {
+      install_apk: {
+        apk_source: BUILT_INTERNALLY
+        mpm: {
+          package_name: "learning/deepmind/research/xgames/android/apks/sgtpuzzles"
+          label: "0.14"
+          path: "2020.07.08-sgtpuzzles-debug.apk"
+        }
+      }
+    }
+    success_condition: {
+      check_install: {
+        package_name: "name.boyle.chris.sgtpuzzles"
+        timeout_sec: 10.0
+      }
+    }
+  },
+  { adb_call: { rotate: { orientation: PORTRAIT_0 } } }
+]
+
+reset_steps: [
+  { adb_call: { force_stop: { package_name: "name.boyle.chris.sgtpuzzles" } } },
+  { adb_call: { clear_cache: { package_name: "name.boyle.chris.sgtpuzzles" } } },
+  {
+    adb_call: {
+      start_activity: {
+        full_activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.SGTPuzzles"
+        extra_args: [
+            "--ez", '"RL_TASK_ENABLED"', '"true"',
+            # params: {up to double X}{a for non-unique solution}
+            "--es", '"RL_TASK_GAME_CONFIG"', '"{ \\"gameId\\":\\"dominosa\\\",\\"params\\":\\"6\\"}"'
+        ]
+      }
+    }
+    success_condition: {
+      wait_for_app_screen: {
+        app_screen: {
+          activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+          view_hierarchy_path: [
+          ]
+        }
+        timeout_sec: 10.0
+      }
+      num_retries: 10
+    }
+  },
+  {
+    adb_call: {
+      start_screen_pinning: {
+        full_activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+      }
+    }
+  }
+]
+
+expected_app_screen: {
+  activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+  view_hierarchy_path: [
+  ]
+}
+
+max_duration_sec: 300  # 5 minutes.
+
+extras_spec: [
+  # All of these a returned when the grid is changed
+  # The grid numbers
+  { name: "numbers" shape: [7, 8], dtype: INT32 },
+  # The grid dominos (R=right, L=left, T=top, B=bottom)
+  { name: "grid" shape: [7, 8], dtype: STRING_U1 },
+  # The grid clashes (1=clash, 0=no clash)
+  { name: "clash" shape: [7, 8], dtype: INT32 }
+]

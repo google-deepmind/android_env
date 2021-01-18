@@ -1,0 +1,92 @@
+# proto-file: google3/third_party/py/android_env/proto/task.proto
+# proto-message: android_env.Task
+
+id: "mdp_0002"
+name: "MDP 0002"
+description: "A 2-state 2-action MDP game for debugging agents. clicking on any button gives positive rewards."
+package_name: "com.example.vokram"
+full_activity_name: "com.example.vokram/com.example.vokram.MainActivity"
+log_tag: "Vokram"
+
+setup_steps: [
+  {
+    adb_call: {
+      install_apk: {
+        apk_source: FIRST_PARTY
+        mpm: {
+          package_name: "learning/deepmind/research/xgames/android/apks/mdp"
+          label: "1.8"
+          path: "2020.08.06-vokram-debug.apk"
+        }
+      }
+    }
+    success_condition: {
+      check_install: {
+        package_name: "com.example.vokram"
+        timeout_sec: 10.0
+      }
+    }
+  },
+  { adb_call: { rotate: { orientation: PORTRAIT_0 } } }
+]
+
+reset_steps: [
+  {
+    adb_call: {
+      start_activity: {
+        full_activity: "com.example.vokram/com.example.vokram.MainActivity"
+        extra_args: [
+            "--ez", '"RL_TASK_ENABLED"', '"true"',
+            "--es", '"RL_TASK_GAME_CONFIG"', '"{"'
+            '"\\"initialSeed\\":-1,"' # Each episode will be randomized.
+            '"\\"states\\":[0,1],"'
+            '"\\"initial_states_prob\\":[{\\"S\\":\\"0\\",\\"P\\":1.0}],"'
+            '"\\"terminal_state\\":1,"'
+            '"\\"actions\\":[A,B],"'
+            '"\\"transitions\\":["'
+            '"{\\"FS\\":\\"0\\",\\"A\\":\\"A\\",\\"TS\\":\\"1\\",\\"P\\":1.0,\\"R\\":1.0},"'
+            '"{\\"FS\\":\\"0\\",\\"A\\":\\"B\\",\\"TS\\":\\"1\\",\\"P\\":1.0,\\"R\\":1.0}"'
+            '"],"'
+            '"\\"movementSpeed\\":[0,0,1]"' # Prevent action buttons from moving.
+            '"}"'
+        ]
+      }
+    }
+    success_condition: {
+      wait_for_app_screen: {
+        app_screen: {
+          activity: "com.example.vokram/com.example.vokram.MainActivity"
+          view_hierarchy_path: [
+          ]
+        }
+        timeout_sec: 10.0
+      }
+    }
+  },
+  {
+    adb_call: {
+      start_screen_pinning: {
+        full_activity: "com.example.vokram/com.example.vokram.MainActivity"
+      }
+    }
+  }
+]
+
+expected_app_screen: {
+  activity: "com.example.vokram/com.example.vokram.MainActivity"
+  view_hierarchy_path: [
+  ]
+}
+
+max_duration_sec: 60  # 1 minute.
+
+extras_spec: [
+  # All of these a returned when any button is pressed
+  # Set of all buttons e.g. ['A', 'B']
+  { name: "actions" shape: [2], dtype: STRING_U1},
+  # Label of the button just pressed e.g. ['B']
+  { name: "clicks" shape: [1], dtype: STRING_U1 },
+  # Coordinates of the top left and bottom right corners of each button
+  # [x_a_0, y_a_0, x_a_1, y_a_1], [x_b_0, y_a_0, x_b_1, y_b_1]
+  { name: "buttons" shape: [2, 4], dtype: INT32 }
+]

@@ -1,0 +1,81 @@
+# proto-file: google3/third_party/py/android_env/proto/task.proto
+# proto-message: android_env.Task
+
+id: "sgtpuzzles_guess_super"
+name: "Simon Tatham's puzzle - Guess - Super"
+description: "You have a set of coloured pegs, and have to reproduce a predetermined sequence of them (chosen by the computer) within a certain number of guesses."
+package_name: "name.boyle.chris.sgtpuzzles"
+full_activity_name: "name.boyle.chris.sgtpuzzles/.SGTPuzzles"
+
+setup_steps: [
+  {
+    adb_call: {
+      install_apk: {
+        apk_source: BUILT_INTERNALLY
+        mpm: {
+          package_name: "learning/deepmind/research/xgames/android/apks/sgtpuzzles"
+          label: "0.14"
+          path: "2020.07.08-sgtpuzzles-debug.apk"
+        }
+      }
+    }
+    success_condition: {
+      check_install: {
+        package_name: "name.boyle.chris.sgtpuzzles"
+        timeout_sec: 10.0
+      }
+    }
+  },
+  { adb_call: { rotate: { orientation: PORTRAIT_0 } } }
+]
+
+reset_steps: [
+  { adb_call: { force_stop: { package_name: "name.boyle.chris.sgtpuzzles" } } },
+  { adb_call: { clear_cache: { package_name: "name.boyle.chris.sgtpuzzles" } } },
+  {
+    adb_call: {
+      start_activity: {
+        full_activity: "name.boyle.chris.sgtpuzzles/.SGTPuzzles"
+        extra_args: [
+            "--ez", '"RL_TASK_ENABLED"', '"true"',
+            # params: c{number of colors 2-10}p{number of pegs > 1}g{number of tries > 0}{'b' to allow OR 'B' to dissallow blanks}{'m' to allow OR 'M' to disallow duplicates}
+            "--es", '"RL_TASK_GAME_CONFIG"', '"{\\"gameId\\":\\"guess\\",\\"params\\":\\"c8p5g12Bm\\"}"'
+        ]
+      }
+    }
+    success_condition: {
+      wait_for_app_screen: {
+        app_screen: {
+          activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+          view_hierarchy_path: [
+          ]
+        }
+        timeout_sec: 10.0
+      }
+      num_retries: 10
+    }
+  },
+  {
+    adb_call: {
+      start_screen_pinning: {
+        full_activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+      }
+    }
+  }
+]
+
+expected_app_screen: {
+  activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+  view_hierarchy_path: [
+  ]
+}
+
+max_duration_sec: 300  # 5 minutes.
+
+extras_spec: [
+  # All of these a returned when a row of pegs are validated
+  # Set of pegs colors int [1-10] validated e.g. [1, 2, 3, 4]
+  { name: "peg" shape: [5], dtype: INT32 },
+  # Feedback (0 = incorrect,1 = correct place, 2 = correct color) of validated pegs e.g. [2, 1, 0, 0]
+  { name: "feedback" shape: [5], dtype: INT32 }
+]

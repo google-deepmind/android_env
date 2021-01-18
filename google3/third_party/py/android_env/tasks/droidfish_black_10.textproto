@@ -1,0 +1,90 @@
+# proto-file: google3/third_party/py/android_env/proto/task.proto
+# proto-message: android_env.Task
+
+id: "droidfish_black_10"
+name: "DroidFish - Black 10%"
+description: "DroidFish is a feature-rich graphical chess user interface, combined with the very strong Stockfish chess engine."
+package_name: "org.petero.droidfish"
+full_activity_name: "org.petero.droidfish/org.petero.droidfish.DroidFish"
+
+setup_steps: [
+  {
+    adb_call: {
+      install_apk: {
+        apk_source: BUILT_INTERNALLY
+        mpm: {
+          package_name: "learning/deepmind/research/xgames/android/apks/droidfish"
+          label: "0.6"
+          path: "2020.02.11-droidfish-debug.apk"
+        }
+      }
+    }
+    success_condition: {
+      check_install: {
+        package_name: "org.petero.droidfish"
+        timeout_sec: 10.0
+      }
+    }
+  },
+  { adb_call: { rotate: { orientation: PORTRAIT_0 } } }
+]
+
+reset_steps: [
+  { adb_call: { force_stop: { package_name: "org.petero.droidfish" } } },
+  { adb_call: { clear_cache: { package_name: "org.petero.droidfish" } } },
+  {
+    adb_call: {
+      start_activity: {
+        full_activity: "org.petero.droidfish/org.petero.droidfish.DroidFish"
+        extra_args: [
+            "--ez", '"RL_TASK_ENABLED"', '"true"',
+            "--es", '"RL_TASK_GAME_CONFIG"', '"{\\"gameMode\\":2,\\"strength_percent\\":10}"'
+        ]
+      }
+    }
+    success_condition: {
+      wait_for_app_screen: {
+        app_screen: {
+          activity: "org.petero.droidfish/org.petero.droidfish.DroidFish"
+          view_hierarchy_path: [
+          ]
+        }
+        timeout_sec: 10.0
+      }
+      num_retries: 10
+    }
+  },
+  {
+    adb_call: {
+      start_screen_pinning: {
+        full_activity: "org.petero.droidfish/org.petero.droidfish.DroidFish"
+      }
+    }
+  }
+]
+
+expected_app_screen: {
+  activity: "org.petero.droidfish/org.petero.droidfish.DroidFish"
+  view_hierarchy_path: [
+  ]
+}
+
+max_duration_sec: 300  # 5 minutes.
+
+extras_spec: [
+  # State of the board, representing pieces by these indices:
+  # No piece - 0
+  # White pieces - 1: king, 2: queen, 3: rook, 4: bishop, 5: knight, 6: pawn
+  # Black pieces - 7: king, 8: queen, 9: rook, 10: bishop, 11: knight, 12: pawn
+  # Returned when the board changes
+  { name: "board" shape: [8, 8], dtype: INT32 },
+  # Coordinate of selected piece (between 0-64, -1 if selection is removed)
+  # Returned when a piece is selected (or unselected)
+  { name: "selection" shape: [1], dtype: INT32 },
+  # Coordinates "from" and "to" cells when a piece is moved (between 0-64)
+  # Returned when a piece is moved
+  { name: "moved" shape: [2], dtype: INT32 },
+  # Coordinates "from" and "to" cells of an invalid move attempt (between 0-64)
+  # Returned upon invalid move request
+  { name: "invalid" shape: [2], dtype: INT32 }
+]

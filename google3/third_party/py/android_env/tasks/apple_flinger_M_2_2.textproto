@@ -1,0 +1,82 @@
+# proto-file: google3/third_party/py/android_env/proto/task.proto
+# proto-message: android_env.Task
+
+id: "apple_flinger_M_2_2"
+name: "Apple Flinger - M_2_2"
+description: "Use a slingshot to shoot with apples."
+package_name: "com.gitlab.ardash.appleflinger.android"
+full_activity_name: "com.gitlab.ardash.appleflinger.android/com.gitlab.ardash.appleflinger.android.AndroidLauncher"
+
+setup_steps: [
+  {
+    adb_call: {
+      install_apk: {
+        apk_source: BUILT_INTERNALLY
+        mpm: {
+          package_name: "learning/deepmind/research/xgames/android/apks/apple_flinger"
+          label: "0.2"
+          path: "2020.08.21-apple-flinger-debug.apk"
+        }
+      }
+    }
+    success_condition: {
+      check_install: {
+        package_name: "com.gitlab.ardash.appleflinger.android"
+        timeout_sec: 10.0
+      }
+    }
+  },
+  { adb_call: { rotate: { orientation: PORTRAIT_0 } } }
+]
+
+reset_steps: [
+  { adb_call: { force_stop: { package_name: "com.gitlab.ardash.appleflinger.android" } } },
+  { adb_call: { clear_cache: { package_name: "com.gitlab.ardash.appleflinger.android" } } },
+  {
+    adb_call: {
+      start_activity: {
+        full_activity: "com.gitlab.ardash.appleflinger.android/com.gitlab.ardash.appleflinger.android.AndroidLauncher"
+        extra_args: [
+            "--ez", '"RL_TASK_ENABLED"', '"true"',
+            "--es", '"RL_TASK_GAME_CONFIG"', '"{\\"mission\\":\\"M_2_2\\"}"'
+        ]
+      }
+    }
+    success_condition: {
+      wait_for_app_screen: {
+        app_screen: {
+          activity: "com.gitlab.ardash.appleflinger.android/com.gitlab.ardash.appleflinger.android.AndroidLauncher"
+          view_hierarchy_path: [
+          ]
+        }
+        timeout_sec: 10.0
+      }
+      num_retries: 10
+    }
+  },
+  {
+    adb_call: {
+      start_screen_pinning: {
+        full_activity: "com.gitlab.ardash.appleflinger.android/com.gitlab.ardash.appleflinger.android.AndroidLauncher"
+      }
+    }
+  }
+]
+
+expected_app_screen: {
+  activity: "com.gitlab.ardash.appleflinger.android/com.gitlab.ardash.appleflinger.android.AndroidLauncher"
+  view_hierarchy_path: [
+  ]
+}
+
+max_duration_sec: 300  # 5 minutes.
+
+extras_spec: [
+  # All of these a returned when any button is pressed
+  # Playing: 1 if playing, 0 if not (waiting for other player)
+  { name: "playing" shape: [1], dtype: INT8},
+  # Player: 1=agent, 2=other player, 0=none
+  { name: "player" shape: [1], dtype: INT8 },
+  # State of the game
+  { name: "state" shape: [1], dtype: STRING_U16 }
+]

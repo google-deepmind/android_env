@@ -1,0 +1,84 @@
+# proto-file: google3/third_party/py/android_env/proto/task.proto
+# proto-message: android_env.Task
+
+id: "sgtpuzzles_bridges_15x15_medium"
+name: "Simon Tatham's puzzle - Bridges - 15x15 - Medium"
+description: "Draw horizontal or vertical bridges to link up all the islands. Bridges may be single or double; they may not cross; the islands must all end up connected to each other; the number in each island must match the number of bridges that end at that island."
+package_name: "name.boyle.chris.sgtpuzzles"
+full_activity_name: "name.boyle.chris.sgtpuzzles/.SGTPuzzles"
+
+setup_steps: [
+  {
+    adb_call: {
+      install_apk: {
+        apk_source: BUILT_INTERNALLY
+        mpm: {
+          package_name: "learning/deepmind/research/xgames/android/apks/sgtpuzzles"
+          label: "0.14"
+          path: "2020.07.08-sgtpuzzles-debug.apk"
+        }
+      }
+    }
+    success_condition: {
+      check_install: {
+        package_name: "name.boyle.chris.sgtpuzzles"
+        timeout_sec: 10.0
+      }
+    }
+  },
+  { adb_call: { rotate: { orientation: PORTRAIT_0 } } }
+]
+
+reset_steps: [
+  { adb_call: { force_stop: { package_name: "name.boyle.chris.sgtpuzzles" } } },
+  { adb_call: { clear_cache: { package_name: "name.boyle.chris.sgtpuzzles" } } },
+  {
+    adb_call: {
+      start_activity: {
+        full_activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.SGTPuzzles"
+        extra_args: [
+            "--ez", '"RL_TASK_ENABLED"', '"true"',
+            # params: {width}x{height}i{% of island}e{expansion factor}m{max bridges / direction}{L for loops allowed}d{0=easy, 1=medium, 2=hard}
+            "--es", '"RL_TASK_GAME_CONFIG"', '"{ \\"gameId\\":\\"bridges\\\",\\"params\\":\\"15x15i30e10m2d1\\"}"'
+        ]
+      }
+    }
+    success_condition: {
+      wait_for_app_screen: {
+        app_screen: {
+          activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+          view_hierarchy_path: [
+          ]
+        }
+        timeout_sec: 10.0
+      }
+      num_retries: 10
+    }
+  },
+  {
+    adb_call: {
+      start_screen_pinning: {
+        full_activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+      }
+    }
+  }
+]
+
+expected_app_screen: {
+  activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+  view_hierarchy_path: [
+  ]
+}
+
+max_duration_sec: 300  # 5 minutes.
+
+extras_spec: [
+  # All of these a returned when the grid is changed
+  # The number islands in the game
+  { name: "islands" shape: [1], dtype: INT32 },
+  # The grid cells:
+  # [0-9]=island, ' '=empty,
+  # '|'=V-line, '"'=double V-line, '!'=wrong V-line
+  # '-'=H-line, '='=double H-line, '~'=wrong H-line
+  { name: "grid" shape: [15, 15], dtype: STRING_U1 }
+]

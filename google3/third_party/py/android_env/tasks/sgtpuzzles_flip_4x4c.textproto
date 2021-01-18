@@ -1,0 +1,87 @@
+# proto-file: google3/third_party/py/android_env/proto/task.proto
+# proto-message: android_env.Task
+
+id: "sgtpuzzles_flip_4x4c"
+name: "Simon Tatham's puzzle - Flip - 4x4 Crosses"
+description: "Try to light up all the squares in the grid by flipping combinations of them."
+package_name: "name.boyle.chris.sgtpuzzles"
+full_activity_name: "name.boyle.chris.sgtpuzzles/.SGTPuzzles"
+
+setup_steps: [
+  {
+    adb_call: {
+      install_apk: {
+        apk_source: BUILT_INTERNALLY
+        mpm: {
+          package_name: "learning/deepmind/research/xgames/android/apks/sgtpuzzles"
+          label: "0.14"
+          path: "2020.07.08-sgtpuzzles-debug.apk"
+        }
+      }
+    }
+    success_condition: {
+      check_install: {
+        package_name: "name.boyle.chris.sgtpuzzles"
+        timeout_sec: 10.0
+      }
+    }
+  },
+  { adb_call: { rotate: { orientation: PORTRAIT_0 } } }
+]
+
+reset_steps: [
+  { adb_call: { force_stop: { package_name: "name.boyle.chris.sgtpuzzles" } } },
+  { adb_call: { clear_cache: { package_name: "name.boyle.chris.sgtpuzzles" } } },
+  {
+    adb_call: {
+      start_activity: {
+        full_activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.SGTPuzzles"
+        extra_args: [
+            "--ez", '"RL_TASK_ENABLED"', '"true"',
+            # params: {width}x{height}{c for crosses diagram || r for random diagram}
+            "--es", '"RL_TASK_GAME_CONFIG"', '"{ \\"gameId\\":\\"flip\\\",\\"params\\":\\"4x4c\\"}"'
+        ]
+      }
+    }
+    success_condition: {
+      wait_for_app_screen: {
+        app_screen: {
+          activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+          view_hierarchy_path: [
+          ]
+        }
+        timeout_sec: 10.0
+      }
+      num_retries: 10
+    }
+  },
+  {
+    adb_call: {
+      start_screen_pinning: {
+        full_activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+      }
+    }
+  }
+]
+
+expected_app_screen: {
+  activity: "name.boyle.chris.sgtpuzzles/name.boyle.chris.sgtpuzzles.GamePlay"
+  view_hierarchy_path: [
+  ]
+}
+
+max_duration_sec: 300  # 5 minutes.
+
+extras_spec: [
+  # All of these a returned when the grid is changed
+  # The number of light cells
+  { name: "light" shape: [1], dtype: INT32 },
+  # The number of dark cells
+  { name: "dark" shape: [1], dtype: INT32 },
+  # The number of moves by the player
+  { name: "moves" shape: [1], dtype: INT32 },
+  # The grid light/dark cells (0 = dark, 1 = light)
+  { name: "grid" shape: [4, 4], dtype: INT32 },
+  # The grid matrix of square neighbours (-1 = outside, 1 = neighbour, 0 = not neighbour)
+  { name: "gridMatrix" shape: [4, 4, 3, 3], dtype: INT32 }
+]

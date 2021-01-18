@@ -1,0 +1,81 @@
+# proto-file: google3/third_party/py/android_env/proto/task.proto
+# proto-message: android_env.Task
+
+id: "android_world_keep"
+name: "AndroidWorld - Keep task"
+description: "Android Keep app."
+package_name: "com.example.android.androidworldservice"
+log_tag: "AndroidWorld"
+
+setup_steps: [
+  {
+    adb_call: {
+      install_apk: {
+        apk_source: FIRST_PARTY
+        mpm: {
+          package_name: "learning/deepmind/research/xgames/android/apks/android_world"
+          label: "0.2"
+          path: "android_world2.apk"
+        }
+      }
+    }
+    success_condition: {
+      check_install: {
+        package_name: "com.example.android.androidworldservice"
+        timeout_sec: 10.0
+      }
+    }
+  },
+  {
+     sleep: { time_sec: 3.0 } },
+  {
+    adb_call: {
+      start_accessibility_service: {
+        full_service: "com.example.android.androidworldservice/com.example.android.androidworldservice.AndroidWorldService"
+      }
+    }
+  },
+  {
+    sleep: { time_sec: 3.0 } },
+  {
+    adb_call: { rotate: { orientation: PORTRAIT_0 } } }
+
+]
+
+reset_steps: [
+  { adb_call: { force_stop: { package_name: "com.google.android.keep" } } },
+  {
+    adb_call: {
+      start_activity: {
+        full_activity: 'com.google.android.keep/com.google.android.keep.activities.BrowseActivity'
+      }
+    }
+    success_condition: {
+      wait_for_app_screen: {
+        app_screen: {
+          activity: 'com.google.android.keep/com.google.android.keep.activities.BrowseActivity'
+          view_hierarchy_path: [
+          ]
+        }
+        timeout_sec: 10.0
+      }
+      num_retries: 10
+    }
+  }
+]
+
+expected_app_screen: {
+  activity: 'com.google.android.keep/com.google.android.keep.activities.BrowseActivity'
+  view_hierarchy_path: [
+  ]
+}
+
+max_duration_sec: 60  # 1 minute.
+
+extras_spec: [
+  # All of these a returned when any button is pressed
+  # Content description of UI element e.g. "Settings"
+  { name: "clicks" shape: [1], dtype: STRING_U250 },
+  # Text of the accessibility even e.g. button text "Accept & Continue"
+  { name: "event" shape: [1], dtype: STRING_U250 }
+]

@@ -1,0 +1,80 @@
+# proto-file: google3/third_party/py/android_env/proto/task.proto
+# proto-message: android_env.Task
+
+id: "vector_pinball_table_4"
+name: "Vector Pinball - Table 4"
+description: "It's a simple vector based pinball game."
+package_name: "com.dozingcatsoftware.bouncy"
+full_activity_name: "com.dozingcatsoftware.bouncy/com.dozingcatsoftware.bouncy.BouncyActivity"
+
+setup_steps: [
+  {
+    adb_call: {
+      install_apk: {
+        apk_source: BUILT_INTERNALLY
+        mpm: {
+          package_name: "learning/deepmind/research/xgames/android/apks/vector_pinball"
+          label: "0.1"
+          path: "2019.12.16-vector-pinball-full-debug.apk"
+        }
+      }
+    }
+    success_condition: {
+      check_install: {
+        package_name: "com.dozingcatsoftware.bouncy"
+        timeout_sec: 10.0
+      }
+    }
+  },
+  { adb_call: { rotate: { orientation: PORTRAIT_0 } } }
+]
+
+reset_steps: [
+  { adb_call: { force_stop: { package_name: "com.dozingcatsoftware.bouncy" } } },
+  { adb_call: { clear_cache: { package_name: "com.dozingcatsoftware.bouncy" } } },
+  {
+    adb_call: {
+      grant_permissions: {
+        package_name: "com.dozingcatsoftware.bouncy"
+        permissions: "android.permission.ACCESS_COARSE_LOCATION"
+      }
+    }
+  },
+  {
+    adb_call: {
+      start_activity: {
+        full_activity: "com.dozingcatsoftware.bouncy/.BouncyActivity"
+        extra_args: [
+            "--ez", '"RL_TASK_ENABLED"', '"true"',
+            "--es", '"RL_TASK_GAME_CONFIG"', '"{\\"zoom\\":\\"false\\",\\"independentFlippers\\":true,\\"unlimitedBalls\\":false,\\"numballs\\":3,\\""level"\\":4,\\"useOpenGL\\":true}"'
+        ]
+      }
+    }
+    success_condition: {
+      wait_for_app_screen: {
+        app_screen: {
+          activity: "com.dozingcatsoftware.bouncy/com.dozingcatsoftware.bouncy.BouncyActivity"
+          view_hierarchy_path: [
+          ]
+        }
+        timeout_sec: 10.0
+      }
+      num_retries: 10
+    }
+  },
+  {
+    adb_call: {
+      start_screen_pinning: {
+        full_activity: "com.dozingcatsoftware.bouncy/com.dozingcatsoftware.bouncy.BouncyActivity"
+      }
+    }
+  }
+]
+
+expected_app_screen: {
+  activity: "com.dozingcatsoftware.bouncy/com.dozingcatsoftware.bouncy.BouncyActivity"
+  view_hierarchy_path: [
+  ]
+}
+
+max_duration_sec: 300  # 5 minutes.

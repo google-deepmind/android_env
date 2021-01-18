@@ -1,0 +1,86 @@
+# proto-file: google3/third_party/py/android_env/proto/task.proto
+# proto-message: android_env.Task
+
+id: "android_world_cycle"
+name: "AndroidWorldCycle"
+description: "Android as the agent's world."
+package_name: "com.example.android.androidworldservice"
+log_tag: "AndroidWorld"
+
+setup_steps: [
+  {
+    adb_call: {
+      install_apk: {
+        apk_source: FIRST_PARTY
+        mpm: {
+          package_name: "learning/deepmind/research/xgames/android/apks/android_world"
+          label: "0.2"
+          path: "android_world2.apk"
+        }
+      }
+    }
+    success_condition: {
+      check_install: {
+        package_name: "com.example.android.androidworldservice"
+        timeout_sec: 10.0
+      }
+    }
+  },
+  {
+     sleep: { time_sec: 3.0 } },
+  {
+    adb_call: {
+      disable_animations: {}}},
+  {
+    adb_call: {
+      start_accessibility_service: {
+        full_service: "com.example.android.androidworldservice/com.example.android.androidworldservice.AndroidWorldService"
+      }
+    }
+  },
+  {
+    sleep: { time_sec: 3.0 }
+  },
+  {
+    adb_call: { rotate: { orientation: PORTRAIT_0 } }
+  }
+]
+
+reset_steps: [
+  { adb_call: { force_stop_random_activity: {} } },
+  {
+    adb_call: {
+      start_random_activity: {
+        activity_list: ["com.google.android.apps.magazines/com.google.apps.dots.android.app.activity.CurrentsStartActivity",  # News
+                     "com.android.chrome/org.chromium.chrome.browser.ChromeTabbedActivity",                                # Chrome
+                     "com.google.android.keep/com.google.android.keep.activities.BrowseActivity",                                                 # Keep
+                     "com.google.android.apps.docs/com.google.android.apps.docs.app.NewMainProxyActivity",                                             # Drive
+                     "com.google.android.apps.docs.editors.slides/com.google.android.apps.docs.app.NewMainProxyActivity",  # Slides
+                     "com.google.android.apps.books/com.google.android.apps.play.books.home.HomeActivity",                 # Play books
+                     "com.google.android.music/com.android.music.activitymanagement.TopLevelActivity",                     # Play music
+                     "com.google.android.apps.seekh/com.google.android.apps.seekh.SplashActivityDefault"                                                # Read along
+                     "com.google.socratic/com.google.android.apps.education.bloom.app.home.HomeActivity",                  # Socratic
+                     "com.google.android.contacts/com.android.contacts.activities.PeopleActivity",                         # Contacts
+                     "com.google.android.gm/com.google.android.gm.GmailActivity",                                                               # Gmail
+                     "com.google.android.apps.photos/com.google.android.apps.photos.home.HomeActivity",                                                  # Photos
+                     "com.google.android.apps.messaging/com.google.android.apps.messaging.ui.ConversationListActivity",                                     # Messages
+                     "com.google.android.deskclock/com.android.deskclock.DeskClock",                                       # Clock
+                     "com.android.documentsui/com.android.documentsui.files.FilesActivity",                                                       # Files
+                     "com.android.calculator2/com.android.calculator2.Calculator",                                                                # Calculator
+                     "com.google.android.calendar/com.android.calendar.AllInOneActivity"                                   # Calendar
+                     ],
+        timeout_sec: 10.0
+      }
+    }
+  }
+]
+
+max_duration_sec: 60  # 1 minute.
+
+extras_spec: [
+  # All of these a returned when any button is pressed
+  # Content description of UI element e.g. "Settings"
+  { name: "clicks" shape: [1], dtype: STRING_U250 },
+  # Text of the accessibility even e.g. button text "Accept & Continue"
+  { name: "event" shape: [1], dtype: STRING_U250 }
+]
