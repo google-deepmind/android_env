@@ -5,27 +5,25 @@ package android_env;
 message AdbCall {
   // Installs an APK into the simulator.
   message InstallApk {
+    // copybara:strip_begin
     enum ApkSource {
       UNSPECIFIED = 0;
-      // The apk is in Google3, was built using blaze and is fully trusted. No
-      // security layer required.
       FIRST_PARTY = 1;
-      // The apk was built internally and we had access to the full source code.
-      // This apk is not fully trusted, but can be run with a single security
-      // layer on Borg. See b/126240143.
       BUILT_INTERNALLY = 2;
-      // This APK is untrusted and requires two layers of security when running
-      // on Borg.
       THIRD_PARTY = 3;
     }
     ApkSource apk_source = 1;
+    // copybara:strip_end
 
     // A location in the filesystem.
-    // NOTE: This also supports remotely filesystems mounted locally such as
-    // CNS (Colossus).
+    // copybara:strip_begin
+    // NOTE: Also supports mounted remote filesystems like CNS.
+    // copybara:strip_end
     message Filesystem {
       string path = 1;
     }
+
+    // copybara:strip_begin
     // An MPM package.
     message MPM {
       // The path to the MPM package.
@@ -36,10 +34,11 @@ message AdbCall {
       // The path inside the MPM.
       string path = 3;
     }
+    // copybara:strip_end
 
     oneof location {
       Filesystem filesystem = 2;
-      MPM mpm = 3;
+      MPM mpm = 3; // copybara:strip
     }
   }
 
