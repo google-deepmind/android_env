@@ -1,8 +1,8 @@
 # proto-file: google3/third_party/py/android_env/proto/task.proto
 # proto-message: android_env.Task
 
-id: "memory_game_emoji_master"
-name: "Memory Game - Emoji - Master"
+id: "memory_game_emojis_master"
+name: "Memory Game - Emojis - Master"
 description: "Simple memory game for kids 4+ age."
 package_name: "com.snatik.matches"
 full_activity_name: "com.snatik.matches/com.snatik.matches.MainActivity"
