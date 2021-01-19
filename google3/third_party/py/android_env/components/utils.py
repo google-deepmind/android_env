@@ -1,19 +1,26 @@
 """Utils for AndroidEnv."""
 
+# copybara:strip_begin
 import collections
 import importlib
 import json
 import os
-from typing import Any, Dict, List, Tuple, Sequence, Union
+from typing import Any, Dict, List, Sequence, Tuple, Union
+# copybara:strip_end_and_replace_begin
+# from typing import Sequence, Tuple
+# copybara:replace_end
 
+# copybara:strip_begin
 from absl import logging
 from android_env.proto import task_pb2
 from dm_env import specs as dm_env_specs
 import funcsigs
 import ml_collections
+# copybara:strip_end
 import numpy as np
 
 
+# copybara:strip_begin
 def transpose_pixels(frame: np.ndarray) -> np.ndarray:
   """Converts image from shape (H, W, C) to (W, H, C) and vice-versa.
 
@@ -40,6 +47,7 @@ def orient_pixels(
   elif orientation == task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270:
     frame = np.rot90(frame, k=1, axes=(0, 1))
   return frame
+# copybara:strip_end
 
 
 def touch_position_to_pixel_position(
@@ -52,6 +60,7 @@ def touch_position_to_pixel_position(
   return tuple(map(cap_idx, touch_pixels, width_height))
 
 
+# copybara:strip_begin
 def instantiate_class(full_class_name: str, **kwargs):
   """Imports the class defined by `full_class_name` and instantiate it.
 
@@ -274,3 +283,4 @@ def convert_int_to_float(data: np.ndarray,
     value_min = iinfo.min
     value_max = iinfo.max
   return float_type(1.0 * (data - value_min) / (value_max - value_min))
+# copybara:strip_end
