@@ -11,12 +11,17 @@ setup_steps: [
   {
     adb_call: {
       install_apk: {
+      # copybara:strip_begin(MPM not necessary)
         apk_source: FIRST_PARTY
         mpm: {
           package_name: "learning/deepmind/research/xgames/android/apks/catch_the_ball"
           label: "0.1"
           path: "2020.07.21-catch-the-ball-debug.apk"
         }
+        # TODO(kenjitoyama): Make sure the offline filesystem works
+      # copybara:strip_end_and_replace_begin
+      #  filesystem: "./apks/catch_the_ball/2020.07.21-catch-the-ball-debug.apk"
+      # copybara:replace_end
       }
     }
     success_condition: {
