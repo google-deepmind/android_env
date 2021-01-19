@@ -21,7 +21,7 @@ FLAGS = flags.FLAGS
 
 _MAX_SSH_TUNNEL_TRIES = 6
 _SSH_TUNNEL_RETRY_SLEEP_SEC = 20
-RESOURCE_DIR = 'google3/third_party/py/andorid_env/components/resources'
+RESOURCE_DIR = 'google3/third_party/py/android_env/components/resources'
 
 
 class VanadiumLauncher():
