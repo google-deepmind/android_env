@@ -3,6 +3,7 @@
 
 import time
 
+from absl.testing import absltest
 from android_env.components import action_type
 from android_env.components import adb_controller
 from android_env.components import dumpsys_thread
@@ -15,12 +16,10 @@ from android_env.proto import task_pb2
 import mock
 import numpy as np
 
-from google3.testing.pybase import googletest
-
 _ROOT_DIR = 'google3.learning.deepmind.rl.environments.android.components'
 
 
-class RemoteControllerTest(googletest.TestCase):
+class RemoteControllerTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -158,4 +157,4 @@ class RemoteControllerTest(googletest.TestCase):
 
 
 if __name__ == '__main__':
-  googletest.main()
+  absltest.main()
