@@ -1,0 +1,62 @@
+{
+  "instance": {
+    "attributes": {
+      "cfg_sta_persistent_data_device": "default",
+      "cfg_sta_display_resolution": "320x480x16x160",
+      "cfg_sta_ephemeral_cache_size_mb": "512",
+      "cfg_sta_initial_locale": "en_US",
+      "gps_coordinates": "-122.083579,37.421577,0,0,0,10",
+      "camera_front": "1,768,1024,checker-sliding",
+      "camera_back": "1,768,1024,checker-fixed",
+      "power_battery_capacity" : "90"
+    },
+    "description": "",
+    "disks": [{
+      "device-name": "persistent-disk-0",
+      "index": 0,
+      "mode": "READ_ONLY",
+      "type": "PERSISTENT"
+    }],
+    "hostname": "android-klp-gce-dev-ghartman-preview-6.c.cloud-test-infra-staging.internal",
+    "id": 10014156677758324840,
+    "image": "",
+    "machine-type": "projects/169259811298/machineTypes/n1-standard-1",
+    "maintenance-event": "NONE",
+    "networkInterfaces": [{
+      "access-configs": [{
+        "externalIp": "130.211.128.104",
+        "type": "ONE_TO_ONE_NAT"
+      }],
+      "ip": "10.240.74.140",
+      "network": "projects/169259811298/networks/default"
+    }],
+    "scheduling": {
+      "automaticRestart": "TRUE",
+      "onHostMaintenance": "MIGRATE"
+    },
+    "serviceAccounts": {
+      "169259811298-dh5g1mrk4t2j9d2momtinl46traujb6t@developer.gserviceaccount.com": {
+        "aliases": ["default"],
+        "email": "169259811298-dh5g1mrk4t2j9d2momtinl46traujb6t@developer.gserviceaccount.com",
+        "scopes": [
+          "https://www.googleapis.com/auth/devstorage.read_only"
+        ]
+      },
+      "default": {
+        "aliases": ["default"],
+        "email": "169259811298-dh5g1mrk4t2j9d2momtinl46traujb6t@developer.gserviceaccount.com",
+        "scopes": [
+          "https://www.googleapis.com/auth/devstorage.read_only"
+        ]
+      }
+    },
+    "zone": "projects/169259811298/zones/us-central1-f"
+  },
+  "project": {
+    "attributes": {
+      "virtual_device_zone": "us-central2-b",
+      "numericProjectId": 169259811298,
+      "projectId": "cloud-test-infra-staging"
+    }
+  }
+}
