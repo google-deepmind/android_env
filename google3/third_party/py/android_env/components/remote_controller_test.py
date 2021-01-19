@@ -16,8 +16,6 @@ from android_env.proto import task_pb2
 import mock
 import numpy as np
 
-_ROOT_DIR = 'google3.learning.deepmind.rl.environments.android.components'
-
 
 class RemoteControllerTest(absltest.TestCase):
 
