@@ -133,7 +133,7 @@ class SetupStepInterpreter():
       raise NotImplementedError('No success check called [%s].' % success_check)
 
   def _parse_adb_call(self, adb_cmd: task_pb2.AdbCall) -> None:
-    """Parses an adb command into a whitelist set of calls."""
+    """Parses an adb command into set of allowed calls."""
 
     call_type = adb_cmd.WhichOneof('command')
     logging.info('Parsing ADB call of type: %s', call_type)
