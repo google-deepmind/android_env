@@ -10,7 +10,7 @@ from android_env.components import errors
 import pexpect
 from pexpect.popen_spawn import PopenSpawn
 
-from google3.pyglib import gfile
+from google3.pyglib import gfile  # copybara:strip
 
 
 class EmulatorLauncher():
@@ -64,7 +64,11 @@ class EmulatorLauncher():
     logging.info('Booting the emulator [%s]', self._emulator_path)
     logging.info('avd: %s', self._avd_name)
     emulator_logfile = os.path.join(self._local_tmp_dir, 'emulator_output')
+    # copybara:strip_begin
     self._emulator_output = gfile.Open(emulator_logfile, 'wb')
+    # copybara:strip_end_and_replace_begin
+    # self._emulator_output = open(emulator_logfile, 'wb')
+    # copybara:replace_end
     base_lib_dir = self._emulator_path[:-8] + 'lib64/'
     ld_library_path = ':'.join([
         base_lib_dir + 'x11/', base_lib_dir + 'qt/lib/',
