@@ -1,9 +1,9 @@
 """Tests for android_env.components.dumpsys_thread."""
 
+from absl.testing import absltest
 from android_env.components import app_screen_checker as screen_checker
 from android_env.components import dumpsys_thread
 
-from absl.testing import absltest
 import mock
 
 

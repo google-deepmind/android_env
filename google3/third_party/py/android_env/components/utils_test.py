@@ -10,7 +10,6 @@ import ml_collections as collections
 import numpy as np
 
 
-
 class UtilsTest(absltest.TestCase):
 
   def test_transpose_pixels(self):

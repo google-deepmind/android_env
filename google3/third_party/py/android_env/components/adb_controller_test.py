@@ -3,8 +3,8 @@
 import os
 import time
 
-from absl.testing import parameterized
 from absl.testing import absltest
+from absl.testing import parameterized
 from android_env.components import adb_controller
 from android_env.components import errors
 from android_env.proto import task_pb2
