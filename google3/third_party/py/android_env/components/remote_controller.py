@@ -101,8 +101,6 @@ class RemoteController():
       self.restart()
       return
 
-    self._start_dumpsys_thread()
-
   @property
   def screen_dimensions(self) -> np.ndarray:
     return self._simulator.screen_dimensions
@@ -159,9 +157,8 @@ class RemoteController():
       # Restart was successful
       break
 
-    # Restart both threads
+    # Restart logcat thread
     self._start_logcat_thread()
-    self._start_dumpsys_thread()
 
     logging.info('Done restarting the remote controller.')
 
