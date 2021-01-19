@@ -15,8 +15,6 @@ from android_env.components import logcat_thread
 from android_env.proto import task_pb2
 import numpy as np
 import pexpect
-from PIL import Image
-
 
 _MAX_INIT_RETRIES = 20
 _INIT_RETRY_SLEEP_SEC = 2.0
@@ -186,25 +184,6 @@ class AdbController():
 
     logging.error('Could not get the orientation. Returning None.')
     return None
-
-  def get_screencap(self) -> Optional[np.ndarray]:
-    """Returns a array of pixels from the Android screen.
-
-    Note that this method can be quite slow, so it is not recommended for
-    cases that require fast communication.
-    """
-    screencap_output = self._execute_command(['shell', 'screencap', '-p'])
-    if not screencap_output:
-      return None
-    img = self._get_image_array_from_bytes(screencap_output)
-    return img
-
-  def _get_image_array_from_bytes(self, image_bytes) -> np.ndarray:
-    image_bytes = image_bytes.replace(b'\r\n', b'\n')
-    img = Image.open(io.BytesIO(image_bytes))
-    img = np.array(img)[:, :, 3]
-    img = np.transpose(img, axes=(1, 0, 2))
-    return img
 
   def _wait_for_device(self,
                        max_tries: int = 20,

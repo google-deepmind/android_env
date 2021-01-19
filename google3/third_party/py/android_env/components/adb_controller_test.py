@@ -345,31 +345,6 @@ package:com.android.wallpaperbackup
   @mock.patch.object(time, 'sleep', autospec=True)
   @mock.patch.object(
       adb_controller.AdbController, '_execute_command', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController,
-      '_get_image_array_from_bytes',
-      autospec=True)
-  def test_get_screencap(self, mock_image, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-    fake_screencap = b'my_screencap'
-    mock_execute_command.return_value = fake_screencap
-    fake_array = np.ones((1, 2, 3))
-    mock_image.return_value = fake_array
-
-    img = adb_control.get_screencap()
-    mock_image.assert_called_once_with(adb_control, fake_screencap)
-    mock_execute_command.assert_called_with(adb_control,
-                                            ['shell', 'screencap', '-p'])
-    np.testing.assert_equal(fake_array, img)
-
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
   def test_input_key(self, mock_execute_command, mock_sleep):
     adb_control = adb_controller.AdbController(
         adb_path='my_adb',
