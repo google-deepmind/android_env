@@ -4,13 +4,12 @@ import os
 import time
 
 from absl.testing import parameterized
+from absl.testing import absltest
 from android_env.components import adb_controller
 from android_env.components import errors
 from android_env.proto import task_pb2
 import mock
 import numpy as np
-
-from google3.testing.pybase import googletest
 
 
 class AdbControllerTest(parameterized.TestCase):
@@ -407,7 +406,7 @@ package:com.android.wallpaperbackup
     # Passing an invalid path should raise an exception.
     self.assertRaises(AssertionError, adb_control.install_apk, '')
 
-    local_apk_path = os.path.join(googletest.GetDefaultTestTmpdir(),
+    local_apk_path = os.path.join(absltest.get_default_test_tmpdir(),
                                   'my_app.apk')
     with open(local_apk_path, 'wb') as f:
       f.write(b'blah. whatever')
@@ -672,4 +671,4 @@ package:baz
 
 
 if __name__ == '__main__':
-  googletest.main()
+  absltest.main()

@@ -1,10 +1,10 @@
 """Tests for android_env.components.thread_function."""
 
+from absl.testing import absltest
 from android_env.components import thread_function
-from google3.testing.pybase import googletest
 
 
-class ThreadFunctionTest(googletest.TestCase):
+class ThreadFunctionTest(absltest.TestCase):
 
   def test_hello_world(self):
 
@@ -48,4 +48,4 @@ class ThreadFunctionTest(googletest.TestCase):
 
 
 if __name__ == '__main__':
-  googletest.main()
+  absltest.main()

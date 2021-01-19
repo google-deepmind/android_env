@@ -2,16 +2,16 @@
 
 import os
 
+from absl.testing import absltest
 from android_env.components import utils
 from android_env.proto import task_pb2
 from dm_env import specs
 import ml_collections as collections
 import numpy as np
 
-from google3.testing.pybase import googletest
 
 
-class UtilsTest(googletest.TestCase):
+class UtilsTest(absltest.TestCase):
 
   def test_transpose_pixels(self):
     image = np.reshape(np.array(range(12)), (3, 2, 2))
@@ -322,4 +322,4 @@ class UtilsTest(googletest.TestCase):
 
 
 if __name__ == '__main__':
-  googletest.main()
+  absltest.main()

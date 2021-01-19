@@ -2,6 +2,7 @@
 
 import subprocess
 
+from absl.testing import absltest
 from android_env.components import action_type
 from android_env.components import adb_controller
 from android_env.components import emulator_console
@@ -11,10 +12,8 @@ from android_env.components import errors
 import mock
 import numpy as np
 
-from google3.testing.pybase import googletest
 
-
-class EmulatorSimulatorTest(googletest.TestCase):
+class EmulatorSimulatorTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -32,7 +31,7 @@ class EmulatorSimulatorTest(googletest.TestCase):
         return_value=self._launcher).start()
 
   def test_adb_device_name_not_empty(self):
-    tmp_dir = googletest.GetDefaultTestTmpdir()
+    tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         emulator_launcher_args={},
         emulator_console_args={},
@@ -44,7 +43,7 @@ class EmulatorSimulatorTest(googletest.TestCase):
 
   @mock.patch.object(subprocess, 'check_output', autospec=True)
   def test_launch_error(self, unused_mock_check_output):
-    tmp_dir = googletest.GetDefaultTestTmpdir()
+    tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         emulator_launcher_args={},
         emulator_console_args={},
@@ -64,7 +63,7 @@ class EmulatorSimulatorTest(googletest.TestCase):
     self._launcher.restart.assert_called_once()
 
   def test_close(self):
-    tmp_dir = googletest.GetDefaultTestTmpdir()
+    tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         emulator_launcher_args={},
         emulator_console_args={},
@@ -85,7 +84,7 @@ class EmulatorSimulatorTest(googletest.TestCase):
       simulator.close()
 
   def test_restart(self):
-    tmp_dir = googletest.GetDefaultTestTmpdir()
+    tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         emulator_launcher_args={},
         emulator_console_args={},
@@ -107,7 +106,7 @@ class EmulatorSimulatorTest(googletest.TestCase):
       self._console.close.assert_called_once()
 
   def test_get_observation(self):
-    tmp_dir = googletest.GetDefaultTestTmpdir()
+    tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         emulator_launcher_args={},
         emulator_console_args={},
@@ -138,7 +137,7 @@ class EmulatorSimulatorTest(googletest.TestCase):
     self.assertEqual(observation['pixels'].shape, (1234, 5678, 3))
 
   def test_send_action(self):
-    tmp_dir = googletest.GetDefaultTestTmpdir()
+    tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         emulator_launcher_args={},
         emulator_console_args={},
@@ -183,4 +182,4 @@ class EmulatorSimulatorTest(googletest.TestCase):
 
 
 if __name__ == '__main__':
-  googletest.main()
+  absltest.main()

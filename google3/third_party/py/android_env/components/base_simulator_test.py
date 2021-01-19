@@ -2,13 +2,12 @@
 
 from typing import Optional, List
 
+from absl.testing import absltest
 from android_env.components import action_type
 from android_env.components import adb_controller
 from android_env.components import base_simulator
 import mock
 import numpy as np
-
-from google3.testing.pybase import googletest
 
 
 class FakeSimulator(base_simulator.BaseSimulator):
@@ -37,7 +36,7 @@ class FakeSimulator(base_simulator.BaseSimulator):
     self._timestamp = timestamp
 
 
-class BaseSimulatorTest(googletest.TestCase):
+class BaseSimulatorTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -46,7 +45,7 @@ class BaseSimulatorTest(googletest.TestCase):
   def test_device_name(self):
     with mock.patch.object(
         adb_controller, 'AdbController', return_value=self._adb_controller):
-      tmp_dir = googletest.GetDefaultTestTmpdir()
+      tmp_dir = absltest.get_default_test_tmpdir()
       simulator = FakeSimulator(
           adb_path='/my/adb',
           adb_port=5037,
@@ -57,7 +56,7 @@ class BaseSimulatorTest(googletest.TestCase):
   def test_launch(self):
     with mock.patch.object(
         adb_controller, 'AdbController', return_value=self._adb_controller):
-      tmp_dir = googletest.GetDefaultTestTmpdir()
+      tmp_dir = absltest.get_default_test_tmpdir()
       simulator = FakeSimulator(
           adb_path='/my/adb',
           adb_port=5037,
@@ -73,7 +72,7 @@ class BaseSimulatorTest(googletest.TestCase):
   def test_launch_close(self):
     with mock.patch.object(
         adb_controller, 'AdbController', return_value=self._adb_controller):
-      tmp_dir = googletest.GetDefaultTestTmpdir()
+      tmp_dir = absltest.get_default_test_tmpdir()
       simulator = FakeSimulator(
           adb_path='/my/adb',
           adb_port=5037,
@@ -88,7 +87,7 @@ class BaseSimulatorTest(googletest.TestCase):
   def test_get_observation(self):
     with mock.patch.object(
         adb_controller, 'AdbController', return_value=self._adb_controller):
-      tmp_dir = googletest.GetDefaultTestTmpdir()
+      tmp_dir = absltest.get_default_test_tmpdir()
       simulator = FakeSimulator(
           adb_path='/my/adb',
           adb_port=5037,
@@ -128,7 +127,7 @@ class BaseSimulatorTest(googletest.TestCase):
   def test_prepare_action(self):
     with mock.patch.object(
         adb_controller, 'AdbController', return_value=self._adb_controller):
-      tmp_dir = googletest.GetDefaultTestTmpdir()
+      tmp_dir = absltest.get_default_test_tmpdir()
       simulator = FakeSimulator(
           adb_path='/my/adb',
           adb_port=5037,
@@ -167,4 +166,4 @@ class BaseSimulatorTest(googletest.TestCase):
 
 
 if __name__ == '__main__':
-  googletest.main()
+  absltest.main()

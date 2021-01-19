@@ -4,11 +4,10 @@ import json
 import subprocess
 import threading
 
+from absl.testing import absltest
 from android_env.components import logcat_thread
 import mock
 import numpy as np
-
-from google3.testing.pybase import googletest
 
 
 class FakeStream():
@@ -58,7 +57,7 @@ def make_stdout(data):
   return '         1553110400.424  5583  5658 D Tag: %s' % data
 
 
-class LogcatThreadTest(googletest.TestCase):
+class LogcatThreadTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -282,4 +281,4 @@ class LogcatThreadTest(googletest.TestCase):
 
 
 if __name__ == '__main__':
-  googletest.main()
+  absltest.main()

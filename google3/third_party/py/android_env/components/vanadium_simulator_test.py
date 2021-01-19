@@ -1,5 +1,6 @@
 """Tests for android_env.components.vanadium_simulator."""
 
+from absl.testing import absltest
 from android_env.components import action_type
 from android_env.components import adb_controller
 from android_env.components import vanadium_communicator
@@ -8,10 +9,8 @@ from android_env.components import vanadium_simulator
 import mock
 import numpy as np
 
-from google3.testing.pybase import googletest
 
-
-class VanadiumSimulatorTest(googletest.TestCase):
+class VanadiumSimulatorTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -30,7 +29,7 @@ class VanadiumSimulatorTest(googletest.TestCase):
         return_value=self._launcher).start()
 
   def test_close(self):
-    tmp_dir = googletest.GetDefaultTestTmpdir()
+    tmp_dir = absltest.get_default_test_tmpdir()
     simulator = vanadium_simulator.VanadiumSimulator(
         vanadium_launcher_args={},
         adb_path='/my/adb',
@@ -48,7 +47,7 @@ class VanadiumSimulatorTest(googletest.TestCase):
       simulator.close()
 
   def test_get_observation(self):
-    tmp_dir = googletest.GetDefaultTestTmpdir()
+    tmp_dir = absltest.get_default_test_tmpdir()
     simulator = vanadium_simulator.VanadiumSimulator(
         vanadium_launcher_args={},
         adb_path='/my/adb',
@@ -80,7 +79,7 @@ class VanadiumSimulatorTest(googletest.TestCase):
     self.assertEqual(observation['pixels'].shape, (1234, 5678, 3))
 
   def test_send_action(self):
-    tmp_dir = googletest.GetDefaultTestTmpdir()
+    tmp_dir = absltest.get_default_test_tmpdir()
     simulator = vanadium_simulator.VanadiumSimulator(
         vanadium_launcher_args={},
         adb_path='/my/adb',
@@ -126,4 +125,4 @@ class VanadiumSimulatorTest(googletest.TestCase):
     ])
 
 if __name__ == '__main__':
-  googletest.main()
+  absltest.main()

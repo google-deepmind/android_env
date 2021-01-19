@@ -6,16 +6,15 @@ import select
 import telnetlib
 import time
 
+from absl.testing import absltest
 from android_env.components import emulator_console
 from android_env.components import errors
 from android_env.proto import raw_observation_pb2
 import mock
 import numpy as np
 
-from google3.testing.pybase import googletest
 
-
-class EmulatorConsoleTest(googletest.TestCase):
+class EmulatorConsoleTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -48,7 +47,7 @@ class EmulatorConsoleTest(googletest.TestCase):
         emulator_console.EmulatorConsole,
         console_port=1234,
         auth_code='dont_share_it_please',
-        tmp_dir=googletest.GetDefaultTestTmpdir())
+        tmp_dir=absltest.get_default_test_tmpdir())
     telnet_connection.assert_has_calls([mock.call('localhost', 1234)] * 3)
     mock_sleep.assert_called()
 
@@ -65,7 +64,7 @@ class EmulatorConsoleTest(googletest.TestCase):
           emulator_console.EmulatorConsole,
           console_port=1234,
           auth_code='dont_share_it_please',
-          tmp_dir=googletest.GetDefaultTestTmpdir())
+          tmp_dir=absltest.get_default_test_tmpdir())
       telnet_init.assert_called_once_with('localhost', 1234)
 
   @mock.patch.object(os.path, 'expanduser', autospec=True)
@@ -79,7 +78,7 @@ class EmulatorConsoleTest(googletest.TestCase):
       _ = emulator_console.EmulatorConsole(
           console_port=1234,
           auth_code=None,
-          tmp_dir=googletest.GetDefaultTestTmpdir())
+          tmp_dir=absltest.get_default_test_tmpdir())
       telnet_init.assert_called_once_with('localhost', 1234)
       mock_expanduser.assert_called_once()
       self._mock_open.assert_called_once()
@@ -100,7 +99,7 @@ class EmulatorConsoleTest(googletest.TestCase):
       _ = emulator_console.EmulatorConsole(
           console_port=1234,
           auth_code=None,
-          tmp_dir=googletest.GetDefaultTestTmpdir())
+          tmp_dir=absltest.get_default_test_tmpdir())
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
       mock_isfile.assert_called_once()
@@ -118,7 +117,7 @@ class EmulatorConsoleTest(googletest.TestCase):
       console = emulator_console.EmulatorConsole(
           console_port=1234,
           auth_code=None,
-          tmp_dir=googletest.GetDefaultTestTmpdir())
+          tmp_dir=absltest.get_default_test_tmpdir())
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
 
@@ -144,7 +143,7 @@ class EmulatorConsoleTest(googletest.TestCase):
       console = emulator_console.EmulatorConsole(
           console_port=1234,
           auth_code=None,
-          tmp_dir=googletest.GetDefaultTestTmpdir())
+          tmp_dir=absltest.get_default_test_tmpdir())
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
 
@@ -164,7 +163,7 @@ class EmulatorConsoleTest(googletest.TestCase):
       console = emulator_console.EmulatorConsole(
           console_port=1234,
           auth_code=None,
-          tmp_dir=googletest.GetDefaultTestTmpdir())
+          tmp_dir=absltest.get_default_test_tmpdir())
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
 
@@ -200,7 +199,7 @@ class EmulatorConsoleTest(googletest.TestCase):
       console = emulator_console.EmulatorConsole(
           console_port=1234,
           auth_code=None,
-          tmp_dir=googletest.GetDefaultTestTmpdir())
+          tmp_dir=absltest.get_default_test_tmpdir())
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
 
@@ -229,7 +228,7 @@ class EmulatorConsoleTest(googletest.TestCase):
       console = emulator_console.EmulatorConsole(
           console_port=1234,
           auth_code=None,
-          tmp_dir=googletest.GetDefaultTestTmpdir())
+          tmp_dir=absltest.get_default_test_tmpdir())
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
 
@@ -265,4 +264,4 @@ class EmulatorConsoleTest(googletest.TestCase):
 
 
 if __name__ == '__main__':
-  googletest.main()
+  absltest.main()

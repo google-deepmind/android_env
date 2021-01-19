@@ -1,6 +1,7 @@
 # Lint as: python3
 """Tests for android_env.components.setup_step_interpreter."""
 
+from absl.testing import absltest
 from android_env.components import adb_controller
 from android_env.components import errors
 from android_env.components import logcat_thread
@@ -9,7 +10,6 @@ from android_env.proto import task_pb2
 import mock
 
 from google3.net.proto2.python.public import text_format
-from google3.testing.pybase import googletest
 
 
 def _to_proto(proto_class, text):
@@ -18,7 +18,7 @@ def _to_proto(proto_class, text):
   return proto
 
 
-class SetupStepInterpreterTest(googletest.TestCase):
+class SetupStepInterpreterTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -386,4 +386,4 @@ success_condition: {
 
 
 if __name__ == '__main__':
-  googletest.main()
+  absltest.main()

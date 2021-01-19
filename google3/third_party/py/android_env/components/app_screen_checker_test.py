@@ -3,8 +3,8 @@
 import re
 from typing import Sequence
 
+from absl.testing import absltest
 from android_env.components import app_screen_checker
-from google3.testing.pybase import googletest
 
 
 def flatten_tree(tree: app_screen_checker.DumpsysNode,
@@ -16,7 +16,7 @@ def flatten_tree(tree: app_screen_checker.DumpsysNode,
     flatten_tree(c, flat_tree, indent + 2)
 
 
-class AppScreenCheckerTest(googletest.TestCase):
+class AppScreenCheckerTest(absltest.TestCase):
 
   # Ensures that build_tree_from_dumpsys_output produces a node whose flat
   # representation matches our expectation from an arbitrary hierarchy.
@@ -212,4 +212,4 @@ TASK
 
 
 if __name__ == '__main__':
-  googletest.main()
+  absltest.main()

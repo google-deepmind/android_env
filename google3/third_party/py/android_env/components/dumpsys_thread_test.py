@@ -3,11 +3,11 @@
 from android_env.components import app_screen_checker as screen_checker
 from android_env.components import dumpsys_thread
 
+from absl.testing import absltest
 import mock
-from google3.testing.pybase import googletest
 
 
-class DumpsysThreadTest(googletest.TestCase):
+class DumpsysThreadTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -73,4 +73,4 @@ class DumpsysThreadTest(googletest.TestCase):
 
 
 if __name__ == '__main__':
-  googletest.main()
+  absltest.main()
