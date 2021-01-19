@@ -139,7 +139,6 @@ class EmulatorLauncher():
     if self._emulator.before:
       for line in self._emulator.before.decode('utf-8').split('\n'):
         logging.info(line)
-    # TODO(kenjitoyama): Should we (also) use pexpect.read_nonblocking()?
 
   def _shutdown(self) -> None:
     if self._emulator:

@@ -200,7 +200,6 @@ class AdbController():
     return img
 
   def _get_image_array_from_bytes(self, image_bytes) -> np.ndarray:
-    # TODO(hamelphi): test this method.
     image_bytes = image_bytes.replace(b'\r\n', b'\n')
     img = Image.open(io.BytesIO(image_bytes))
     img = np.array(img)[:, :, 3]
@@ -247,7 +246,6 @@ class AdbController():
         return False
     return True
 
-  # TODO(b/152043874) Add unittests.
   def push_file(self, src: str, dest: str, timeout=60.0):
     _ = self._execute_command(['push', src, dest], timeout=timeout)
 

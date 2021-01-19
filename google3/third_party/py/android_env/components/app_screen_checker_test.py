@@ -173,8 +173,6 @@ TASK
         app_screen_checker.matches_path(dumpsys_output,
                                         expected_view_hierarchy_path))
 
-    # TODO(b/140231726): Add tests for AppScreenChecker's main functionality.
-
   def test_matches_path_one_level_deep(self):
     dumpsys_output = """
 TASK
@@ -211,8 +209,6 @@ TASK
     self.assertFalse(
         app_screen_checker.matches_path(
             dumpsys_output, expected_view_hierarchy_path, max_levels=2))
-
-    # TODO(b/140231726): Add tests for AppScreenChecker's main functionality.
 
 
 if __name__ == '__main__':

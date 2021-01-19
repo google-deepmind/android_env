@@ -140,7 +140,6 @@ class SetupStepInterpreter():
 
     if call_type == 'tap':
       tap = adb_cmd.tap
-      # TODO(b/137362270): Replace ADB_CALL+TAP by just TAP.
       self._adb_controller.input_tap(tap.x, tap.y)
 
     elif call_type == 'rotate':
