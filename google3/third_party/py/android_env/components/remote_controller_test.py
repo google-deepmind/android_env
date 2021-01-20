@@ -57,13 +57,11 @@ class RemoteControllerTest(absltest.TestCase):
   def test_restart(self):
     self._remote_controller.restart()
     assert hasattr(self._remote_controller, '_logcat_thread')
-    assert hasattr(self._remote_controller, '_dumpsys_thread')
 
   def test_reset(self):
     self._remote_controller.reset()
     assert hasattr(self._remote_controller, '_logcat_thread')
     assert hasattr(self._remote_controller, '_dumpsys_thread')
-    self._dumpsys_thread.kill.assert_called_once()
 
   def test_get_current_reward(self):
     self._remote_controller._logcat_thread.get_and_reset_reward.return_value = 1.0
