@@ -1,4 +1,3 @@
-# Lint as: python3
 """Tests for android_env.components.remote_controller."""
 
 import time

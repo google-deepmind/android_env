@@ -1,4 +1,3 @@
-# Lint as: python3
 """Definitions of exceptions used by AndroidEnv."""
 
 

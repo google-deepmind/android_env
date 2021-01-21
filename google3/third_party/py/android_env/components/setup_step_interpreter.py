@@ -1,4 +1,3 @@
-# Lint as: python3
 """A component that parses and processes SetupSteps."""
 
 import copy

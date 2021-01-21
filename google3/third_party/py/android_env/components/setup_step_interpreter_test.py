@@ -1,4 +1,3 @@
-# Lint as: python3
 """Tests for android_env.components.setup_step_interpreter."""
 
 from absl.testing import absltest

@@ -1,4 +1,3 @@
-# Lint as: python3
 """RemoteController handles the communication with AndroidOS."""
 
 import copy

@@ -1,4 +1,3 @@
-# Lint as: python3
 """Pseudo metadata server for Cloud Android.
 
 TODO(b/149332385): Port this to use HTTPServer2 (go/httpserver2)

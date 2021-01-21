@@ -1,4 +1,3 @@
-# Lint as: python3
 """A class the launches a thread to read Android logcat outputs."""
 
 import ast

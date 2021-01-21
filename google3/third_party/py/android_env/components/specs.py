@@ -1,4 +1,3 @@
-# Lint as: python3
 """Base specs for AndroidEnv."""
 
 from typing import Dict
