@@ -1,7 +1,7 @@
 """Prepares and launches the emulator."""
 
 import os
-import shutil
+import shutil  # copybara:strip
 import signal
 import time
 
@@ -126,10 +126,12 @@ class EmulatorLauncher():
   def close(self):
     logging.info('Closing the emulator...')
     self._shutdown()
+    # copybara:strip_begin
     try:
       shutil.rmtree(self._android_avd_home)
     except OSError as e:
       logging.error('Error cleaning up EmulatorLauncher: %s', e)
+    # copybara:strip_end
     logging.info('Done closing the emulator.')
 
   def __del__(self):
