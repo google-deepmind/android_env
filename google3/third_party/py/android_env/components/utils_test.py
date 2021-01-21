@@ -1,18 +1,32 @@
 """Tests for android_env.components.utils."""
 
-import os
+import os  # copybara:strip
 
 from absl.testing import absltest
 from absl.testing import parameterized
 from android_env.components import utils
+# copybara:strip_begin
 from android_env.proto import task_pb2
 from dm_env import specs
 import ml_collections as collections
+# copybara:strip_end
 import numpy as np
 
 
 class UtilsTest(parameterized.TestCase):
 
+  @parameterized.parameters(
+      ([0.5, 0.5], [320, 480], (160, 240)),
+      ([0.25, 0.75], [320, 480], (80, 360)),
+      ([0.0, 0.0], [320, 480], (0, 0)),
+      ([1.0, 1.0], [320, 480], (319, 479)),
+      )
+  def test_touch_position_to_pixel_position(
+      self, touch_pos, width_height, pixel_pos):
+    self.assertEqual(utils.touch_position_to_pixel_position(
+        np.array(touch_pos), width_height), pixel_pos)
+
+  # copybara:strip_begin
   def test_transpose_pixels(self):
     image = np.reshape(np.array(range(12)), (3, 2, 2))
     expected = [[[0, 1], [4, 5], [8, 9]], [[2, 3], [6, 7], [10, 11]]]
@@ -319,18 +333,7 @@ class UtilsTest(parameterized.TestCase):
   def test_maybe_convert_discrete_correct(self):
     spec = specs.DiscreteArray(num_values=5, name='discrete_array')
     self.assertEqual(utils.maybe_convert_discrete(spec).shape, (1,))
-
-  @parameterized.parameters(
-      ([0.5, 0.5], [320, 480], (160, 240)),
-      ([0.25, 0.75], [320, 480], (80, 360)),
-      ([0.0, 0.0], [320, 480], (0, 0)),
-      ([1.0, 1.0], [320, 480], (319, 479)),
-      )
-  def test_touch_position_to_pixel_position(
-      self, touch_pos, width_height, pixel_pos):
-    self.assertEqual(utils.touch_position_to_pixel_position(
-        np.array(touch_pos), width_height), pixel_pos)
-
+  # copybara:strip_end
 
 if __name__ == '__main__':
   absltest.main()
