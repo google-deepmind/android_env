@@ -9,9 +9,6 @@ from dm_env import specs
 import numpy as np
 
 
-LEGACY_OBSERVATION_ORDER = ['pixels', 'timestamp', 'orientation']
-LEGACY_ACTION_ORDER = ['action_type', 'touch_position']
-
 _PROTO_DTYPE_TO_NUMPY_DTYPE = {
     task_pb2.ArraySpec.DataType.FLOAT: np.float32,
     task_pb2.ArraySpec.DataType.DOUBLE: np.float64,

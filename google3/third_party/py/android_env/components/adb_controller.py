@@ -1,6 +1,5 @@
 """A class to manage and control an external ADB process."""
 
-import io
 import os
 import pathlib
 import re
@@ -13,7 +12,6 @@ from absl import logging
 from android_env.components import errors
 from android_env.components import logcat_thread
 from android_env.proto import task_pb2
-import numpy as np
 import pexpect
 
 _MAX_INIT_RETRIES = 20
