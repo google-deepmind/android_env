@@ -20,6 +20,16 @@ import ml_collections
 import numpy as np
 
 
+def touch_position_to_pixel_position(
+    touch_position: np.ndarray,
+    width_height: Sequence[int],
+) -> Tuple[int, int]:
+  """Maps touch position in [0,1] to the corresponding pixel on the screen."""
+  touch_pixels = (touch_position * width_height).astype(np.int32)
+  cap_idx = lambda v, idx_len: min(v, idx_len - 1)
+  return tuple(map(cap_idx, touch_pixels, width_height))
+
+
 # copybara:strip_begin
 def transpose_pixels(frame: np.ndarray) -> np.ndarray:
   """Converts image from shape (H, W, C) to (W, H, C) and vice-versa.
@@ -47,20 +57,8 @@ def orient_pixels(
   elif orientation == task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270:
     frame = np.rot90(frame, k=1, axes=(0, 1))
   return frame
-# copybara:strip_end
 
 
-def touch_position_to_pixel_position(
-    touch_position: np.ndarray,
-    width_height: Sequence[int],
-) -> Tuple[int, int]:
-  """Maps touch position in [0,1] to the corresponding pixel on the screen."""
-  touch_pixels = (touch_position * width_height).astype(np.int32)
-  cap_idx = lambda v, idx_len: min(v, idx_len - 1)
-  return tuple(map(cap_idx, touch_pixels, width_height))
-
-
-# copybara:strip_begin
 def instantiate_class(full_class_name: str, **kwargs):
   """Imports the class defined by `full_class_name` and instantiate it.
 
