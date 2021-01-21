@@ -495,7 +495,7 @@ class AdbController():
         time.sleep(_INIT_RETRY_SLEEP_SEC)
 
     raise errors.AdbControllerShellInitError(
-        'Failed to start ABD shell. Max number of retries reached.')
+        'Failed to start ADB shell. Max number of retries reached.')
 
   def _execute_normal_command(self,
                               args: List[str],
