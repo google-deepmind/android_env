@@ -4,7 +4,7 @@ import os
 from android_env import android_env
 from android_env.components import emulator_simulator
 from android_env.proto import task_pb2
-from google.protobuf import text_format
+from google3.net.proto2.python.public import text_format
 
 
 def load(adb_path: str,
