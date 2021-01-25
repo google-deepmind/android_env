@@ -15,8 +15,10 @@ import portpicker
 class EmulatorSimulator(base_simulator.BaseSimulator):
   """Controls an Android Emulator."""
 
-  def __init__(self, emulator_launcher_args: Dict[str, Any],
-               emulator_console_args: Dict[str, Any], **kwargs):
+  def __init__(self,
+               emulator_launcher_args: Dict[str, Any],
+               emulator_console_args: Dict[str, Any],
+               **kwargs):
     self._adb_port = portpicker.pick_unused_port()
     self._console_port = portpicker.pick_unused_port()
 

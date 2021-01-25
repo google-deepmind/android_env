@@ -41,7 +41,7 @@ class AndroidEnv(dm_env.Environment):
     self._remote_controller = remote_controller.RemoteController(
         task_config=self._task_config,
         simulator=simulator,
-        **self._config['remote_controller_config'])
+        **self._config.get('remote_controller_config', dict()))
 
     # Fetch max duration
     self._set_max_episode_length()
@@ -71,7 +71,7 @@ class AndroidEnv(dm_env.Environment):
   def _set_max_episode_length(self):
     """Determines maximum length of an episode."""
 
-    max_duration_steps = self._config['max_duration_steps']
+    max_duration_steps = self._config.get('max_duration_steps', -1)
     if max_duration_steps > 0:
       self._task_max_duration_steps = int(max_duration_steps)
     else:  # Will rely on max_duration_sec instead

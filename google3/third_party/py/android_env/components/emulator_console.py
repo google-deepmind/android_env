@@ -17,7 +17,10 @@ import numpy as np
 class EmulatorConsole():
   """Handles communication with the emulator."""
 
-  def __init__(self, console_port: int, auth_code: str, tmp_dir: str = '/tmp'):
+  def __init__(self,
+               console_port: int,
+               auth_code: str = '',
+               tmp_dir: str = '/tmp'):
     """Initializes this EmulatorConsole.
 
     Args:

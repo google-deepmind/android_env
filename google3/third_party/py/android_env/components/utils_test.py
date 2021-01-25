@@ -26,7 +26,6 @@ class UtilsTest(parameterized.TestCase):
     self.assertEqual(utils.touch_position_to_pixel_position(
         np.array(touch_pos), width_height), pixel_pos)
 
-  # copybara:strip_begin
   def test_transpose_pixels(self):
     image = np.reshape(np.array(range(12)), (3, 2, 2))
     expected = [[[0, 1], [4, 5], [8, 9]], [[2, 3], [6, 7], [10, 11]]]
@@ -59,6 +58,7 @@ class UtilsTest(parameterized.TestCase):
     self.assertEqual(rotated.shape, (3, 2, 2))
     self.assertTrue((rotated == image).all())
 
+  # copybara:strip_begin
   def test_instantiate_class(self):
     # Instantiate an arbitrary class by name and verify that it's not None.
     array_spec = utils.instantiate_class(

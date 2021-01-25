@@ -28,7 +28,7 @@ class EmulatorLauncher():
       run_headless: bool = False,
       kvm_device: str = '/dev/kvm',
       android_avd_home: str = '',
-      startup_wait_time_sec: int = 80,
+      startup_wait_time_sec: int = 300,
   ):
     """Installs required files locally and launches the emulator.
 

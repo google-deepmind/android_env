@@ -10,9 +10,10 @@ from typing import Any, Dict, List, Sequence, Tuple, Union
 # from typing import Sequence, Tuple
 # copybara:replace_end
 
-# copybara:strip_begin
-from absl import logging
+
+from absl import logging  # copybara:strip
 from android_env.proto import task_pb2
+# copybara:strip_begin
 from dm_env import specs as dm_env_specs
 import funcsigs
 import ml_collections
@@ -30,19 +31,8 @@ def touch_position_to_pixel_position(
   return tuple(map(cap_idx, touch_pixels, width_height))
 
 
-# copybara:strip_begin
 def transpose_pixels(frame: np.ndarray) -> np.ndarray:
-  """Converts image from shape (H, W, C) to (W, H, C) and vice-versa.
-
-  Some software libraries like pygame need the data to be in width-major order.
-  This function can be used to convert AndroidEnv observations to this format.
-
-  Args:
-    frame: Array representing Android screen.
-
-  Returns:
-    Transpose of array representing Android screen.
-  """
+  """Converts image from shape (H, W, C) to (W, H, C) and vice-versa."""
   return np.transpose(frame, axes=(1, 0, 2))
 
 
@@ -59,6 +49,7 @@ def orient_pixels(
   return frame
 
 
+# copybara:strip_begin
 def instantiate_class(full_class_name: str, **kwargs):
   """Imports the class defined by `full_class_name` and instantiate it.
 

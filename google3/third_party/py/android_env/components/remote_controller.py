@@ -28,18 +28,19 @@ class RemoteController():
   def __init__(
       self,
       simulator: base_simulator.BaseSimulator,
-      max_bad_states: int,
-      dumpsys_check_frequency: int,
-      max_failed_current_activity: int,
-      step_timeout_sec: int,
-      expected_fps: int,
       task_config: task_pb2.Task,
+      max_bad_states: int = 3,
+      dumpsys_check_frequency: int = 150,
+      max_failed_current_activity: int = 10,
+      step_timeout_sec: int = 10,
+      expected_fps: int = 5,
       periodic_restart_time_min: float = 0.0,
   ):
     """Handles communication between AndroidEnv and AndroidOS.
 
     Args:
       simulator: A BaseSimulator Instance.
+      task_config: A task proto defining the RL task.
       max_bad_states: How many bad states in a row are allowed before a restart
         of the simulator is triggered.
       dumpsys_check_frequency: Frequency, in steps, at which to check
@@ -51,7 +52,6 @@ class RemoteController():
         disable.
       expected_fps: Maximum steps per second. If the simulator is faster,
         RemoteController will wait before returning an observation.
-      task_config: A task proto defining the RL task.
       periodic_restart_time_min: Time between periodic restarts in minutes. If >
         0.0, will trigger a simulator restart at the end of the next episode
         once the time has been reached.

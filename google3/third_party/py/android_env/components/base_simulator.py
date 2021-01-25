@@ -29,13 +29,13 @@ class BaseSimulator(metaclass=abc.ABCMeta):
   def __init__(self,
                adb_path: str,
                adb_port: int,
-               tmp_dir: str,
                prompt_regex: str,
+               tmp_dir: str = '/tmp',
                show_touches: bool = True,
                pointer_location: bool = True,
                show_status_bar: bool = False,
                show_navigation_bar: bool = False,
-               kvm_device: str = ''):
+               kvm_device: str = '/dev/kvm'):
 
     self._adb_path = adb_path
     self._adb_server_port = adb_port

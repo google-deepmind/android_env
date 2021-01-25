@@ -18,9 +18,10 @@ setup_steps: [
           label: "0.1"
           path: "2020.07.21-catch-the-ball-debug.apk"
         }
-        # TODO(kenjitoyama): Make sure the offline filesystem works
       # copybara:strip_end_and_replace_begin
-      #  filesystem: "./apks/catch_the_ball/2020.07.21-catch-the-ball-debug.apk"
+      #  filesystem: {
+      #    path: "./apks/catch_the_ball/2020.07.21-catch-the-ball-debug.apk"
+      #  }
       # copybara:replace_end
       }
     }
