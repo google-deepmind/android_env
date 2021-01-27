@@ -21,6 +21,7 @@ from absl import flags
 from absl import logging
 
 import android_env
+from dm_env import specs
 import numpy as np
 
 FLAGS = flags.FLAGS
@@ -56,20 +57,20 @@ def main(_):
 
   def get_random_action() -> Dict[str, np.ndarray]:
     """Returns a random AndroidEnv action."""
-    return {
-        'touch_position': np.random.random(
-            size=action_spec['touch_position'].shape).astype(
-                action_spec['touch_position'].dtype),
-        'action_type': np.random.randint(
-            low=action_spec['action_type'].minimum,
-            high=action_spec['action_type'].maximum+1,
-            dtype=action_spec['action_type'].dtype),
-    }
+    action = {}
+    for k, v in action_spec.items():
+      if isinstance(v, specs.DiscreteArray):
+        action[k] = np.random.randint(low=0, high=v.num_values, dtype=v.dtype)
+      else:
+        action[k] = np.random.random(size=v.shape).astype(v.dtype)
+    return action
 
   for step in range(FLAGS.num_steps):
     action = get_random_action()
     timestep = env.step(action=action)
     logging.info('Step %r, act: %r, reward: %r', step, action, timestep.reward)
+
+  env.close()
 
 
 if __name__ == '__main__':
