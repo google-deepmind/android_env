@@ -41,7 +41,7 @@ flags.DEFINE_boolean('run_headless', True, 'Optionally turn off display.')
 flags.DEFINE_string('task_path', None, 'Path to task textproto file.')
 
 # Pygame args.
-flags.DEFINE_list('screen_size', [480, 720], 'Screen width,height in pixels.')
+flags.DEFINE_list('screen_size', '480,720', 'Screen width, height in pixels.')
 flags.DEFINE_float('frame_rate', 1.0/30.0, 'Frame rate in seconds.')
 
 FLAGS = flags.FLAGS
