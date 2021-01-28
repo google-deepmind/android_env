@@ -197,7 +197,7 @@ class LogcatThreadTest(absltest.TestCase):
     np.testing.assert_almost_equal([0.5], extras.get('another_extra'))
     np.testing.assert_almost_equal([[[1, 1, 1], [1, 1, 1]]],
                                    extras.get('multi_dimension_extra'))
-    np.testing.assert_equal([[1]], extras.get('boolean_extra'))
+    np.testing.assert_equal([1], extras.get('boolean_extra'))
     self.assertEqual({}, logcat.get_and_reset_extras())
 
   def test_messsage(self):

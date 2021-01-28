@@ -239,7 +239,7 @@ class LogcatThread(thread_function.ThreadFunction):
           # Except all to avoid unnecessary crashes, only log error.
           except Exception as e:  # pylint: disable=broad-except
             logging.exception('Could not parse extra: %s, error: %s',
-                          extra_matches.group('extra'), e)
+                              extra_matches.group('extra'), e)
             continue
         else:
           # No extra value provided for boolean extra. Setting value to True.
@@ -266,4 +266,3 @@ class LogcatThread(thread_function.ThreadFunction):
         with self._lock:
           self._episode_ended = True
         continue
-
