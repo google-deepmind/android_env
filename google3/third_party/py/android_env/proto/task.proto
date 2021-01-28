@@ -283,6 +283,13 @@ message Task {
   // If <= 0.0, this logic is disabled.
   float max_duration_sec = 10;
 
+  // The maximum number of interactions in a single episode between the
+  // environment and an agent.
+  // This setting is appropriate for tasks that are not time-dependent or when
+  // the performance of the simulation varies dramatically between runs.
+  // If <= 0, this logic is disabled.
+  int32 max_num_steps = 13;
+
   // (Optional): The task may also define extras to help the RL agent.
   // An Extra in AndroidEnv is any information that apps may send to aid the
   // understanding of the task. The type of information sent through this

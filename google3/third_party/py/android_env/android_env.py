@@ -69,11 +69,15 @@ class AndroidEnv(dm_env.Environment):
     logging.info('Task extras spec: %s', self.task_extras_spec())
 
   def _set_max_episode_length(self):
-    """Determines maximum length of an episode."""
+    """Determines maximum length of an episode in steps or in time."""
 
-    max_duration_steps = self._config.get('max_duration_steps', -1)
-    if max_duration_steps > 0:
-      self._task_max_duration_steps = int(max_duration_steps)
+    max_num_steps = self._task_config.max_num_steps
+    config_max_num_steps = self._config.get('max_duration_steps', -1)
+    if config_max_num_steps > 0:
+      max_num_steps = config_max_num_steps
+
+    if max_num_steps > 0:
+      self._task_max_duration_steps = int(max_num_steps)
     else:  # Will rely on max_duration_sec instead
       self._task_max_duration_steps = None
 
