@@ -176,9 +176,10 @@ class LogcatThread(thread_function.ThreadFunction):
     float_re = r'([-+]?[0-9]*\.?[0-9]*)'
     score_regexp = re.compile(r'^[Ss]core: ' + float_re + r'$')
     reward_regexp = re.compile(r'^[Rr]eward: ' + float_re + r'$')
-    extra_regexp = re.compile(r'^extra: (?P<name>[^ ]*) (?P<extra>.*)$')
+    extra_regexp = re.compile(r'^extra: (?P<name>[^ ]*)[ ]?(?P<extra>.*)$')
     json_extra_regexp = re.compile(r'^json_extra: (?P<json_extra>.*)$')
-    episode_end_regexp = re.compile(r'^episode end$')
+    # Episode boundaries can be tagged by 'episode end' or 'episode_end'
+    episode_end_regexp = re.compile(r'^episode[ _]end$')
 
     for line in self._stdout:
       # We never hand back control to ThreadFunction._run() so we need to
@@ -198,6 +199,12 @@ class LogcatThread(thread_function.ThreadFunction):
       if not matches or len(matches.groups()) != 6:
         continue
 
+      if self._message_regexp is not None and not self._message_received:
+        message_matches = self._message_regexp.match(matches.group('message'))
+        if message_matches:
+          with self._lock:
+            self._message_received = True
+
       # Search for rewards and scores in the log message.
       # The way this works is that each application would typically only use one
       # of these.
@@ -206,33 +213,40 @@ class LogcatThread(thread_function.ThreadFunction):
       # If the app directly specifies the reward, then the score will be
       # ignored.
       reward_matches = reward_regexp.match(matches.group('message'))
-      score_matches = score_regexp.match(matches.group('message'))
-
       if reward_matches:
         reward = float(reward_matches.group(1))
         with self._lock:
           self._latest_reward += reward
-      elif score_matches:
+        continue
+      score_matches = score_regexp.match(matches.group('message'))
+      if score_matches:
         current_score = float(score_matches.group(1))
         with self._lock:
           current_reward = current_score - self._latest_score
           self._latest_score = current_score
           self._latest_reward += current_reward
+        continue
 
       # Also search for extras in the log message.
       extra_matches = extra_regexp.match(matches.group('message'))
       if extra_matches:
         extra_name = extra_matches.group('name')
-        try:
-          extra = ast.literal_eval(extra_matches.group('extra'))
+        extra = extra_matches.group('extra')
+        if extra:
+          try:
+            extra = ast.literal_eval(extra_matches.group('extra'))
 
-        # Except all to avoid unnecessary crashes, only log error.
-        except Exception as e:  # pylint: disable=broad-except
-          logging.error('Could not parse extra: %s, error: %s',
-                        extra_matches.group('extra'), e)
-          continue
+          # Except all to avoid unnecessary crashes, only log error.
+          except Exception as e:  # pylint: disable=broad-except
+            logging.exception('Could not parse extra: %s, error: %s',
+                          extra_matches.group('extra'), e)
+            continue
+        else:
+          # No extra value provided for boolean extra. Setting value to True.
+          extra = 1
 
         self._process_extra(extra_name, extra)
+        continue
 
       json_extra_matches = json_extra_regexp.match(matches.group('message'))
       if json_extra_matches:
@@ -242,16 +256,14 @@ class LogcatThread(thread_function.ThreadFunction):
         except ValueError:
           logging.error('JSON string could not be parsed to a dictionary: %s',
                         extra_data)
+          continue
         for extra_name, extra_value in extra.items():
           self._process_extra(extra_name, extra_value)
+        continue
 
       episode_end_matches = episode_end_regexp.match(matches.group('message'))
       if episode_end_matches:
         with self._lock:
           self._episode_ended = True
+        continue
 
-      if self._message_regexp is not None and not self._message_received:
-        message_matches = self._message_regexp.match(matches.group('message'))
-        if message_matches:
-          with self._lock:
-            self._message_received = True

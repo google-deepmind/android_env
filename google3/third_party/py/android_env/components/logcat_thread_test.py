@@ -166,6 +166,17 @@ class LogcatThreadTest(absltest.TestCase):
     self.assertEqual(True, logcat.get_and_reset_episode_end())
     self.assertEqual(False, logcat.get_and_reset_episode_end())
 
+  def test_episode_end_with_underscore(self):
+    logcat = logcat_thread.LogcatThread()
+    self.mock_popen.assert_called_once()
+    self.assertEqual(False, logcat.get_and_reset_episode_end())
+    self.fake_proc.stdout.send_value(make_stdout('episode_end'))
+    # Wait until the log has been processed by the thread.
+    while self.fake_proc.stdout.has_next_value():
+      pass
+    self.assertEqual(True, logcat.get_and_reset_episode_end())
+    self.assertEqual(False, logcat.get_and_reset_episode_end())
+
   def test_extras(self):
     logcat = logcat_thread.LogcatThread()
     self.mock_popen.assert_called_once()
@@ -176,6 +187,7 @@ class LogcatThreadTest(absltest.TestCase):
     self.fake_proc.stdout.send_value(make_stdout('extra: another_extra 0.5'))
     self.fake_proc.stdout.send_value(
         make_stdout('extra: multi_dimension_extra [[1,1,1],[1,1,1]]'))
+    self.fake_proc.stdout.send_value(make_stdout('extra: boolean_extra'))
     # Wait until the logs have been processed by the thread.
     while self.fake_proc.stdout.has_next_value():
       pass
@@ -185,6 +197,7 @@ class LogcatThreadTest(absltest.TestCase):
     np.testing.assert_almost_equal([0.5], extras.get('another_extra'))
     np.testing.assert_almost_equal([[[1, 1, 1], [1, 1, 1]]],
                                    extras.get('multi_dimension_extra'))
+    np.testing.assert_equal([[1]], extras.get('boolean_extra'))
     self.assertEqual({}, logcat.get_and_reset_extras())
 
   def test_messsage(self):
