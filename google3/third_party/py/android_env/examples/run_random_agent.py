@@ -65,6 +65,8 @@ def main(_):
         action[k] = np.random.random(size=v.shape).astype(v.dtype)
     return action
 
+  _ = env.reset()
+
   for step in range(FLAGS.num_steps):
     action = get_random_action()
     timestep = env.step(action=action)
