@@ -2,6 +2,7 @@
 
 import copy
 import datetime
+import time
 
 from typing import Any, Dict
 from absl import logging
@@ -36,6 +37,11 @@ class AndroidEnv(dm_env.Environment):
     self._latest_step_type = StepType.LAST
     self._reset_next_step = True
     self._task_start_time = None
+
+    self._episode_cumulative_internal_time = 0.0
+    self._episode_cumulative_external_time = 0.0
+    self._episode_max_external_time = 0.0
+    self._episode_max_internal_time = 0.0
 
     # Initialize remote controller
     self._remote_controller = remote_controller.RemoteController(
@@ -121,9 +127,6 @@ class AndroidEnv(dm_env.Environment):
     self._reset_log_dict()
     self._task_start_time = datetime.datetime.now()
 
-    logging.info('Done resetting AndroidEnv.')
-    logging.info('************* NEW EPISODE *************')
-
     # Fetch observation and task_extras from remote controller
     observation = self._remote_controller.get_current_observation()
     task_extras = self._remote_controller.get_current_extras()
@@ -137,6 +140,11 @@ class AndroidEnv(dm_env.Environment):
     self._validate_step_type(step_type)
     self._latest_step_type = step_type
 
+    self._step_exit_time = time.time()
+
+    logging.info('Done resetting AndroidEnv.')
+    logging.info('************* NEW EPISODE *************')
+
     return dm_env.TimeStep(
         step_type=self._latest_step_type,
         observation=self._latest_observation,
@@ -145,6 +153,11 @@ class AndroidEnv(dm_env.Environment):
 
   def step(self, action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
     """Take a step in the environment."""
+    step_start_time = time.time()
+    external_time = step_start_time - self._step_exit_time
+    self._episode_max_external_time = max(self._episode_max_external_time,
+                                          external_time)
+    self._episode_cumulative_external_time += external_time
 
     self._latest_action = action.copy()
 
@@ -181,6 +194,12 @@ class AndroidEnv(dm_env.Environment):
     step_type = StepType.LAST if self._reset_next_step else StepType.MID
     self._validate_step_type(step_type)
     self._latest_step_type = step_type
+
+    self._step_exit_time = time.time()
+    internal_time = self._step_exit_time - step_start_time
+    self._episode_max_internal_time = max(self._episode_max_internal_time,
+                                          internal_time)
+    self._episode_cumulative_internal_time += internal_time
 
     # Return timestep with reward and observation just computed
     return dm_env.TimeStep(
@@ -294,6 +313,15 @@ class AndroidEnv(dm_env.Environment):
         log_dict[f'{prefix}_action_type_ratio_{act_type.name}'] = log_dict[
             f'{prefix}_action_type_{act_type.name}'] / log_dict[
                 f'{prefix}_steps']
+    episode_steps = log_dict['androidenv_episode_steps']
+    if episode_steps:
+      log_dict['time_per_step_external_mean'] = (
+          self._episode_cumulative_external_time / episode_steps)
+      log_dict['time_per_step_internal_mean'] = (
+          self._episode_cumulative_internal_time / episode_steps)
+      log_dict['time_per_step_external_max'] = self._episode_max_external_time
+      log_dict['time_per_step_internal_max'] = self._episode_max_internal_time
+
     return log_dict
 
   def _reset_log_dict(self) -> None:
@@ -302,6 +330,10 @@ class AndroidEnv(dm_env.Environment):
     for key in self._log_dict:
       if key.startswith('androidenv_episode'):
         self._log_dict[key] = 0.0
+    self._episode_cumulative_internal_time = 0.0
+    self._episode_cumulative_external_time = 0.0
+    self._episode_max_external_time = 0.0
+    self._episode_max_internal_time = 0.0
 
   def create_adb_controller(self) -> adb_controller.AdbController:
     """Creates an adb_controller and transfer ownership to the caller."""
