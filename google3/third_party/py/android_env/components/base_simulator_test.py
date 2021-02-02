@@ -13,8 +13,8 @@ import numpy as np
 class FakeSimulator(base_simulator.BaseSimulator):
   """A simulator that spits injected data."""
 
-  def __init__(self, adb_controller, **kwargs):
-    self._injected_adb_controller = adb_controller
+  def __init__(self, injected_adb_controller, **kwargs):
+    self._injected_adb_controller = injected_adb_controller
     super().__init__(**kwargs)
 
   def adb_device_name(self) -> str:
