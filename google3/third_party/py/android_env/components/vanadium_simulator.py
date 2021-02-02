@@ -26,9 +26,9 @@ class VanadiumSimulator(base_simulator.BaseSimulator):
 
   def __init__(self, vanadium_launcher_args: Dict[str, Any],
                communication_binaries_path: str, **kwargs):
+    self._adb_local_port = portpicker.pick_unused_port()
     super().__init__(**kwargs)
     self._communication_binaries_path = communication_binaries_path
-    self._adb_local_port = portpicker.pick_unused_port()
     self._vmm_ssh_port = portpicker.pick_unused_port()
 
     vanadium_launcher_args.update({
@@ -43,6 +43,9 @@ class VanadiumSimulator(base_simulator.BaseSimulator):
     self._communicator = None
 
   def adb_device_name(self) -> str:
+    return self._tcp_address()
+
+  def _tcp_address(self) -> str:
     return 'localhost:' + str(self._adb_local_port)
 
   def _restart_impl(self) -> None:
@@ -51,6 +54,7 @@ class VanadiumSimulator(base_simulator.BaseSimulator):
 
   def _launch_impl(self) -> None:
     self._launcher.launch()
+    self._tcp_connect()
     self._communicator = vanadium_communicator.VanadiumCommunicator(
         adb_control_sendevent=self.create_adb_controller(),
         adb_control_screencap=self.create_adb_controller(),
@@ -69,6 +73,7 @@ class VanadiumSimulator(base_simulator.BaseSimulator):
       self._launcher.close()
     if self._communicator is not None:
       self._communicator.close()
+    self._tcp_disconnect()
 
   def close(self):
     self._vanadium_close()
@@ -80,7 +85,15 @@ class VanadiumSimulator(base_simulator.BaseSimulator):
     timestamp_us = np.int64(time.time() * 1e6)
     return [screenshot, timestamp_us]
 
-  def create_adb_controller(self):
-    adb_control = super().create_adb_controller(
-        tcp_host='localhost', tcp_port=self._adb_local_port)
-    return adb_control
+  def _tcp_connect(self) -> Optional[bytes]:
+    """Connects ADB to a device via TCP/IP."""
+    cmd_out = self._adb_controller.tcp_connect(tcp_address=self._tcp_address())
+    self._connected = True
+    return cmd_out
+
+  def _tcp_disconnect(self) -> Optional[bytes]:
+    """Attempts to disconnect ADB if connected over TCP."""
+    if self._connected:
+      cmd_out = self._adb_controller.tcp_disconnect()
+      self._connected = False
+      return cmd_out

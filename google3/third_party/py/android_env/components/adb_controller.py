@@ -21,43 +21,40 @@ _INIT_RETRY_SLEEP_SEC = 2.0
 class AdbController():
   """Manages communication with adb."""
 
-  def __init__(self,
-               adb_path: str = 'adb',
-               device_name: str = '',
-               server_port: int = 5037,
-               shell_prompt: str = r'generic_x86:/ \$',
-               tcp_host: Optional[str] = None,
-               tcp_port: Optional[int] = None,
-               connect_max_tries: int = 20):
+  def __init__(
+      self,
+      adb_path: str = 'adb',
+      device_name: str = '',
+      server_port: int = 5037,
+      shell_prompt: str = r'generic_x86:/ \$',
+  ):
     self._execute_command_lock = threading.Lock()
     self._adb_path = adb_path
     self._server_port = str(server_port)
     self._shell_is_ready = False
     self._prompt = shell_prompt
     self._adb_shell = None
-    # Make an initial device-independent call to ADB to start the deamon
-    # on the given port.
-    self._device_name = ''
-    self._execute_command(['devices'])
-    time.sleep(0.2)
-
-    self._connected = False
-    self._connect_max_tries = connect_max_tries
-    if tcp_host is not None and tcp_port is not None:
-      self._connection = (tcp_host, tcp_port)
-      self._connect()
-    else:
-      self._connection = None
-
-    # Subsequent calls will use the device name.
     self._device_name = device_name
-
     # Unset problematic environment variables. ADB commands will fail if these
     # are set. They are normally exported by AndroidStudio.
     if 'ANDROID_HOME' in os.environ:
       del os.environ['ANDROID_HOME']
     if 'ANDROID_ADB_SERVER_PORT' in os.environ:
       del os.environ['ANDROID_ADB_SERVER_PORT']
+
+  def init_server(self):
+    """Initialize the ADB server deamon on the given port.
+
+    This function should be called immediately after initializing the first
+    adb_controller, and before launching the simulator.
+    """
+    # Make an initial device-independent call to ADB to start the deamon.
+    device_name_tmp = self._device_name
+    self._device_name = ''
+    self._execute_command(['devices'])
+    time.sleep(0.2)
+    # Subsequent calls will use the device name.
+    self._device_name = device_name_tmp
 
   def close(self) -> None:
     """Closes internal threads and processes."""
@@ -67,7 +64,6 @@ class AdbController():
       self._adb_shell.close(force=True)
       self._adb_shell = None
       self._shell_is_ready = False
-    self._disconnect()
     logging.info('Done closing ADB controller.')
 
   def _execute_command(self,
@@ -386,41 +382,38 @@ class AdbController():
       return  # Don't execute anything if the task ID can't be found.
     self._execute_command(['shell', 'am', 'task', 'lock', str(current_task_id)])
 
-  def _connect(self) -> Optional[bytes]:
+  def tcp_connect(self,
+                  tcp_address: str,
+                  connect_max_tries: int = 20) -> Optional[bytes]:
     """Connects ADB to a device via TCP/IP."""
     # All AdbController instances in the process are connected to the same
-    # address. Connecting one controller will connect all of them. However,
-    # there is no harm in trying to connect all instances.
+    # address. Only the first AdbController instance needs to connect.
     n_tries = 0
     sleep_time = 1.0
-    while n_tries < self._connect_max_tries:
+    while n_tries < connect_max_tries:
       n_tries += 1
-      output = self._execute_command(['connect', ('%s:%i' % self._connection)])
+      output = self._execute_command(['connect', tcp_address])
       logging.info(output)
       # Checking for 'connected to XXX:YYY' or 'already connected to XXX:YYY'
       if (output is not None and
-          ('connected to %s:%i' % self._connection).encode('utf8') in output):
-        self._connected = True
+          ('connected to %s' % tcp_address).encode('utf8') in output):
         return output
       else:
         logging.error(
             'ADB unable to connect. Retrying in %f seconds. Try %d of %d',
-            sleep_time, n_tries, self._connect_max_tries)
+            sleep_time, n_tries, connect_max_tries)
         time.sleep(sleep_time)
     raise errors.AdbControllerConnectionError
 
-  def _disconnect(self) -> Optional[bytes]:
-    """Attempts to disconnect if connected over TCP."""
-    if self._connected:
-      try:
-        output = self._execute_command(['disconnect'])
-        logging.info(output)
-      except subprocess.CalledProcessError:
-        logging.info('Disconnect unsuccessful, tcp connection is probably '
-                     'already closed.')
-        output = None
-      self._connected = False
+  def tcp_disconnect(self) -> Optional[bytes]:
+    """Disconnect from all TCP connections."""
+    try:
+      output = self._execute_command(['disconnect'])
+      logging.info(output)
       return output
+    except subprocess.CalledProcessError:
+      logging.info('Disconnect unsuccessful, tcp connection is probably '
+                   'already closed.')
 
   def is_package_installed(self, package_name: str) -> bool:
     """Checks that the given package is installed."""

@@ -56,6 +56,8 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     self._last_obs_timestamp = 0
     self._launched = False
 
+    self._init_own_adb_controller()
+
     logging.info('Initialized simulator with ADB server port %r.',
                  self._adb_server_port)
 
@@ -91,17 +93,14 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     """
     pass
 
-  def create_adb_controller(self, tcp_host=None, tcp_port=None):
+  def create_adb_controller(self):
     return adb_controller.AdbController(
         adb_path=self._adb_path,
         device_name=self.adb_device_name(),
         server_port=self._adb_server_port,
-        shell_prompt=self._prompt_regex,
-        tcp_host=tcp_host,
-        tcp_port=tcp_port)
+        shell_prompt=self._prompt_regex)
 
   def _base_post_launch_setup(self):
-    self._init_own_adb_controller()
     self._set_device_screen_dimensions()
     self._last_action = (0, 0, False)
     self._adb_controller.set_touch_indicators(
@@ -184,6 +183,8 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     if self._adb_controller is not None:
       self._adb_controller.close()
     self._adb_controller = self.create_adb_controller()
+    # The adb server daemon must be up before launching the simulator.
+    self._adb_controller.init_server()
 
   def _set_device_screen_dimensions(self):
     """Gets the (height, width)-tuple representing a screen size in pixels."""

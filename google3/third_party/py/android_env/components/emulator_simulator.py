@@ -41,8 +41,6 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     })
     self._emulator_console_args = emulator_console_args
     logging.info('emulator_console_args: %r', emulator_console_args)
-    # The adb server daemon must be up before launching the emulator.
-    self._adb_controller = self._init_own_adb_controller()
 
   def _start_console(self) -> None:
     self._console = emulator_console.EmulatorConsole(

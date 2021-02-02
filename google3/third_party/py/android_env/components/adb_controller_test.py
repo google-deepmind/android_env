@@ -1,6 +1,7 @@
 """Unit tests for AdbController."""
 
 import os
+import subprocess
 import time
 
 from absl.testing import absltest
@@ -9,114 +10,64 @@ from android_env.components import adb_controller
 from android_env.components import errors
 from android_env.proto import task_pb2
 import mock
-import numpy as np
 
 
 class AdbControllerTest(parameterized.TestCase):
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_deletes_problem_env_vars(self, mock_execute_command, mock_sleep):
-    os.environ['ANDROID_HOME'] = '/usr/local/Android/Sdk'
-    os.environ['ANDROID_ADB_SERVER_PORT'] = '1337'
-    adb_controller.AdbController(
+  def setUp(self):
+    super().setUp()
+    self._mock_execute_command = self.enter_context(
+        mock.patch.object(
+            adb_controller.AdbController, '_execute_command', autospec=True))
+    self._adb_controller = adb_controller.AdbController(
         adb_path='my_adb',
         device_name='awesome_device',
         server_port=9999,
         shell_prompt='l33t>')
-    self.assertNotIn('ANDROID_HOME', os.environ)
-    self.assertNotIn('ANDROID_ADB_SERVER_PORT', os.environ)
-    mock_execute_command.assert_called()  # at __init__.
-    mock_sleep.assert_called_once()  # We don't care about the arg.
 
   @mock.patch.object(
       adb_controller.AdbController, '_wait_for_device', autospec=True)
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_set_touch_indicators(self, mock_execute_command, mock_sleep,
-                                mock_wait_for_device):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_execute_command.assert_called()  # at __init__.
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-    adb_control.set_touch_indicators(show_touches=True, pointer_location=False)
+  def test_set_touch_indicators(self, mock_wait_for_device):
+    self._adb_controller.set_touch_indicators(
+        show_touches=True, pointer_location=False)
     mock_wait_for_device.assert_called_once()
-    mock_execute_command.assert_called_with(
-        adb_control,
-        ['shell', 'settings', 'put', 'system', 'pointer_location', '0'])
+    self._mock_execute_command.assert_has_calls([
+        mock.call(self._adb_controller,
+                  ['shell', 'settings', 'put', 'system', 'show_touches', '1']),
+        mock.call(
+            self._adb_controller,
+            ['shell', 'settings', 'put', 'system', 'pointer_location', '0'])
+    ])
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_force_stop(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_execute_command.assert_called()  # at __init__.
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-    adb_control.force_stop('com.amazing.package')
-    mock_execute_command.assert_called_with(
-        adb_control, ['shell', 'am', 'force-stop', 'com.amazing.package'])
+  def test_force_stop(self):
+    self._adb_controller.force_stop('com.amazing.package')
+    self._mock_execute_command.assert_called_once_with(
+        self._adb_controller,
+        ['shell', 'am', 'force-stop', 'com.amazing.package'])
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_clear_cache(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_execute_command.assert_called()  # at __init__.
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-    adb_control.clear_cache('com.amazing.package')
-    mock_execute_command.assert_called_with(
-        adb_control, ['shell', 'pm', 'clear', 'com.amazing.package'])
+  def test_clear_cache(self):
+    self._adb_controller.clear_cache('com.amazing.package')
+    self._mock_execute_command.assert_called_with(
+        self._adb_controller, ['shell', 'pm', 'clear', 'com.amazing.package'])
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_grant_permissions(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_execute_command.assert_called()  # at __init__.
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-    adb_control.grant_permissions('com.amazing.package',
-                                  ['hey.READ', 'ho.WRITE'])
-    mock_execute_command.assert_has_calls([
-        mock.call(adb_control,
+  def test_grant_permissions(self):
+    self._adb_controller.grant_permissions('com.amazing.package',
+                                           ['hey.READ', 'ho.WRITE'])
+    self._mock_execute_command.assert_has_calls([
+        mock.call(self._adb_controller,
                   ['shell', 'pm', 'grant', 'com.amazing.package', 'hey.READ']),
-        mock.call(adb_control,
+        mock.call(self._adb_controller,
                   ['shell', 'pm', 'grant', 'com.amazing.package', 'ho.WRITE']),
     ])
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_installed_packages(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-    mock_execute_command.return_value = b"""
+  def test_installed_packages(self):
+    self._mock_execute_command.return_value = b"""
 package:com.google.android.apps.wallpaper
 package:com.android.phone
 package:com.android.shell
 package:com.android.wallpaperbackup
 """
-    packages = adb_control._installed_packages()
+    packages = self._adb_controller._installed_packages()
     self.assertEqual(packages, [
         'com.google.android.apps.wallpaper',
         'com.android.phone',
@@ -124,338 +75,196 @@ package:com.android.wallpaperbackup
         'com.android.wallpaperbackup',
     ])
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_start_activity(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-    # mock_execute_command.
-    adb_control.start_activity('hello.world/hello.world.MainActivity', [])
-    adb_control.start_activity(
+  def test_start_activity(self):
+    self._adb_controller.start_activity('hello.world/hello.world.MainActivity',
+                                        [])
+    self._adb_controller.start_activity(
         full_activity='hello.world/hello.world.MainActivity',
         extra_args=['Planet 1', 'Planet 2'])
-    mock_execute_command.assert_has_calls([
-        mock.call(adb_control, [
+    self._mock_execute_command.assert_has_calls([
+        mock.call(self._adb_controller, [
             'shell', 'am', 'start', '-S', '-n',
             'hello.world/hello.world.MainActivity'
         ], 10),
-        mock.call(adb_control, [
+        mock.call(self._adb_controller, [
             'shell', 'am', 'start', '-S', '-n',
             'hello.world/hello.world.MainActivity', 'Planet 1', 'Planet 2'
         ], 10)
     ])
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_start_intent(self, mock_execute_command, unused_mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    adb_control.start_intent(
+  def test_start_intent(self):
+    self._adb_controller.start_intent(
         action='action',
         data_uri='data',
         package_name='my.package',
         timeout=3.0)
 
-    mock_execute_command.assert_has_calls([
-        mock.call(adb_control, ['devices']),  # from the __init__
-        mock.call(adb_control, [
-            'shell', 'am', 'start', '-a', 'action', '-d', 'data', 'my.package'
-        ], 3.0)
-    ])
+    self._mock_execute_command.assert_called_once_with(
+        self._adb_controller,
+        ['shell', 'am', 'start', '-a', 'action', '-d', 'data', 'my.package'],
+        3.0)
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_broadcast(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-    # mock_execute_command.
-    adb_control.broadcast('hello.world/hello.world.BroadcastReceiver',
-                          'android.intent.action.TEST', [])
-    adb_control.broadcast(
+  def test_broadcast(self):
+    self._adb_controller.broadcast('hello.world/hello.world.BroadcastReceiver',
+                                   'android.intent.action.TEST', [])
+    self._adb_controller.broadcast(
         receiver='hello.world/hello.world.BroadcastReceiver',
         action='android.intent.action.TEST',
         extra_args=['--es', 'KEY', 'VALUE'])
-    mock_execute_command.assert_has_calls([
-        mock.call(adb_control, [
+    self._mock_execute_command.assert_has_calls([
+        mock.call(self._adb_controller, [
             'shell', 'am', 'broadcast', '-n',
             'hello.world/hello.world.BroadcastReceiver', '-a',
             'android.intent.action.TEST'
         ]),
-        mock.call(adb_control, [
+        mock.call(self._adb_controller, [
             'shell', 'am', 'broadcast', '-n',
             'hello.world/hello.world.BroadcastReceiver', '-a',
             'android.intent.action.TEST', '--es', 'KEY', 'VALUE'
         ])
     ])
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_setprop(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()
-    adb_control.setprop('myprop', 'true')
-    adb_control.setprop('myotherprop', 'false')
-    mock_execute_command.assert_has_calls([
-        mock.call(adb_control, ['shell', 'setprop', 'myprop', 'true']),
-        mock.call(adb_control, ['shell', 'setprop', 'myotherprop', 'false']),
+  def test_setprop(self):
+    self._adb_controller.setprop('myprop', 'true')
+    self._adb_controller.setprop('myotherprop', 'false')
+    self._mock_execute_command.assert_has_calls([
+        mock.call(self._adb_controller, ['shell', 'setprop', 'myprop', 'true']),
+        mock.call(self._adb_controller,
+                  ['shell', 'setprop', 'myotherprop', 'false']),
     ])
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_rotate_device(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-    adb_control.rotate_device(task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90)
-    adb_control.rotate_device(task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_0)
-    adb_control.rotate_device(task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270)
-    adb_control.rotate_device(task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180)
-    mock_execute_command.assert_has_calls([
+  def test_rotate_device(self):
+    self._adb_controller.rotate_device(
+        task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90)
+    self._adb_controller.rotate_device(
+        task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_0)
+    self._adb_controller.rotate_device(
+        task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270)
+    self._adb_controller.rotate_device(
+        task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180)
+    self._mock_execute_command.assert_has_calls([
         mock.call(
-            adb_control,
+            self._adb_controller,
             args=['shell', 'settings', 'put', 'system', 'user_rotation', '1']),
         mock.call(
-            adb_control,
+            self._adb_controller,
             args=['shell', 'settings', 'put', 'system', 'user_rotation', '0']),
         mock.call(
-            adb_control,
+            self._adb_controller,
             args=['shell', 'settings', 'put', 'system', 'user_rotation', '3']),
         mock.call(
-            adb_control,
+            self._adb_controller,
             args=['shell', 'settings', 'put', 'system', 'user_rotation', '2'])
     ])
 
   @mock.patch.object(
       adb_controller.AdbController, '_wait_for_device', autospec=True)
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_get_screen_dimensions_failed_wait(self, unused_mock_execute_command,
-                                             mock_sleep, mock_wait_for_device):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
+  def test_get_screen_dimensions_failed_wait(self, mock_wait_for_device):
 
     mock_wait_for_device.side_effect = errors.AdbControllerDeviceTimeoutError(
         'Time is up.')
     self.assertRaises(errors.AdbControllerDeviceTimeoutError,
-                      adb_control.get_screen_dimensions)
+                      self._adb_controller.get_screen_dimensions)
     mock_wait_for_device.assert_called_once()
 
   @mock.patch.object(
       adb_controller.AdbController, '_wait_for_device', autospec=True)
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_get_screen_dimensions_success(self, mock_execute_command, mock_sleep,
-                                         mock_wait_for_device):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-
-    mock_execute_command.return_value = b'Physical size: 1280x800'
-    screen_dimensions = adb_control.get_screen_dimensions()
+  def test_get_screen_dimensions_success(self, mock_wait_for_device):
+    self._mock_execute_command.return_value = b'Physical size: 1280x800'
+    screen_dimensions = self._adb_controller.get_screen_dimensions()
     mock_wait_for_device.assert_called()
-    mock_execute_command.assert_called_with(adb_control,
-                                            ['shell', 'wm', 'size'])
+    self._mock_execute_command.assert_called_with(self._adb_controller,
+                                                  ['shell', 'wm', 'size'])
     self.assertEqual(screen_dimensions, (800, 1280))
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_activity_dumpsys(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-
+  def test_activity_dumpsys(self):
     package_name = 'com.world.hello'
-    mock_execute_command.return_value = b'My awesome dumpsys output!!!'
-    activity_dumpsys = adb_control.get_activity_dumpsys(package_name)
-    mock_execute_command.assert_called_with(
-        adb_control,
+    self._mock_execute_command.return_value = b'My awesome dumpsys output!!!'
+    activity_dumpsys = self._adb_controller.get_activity_dumpsys(package_name)
+    self._mock_execute_command.assert_called_once_with(
+        self._adb_controller,
         ['shell', 'dumpsys', 'activity', package_name, package_name])
     # Compare activity_dumpsys to what we want. Notice that we expect a UTF-8
     # string, NOT bytes.
     self.assertEqual(activity_dumpsys, 'My awesome dumpsys output!!!')
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_input_tap(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
+  def test_input_tap(self):
+    self._mock_execute_command.return_value = b''
+    self._adb_controller.input_tap(123, 456)
+    self._mock_execute_command.assert_called_once_with(
+        self._adb_controller, ['shell', 'input', 'tap', '123', '456'])
 
-    mock_execute_command.return_value = b''
-    adb_control.input_tap(123, 456)
-    mock_execute_command.assert_called_with(
-        adb_control, ['shell', 'input', 'tap', '123', '456'])
+  def test_input_text(self):
+    self._mock_execute_command.return_value = b''
+    self._adb_controller.input_text('my_text')
+    self._mock_execute_command.assert_called_once_with(
+        self._adb_controller, ['shell', 'input', 'text', 'my_text'])
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_input_text(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
+  def test_input_key(self):
 
-    mock_execute_command.return_value = b''
-    adb_control.input_text('my_text')
-    mock_execute_command.assert_called_with(
-        adb_control, ['shell', 'input', 'text', 'my_text'])
-
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_input_key(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-
-    mock_execute_command.return_value = b''
-    adb_control.input_key('KEYCODE_HOME')
-    adb_control.input_key('KEYCODE_BACK')
-    adb_control.input_key('KEYCODE_ENTER')
-    mock_execute_command.assert_has_calls([
-        mock.call(adb_control, ['shell', 'input', 'keyevent', 'KEYCODE_HOME']),
-        mock.call(adb_control, ['shell', 'input', 'keyevent', 'KEYCODE_BACK']),
-        mock.call(adb_control, ['shell', 'input', 'keyevent', 'KEYCODE_ENTER']),
+    self._mock_execute_command.return_value = b''
+    self._adb_controller.input_key('KEYCODE_HOME')
+    self._adb_controller.input_key('KEYCODE_BACK')
+    self._adb_controller.input_key('KEYCODE_ENTER')
+    self._mock_execute_command.assert_has_calls([
+        mock.call(self._adb_controller,
+                  ['shell', 'input', 'keyevent', 'KEYCODE_HOME']),
+        mock.call(self._adb_controller,
+                  ['shell', 'input', 'keyevent', 'KEYCODE_BACK']),
+        mock.call(self._adb_controller,
+                  ['shell', 'input', 'keyevent', 'KEYCODE_ENTER']),
     ])
 
     # A key code outside of the accepted codes should raise an exception.
-    self.assertRaises(AssertionError, adb_control.input_key, 'KEYCODE_0')
+    self.assertRaises(AssertionError, self._adb_controller.input_key,
+                      'KEYCODE_0')
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_install_apk(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-
-    mock_execute_command.return_value = b''
+  def test_install_apk(self):
+    self._mock_execute_command.return_value = b''
     # Passing an invalid path should raise an exception.
-    self.assertRaises(AssertionError, adb_control.install_apk, '')
+    self.assertRaises(AssertionError, self._adb_controller.install_apk, '')
 
     local_apk_path = os.path.join(absltest.get_default_test_tmpdir(),
                                   'my_app.apk')
     with open(local_apk_path, 'wb') as f:
       f.write(b'blah. whatever')
-    adb_control.install_apk(local_apk_path, timeout=2.0)
-    mock_execute_command.assert_has_calls([
+    self._adb_controller.install_apk(local_apk_path, timeout=2.0)
+    self._mock_execute_command.assert_has_calls([
         mock.call(
-            adb_control, ['install', '-r', '-t', '-g', local_apk_path],
+            self._adb_controller, ['install', '-r', '-t', '-g', local_apk_path],
             timeout=2.0),
     ])
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_start_accessibility_service(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-
-    mock_execute_command.return_value = b''
-    adb_control.start_accessibility_service('my.service')
-    mock_execute_command.assert_has_calls([
-        mock.call(adb_control, [
+  def test_start_accessibility_service(self):
+    self._mock_execute_command.return_value = b''
+    self._adb_controller.start_accessibility_service('my.service')
+    self._mock_execute_command.assert_has_calls([
+        mock.call(self._adb_controller, [
             'shell', 'settings', 'put', 'secure',
             'enabled_accessibility_services', 'my.service'
         ])
     ])
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
   @mock.patch.object(
       adb_controller.AdbController, '_fetch_current_task_id', autospec=True)
-  def test_start_screen_pinning_task_not_found(self, mock_fetch_current_task_id,
-                                               mock_execute_command,
-                                               mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-
-    mock_execute_command.reset_mock()
-    mock_execute_command.return_value = b''
+  def test_start_screen_pinning_task_not_found(self,
+                                               mock_fetch_current_task_id):
+    self._mock_execute_command.return_value = b''
     mock_fetch_current_task_id.return_value = -1
-    adb_control.start_screen_pinning('my.app.CoolActivity')
-    mock_execute_command.assert_not_called()
+    self._adb_controller.start_screen_pinning('my.app.CoolActivity')
+    self._mock_execute_command.assert_not_called()
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
   @mock.patch.object(
       adb_controller.AdbController, '_fetch_current_task_id', autospec=True)
-  def test_start_screen_pinning(self, mock_fetch_current_task_id,
-                                mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-
-    mock_execute_command.return_value = b''
+  def test_start_screen_pinning(self, mock_fetch_current_task_id):
+    self._mock_execute_command.return_value = b''
     mock_fetch_current_task_id.return_value = 123
-    adb_control.start_screen_pinning('my.app.CoolActivity')
-    mock_execute_command.assert_has_calls(
-        [mock.call(adb_control, ['shell', 'am', 'task', 'lock', '123'])])
+    self._adb_controller.start_screen_pinning('my.app.CoolActivity')
+    self._mock_execute_command.assert_has_calls([
+        mock.call(self._adb_controller, ['shell', 'am', 'task', 'lock', '123'])
+    ])
 
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_fetch_current_task_id(self, mock_execute_command):
+  def test_fetch_current_task_id(self):
     full_activity_name = (
         'com.google.example.games.nostalgicracer/'
         'com.google.example.games.nostalgicracer.MainActivity')
@@ -472,145 +281,84 @@ package:com.android.wallpaperbackup
         full_activity_name)
     stack_list = '\n'.join([bad_task, good_task_not_visible,
                             good_task]).encode('utf-8')
-    mock_execute_command.return_value = stack_list
+    self._mock_execute_command.return_value = stack_list
 
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
+    self.assertEqual(
+        50, self._adb_controller._fetch_current_task_id(full_activity_name))
 
-    self.assertEqual(50, adb_control._fetch_current_task_id(full_activity_name))
-
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_check_install_not_installed(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-
-    mock_execute_command.return_value = b"""
+  def test_check_install_not_installed(self):
+    self._mock_execute_command.return_value = b"""
 package:foo
 package:bar
 package:baz
 """
-    self.assertFalse(adb_control.is_package_installed('faz'))
+    self.assertFalse(self._adb_controller.is_package_installed('faz'))
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_check_install_installed(self, mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-
-    mock_execute_command.return_value = b"""
+  def test_check_install_installed(self):
+    self._mock_execute_command.return_value = b"""
 package:foo
 package:bar
 package:baz
 """
-    self.assertTrue(adb_control.is_package_installed('baz'))
+    self.assertTrue(self._adb_controller.is_package_installed('baz'))
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_connect(self, mock_execute_command, mock_sleep):
-    mock_execute_command.return_value = b'connected to myhost:12345'
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>',
-        tcp_host='myhost',
-        tcp_port=12345)
-    mock_sleep.assert_called_once()
-    mock_execute_command.assert_has_calls(
-        [mock.call(adb_control, ['connect', 'myhost:12345'])])
-    self.assertTrue(adb_control._connected)
+  def test_tcp_connect(self):
+    connect_msg = b'connected to myhost:12345'
+    self._mock_execute_command.return_value = connect_msg
+    cmd_out = self._adb_controller.tcp_connect('myhost:12345')
+    self._mock_execute_command.assert_has_calls(
+        [mock.call(self._adb_controller, ['connect', 'myhost:12345'])])
+    self.assertEqual(connect_msg, cmd_out)
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_no_connection(self, mock_execute_command, mock_sleep):
-    mock_execute_command.return_value = b'connected to myhost:12345'
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>')
-    mock_sleep.assert_called_once()
-    mock_execute_command.assert_called_once_with(adb_control, ['devices'])
-    self.assertFalse(adb_control._connected)
+  def test_connect_already_connected(self):
+    connect_msg = b'already connected to myhost:12345'
+    self._mock_execute_command.return_value = connect_msg
+    cmd_out = self._adb_controller.tcp_connect('myhost:12345')
+    self._mock_execute_command.assert_called_once_with(
+        self._adb_controller, ['connect', 'myhost:12345'])
+    self.assertEqual(connect_msg, cmd_out)
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_connect_already_connected(self, mock_execute_command, mock_sleep):
-    mock_execute_command.return_value = b'already connected to myhost:12345'
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>',
-        tcp_host='myhost',
-        tcp_port=12345)
-    mock_sleep.assert_called_once()
-
-    mock_execute_command.assert_has_calls(
-        [mock.call(adb_control, ['connect', 'myhost:12345'])])
-    self.assertTrue(adb_control._connected)
-
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_connect_retry(self, mock_execute_command, unused_mock_sleep):
-    mock_execute_command.side_effect = [
-        b'devices.',  # The first command is the 'devices' call in __init__.
-        b'connection refused',
-        b'connected to myhost:12345'
+  def test_connect_retry(self):
+    connect_msg = b'connected to myhost:12345'
+    self._mock_execute_command.side_effect = [
+        b'connection refused', connect_msg
     ]
-    adb_control = adb_controller.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>',
-        tcp_host='myhost',
-        tcp_port=12345,
-        connect_max_tries=2)
-    mock_execute_command.assert_has_calls([
-        mock.call(adb_control, ['devices']),
-        mock.call(adb_control, ['connect', 'myhost:12345']),
-        mock.call(adb_control, ['connect', 'myhost:12345']),
+    cmd_out = self._adb_controller.tcp_connect('myhost:12345')
+    self._mock_execute_command.assert_has_calls([
+        mock.call(self._adb_controller, ['connect', 'myhost:12345']),
+        mock.call(self._adb_controller, ['connect', 'myhost:12345']),
     ])
-    self.assertTrue(adb_control._connected)
+    self.assertEqual(2, self._mock_execute_command.call_count)
+    self.assertEqual(connect_msg, cmd_out)
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_connect_fail(self, mock_execute_command, unused_mock_sleep):
-    mock_execute_command.side_effect = [
-        b'devices.',  # The first command is the 'devices' call in __init__.
+  def test_connect_fail(self):
+    self._mock_execute_command.side_effect = [
         b'connection refused',
         b'Nope!',
         b'connected to myhost:12345'  # A third try would have connected.
     ]
     self.assertRaises(
         errors.AdbControllerConnectionError,
-        adb_controller.AdbController,
-        adb_path='my_adb',
-        device_name='awesome_device',
-        server_port=9999,
-        shell_prompt='l33t>',
-        tcp_host='myhost',
-        tcp_port=12345,
+        self._adb_controller.tcp_connect,
+        'myhost:12345',
         connect_max_tries=2)
+
+  def test_disconnect(self):
+    disconnect_msg = b'disconnecting...'
+    self._mock_execute_command.return_value = disconnect_msg
+    cmd_out = self._adb_controller.tcp_disconnect()
+    self._mock_execute_command.assert_called_once_with(self._adb_controller,
+                                                       ['disconnect'])
+    self.assertEqual(disconnect_msg, cmd_out)
+
+  def test_disconnect_fail(self):
+    # If the disconnect command fails, we just ignore it.
+    self._mock_execute_command.side_effect = subprocess.CalledProcessError(
+        1, '', None)
+    cmd_out = self._adb_controller.tcp_disconnect()
+    self._mock_execute_command.assert_called_once_with(self._adb_controller,
+                                                       ['disconnect'])
+    self.assertIsNone(cmd_out)
 
   @parameterized.parameters(
       (True, True, 'null*'),
@@ -619,30 +367,40 @@ package:baz
       (False, False, 'immersive.full=*'),
       (None, None, 'immersive.full=*'),  # Defaults to hiding both.
   )
+  def test_set_bar_visibility(self, navigation, status, expected):
+    expected_output = b'Message.'
+    self._mock_execute_command.return_value = expected_output
+
+    self.assertEqual(
+        expected_output,
+        self._adb_controller.set_bar_visibility(
+            navigation=navigation, status=status))
+    self._mock_execute_command.assert_has_calls([
+        mock.call(
+            self._adb_controller,
+            ['shell', 'settings', 'put', 'global', 'policy_control', expected]),
+    ])
+
   @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(
-      adb_controller.AdbController, '_execute_command', autospec=True)
-  def test_set_bar_visibility(self, navigation, status, expected,
-                              mock_execute_command, mock_sleep):
-    adb_control = adb_controller.AdbController(
+  def test_init_server(self, mock_sleep):
+    self._adb_controller.init_server()
+    self._mock_execute_command.assert_called_once_with(self._adb_controller,
+                                                       ['devices'])
+    mock_sleep.assert_called_once()
+
+
+class AdbControllerInitTest(absltest.TestCase):
+
+  def test_deletes_problem_env_vars(self):
+    os.environ['ANDROID_HOME'] = '/usr/local/Android/Sdk'
+    os.environ['ANDROID_ADB_SERVER_PORT'] = '1337'
+    adb_controller.AdbController(
         adb_path='my_adb',
         device_name='awesome_device',
         server_port=9999,
         shell_prompt='l33t>')
-    mock_sleep.assert_called_once()  # We don't care about the arg.
-
-    expected_output = b'Message.'
-    mock_execute_command.return_value = expected_output
-
-    self.assertEqual(
-        expected_output,
-        adb_control.set_bar_visibility(navigation=navigation, status=status))
-    mock_execute_command.assert_has_calls([
-        mock.call(adb_control, ['devices']),  # From the __init__.
-        mock.call(
-            adb_control,
-            ['shell', 'settings', 'put', 'global', 'policy_control', expected]),
-    ])
+    self.assertNotIn('ANDROID_HOME', os.environ)
+    self.assertNotIn('ANDROID_ADB_SERVER_PORT', os.environ)
 
 
 if __name__ == '__main__':

@@ -124,5 +124,31 @@ class VanadiumSimulatorTest(absltest.TestCase):
         mock.call(0, 0, False),
     ])
 
+  def test_tcp_connection(self):
+    tmp_dir = absltest.get_default_test_tmpdir()
+    simulator = vanadium_simulator.VanadiumSimulator(
+        vanadium_launcher_args={},
+        adb_path='/my/adb',
+        adb_port=5037,
+        tmp_dir=tmp_dir,
+        prompt_regex='awesome>',
+        communication_binaries_path='')
+
+    self._adb_controller.get_screen_dimensions.return_value = (1234, 5678)
+    with mock.patch.object(
+        vanadium_communicator,
+        'VanadiumCommunicator',
+        return_value=self._communicator):
+      self._adb_controller.tcp_connect.assert_not_called()
+      simulator.launch()
+      # Creating more adb_controllers should not trigger more connections or
+      # disconnections
+      _ = simulator.create_adb_controller()
+      self._adb_controller.tcp_connect.assert_called_once()
+      self._adb_controller.tcp_disconnect.assert_not_called()
+      simulator.close()
+      self._adb_controller.tcp_disconnect.assert_called_once()
+
+
 if __name__ == '__main__':
   absltest.main()
