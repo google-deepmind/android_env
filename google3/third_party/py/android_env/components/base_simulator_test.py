@@ -51,7 +51,7 @@ class BaseSimulatorTest(absltest.TestCase):
         adb_port=5037,
         tmp_dir=tmp_dir,
         prompt_regex='awesome>',
-        adb_controller=self._adb_controller)
+        injected_adb_controller=self._adb_controller)
 
   def test_adb_server_init(self):
     # The simulator init should start the adb server.
