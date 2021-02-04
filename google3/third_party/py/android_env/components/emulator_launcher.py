@@ -1,7 +1,7 @@
 """Prepares and launches the emulator."""
 
+from distutils import dir_util  # copybara:strip
 import os
-import shutil  # copybara:strip
 import signal
 import time
 
@@ -128,7 +128,7 @@ class EmulatorLauncher():
     self._shutdown()
     # copybara:strip_begin
     try:
-      shutil.rmtree(self._android_avd_home)
+      dir_util.remove_tree(self._android_avd_home)
     except OSError as e:
       logging.error('Error cleaning up EmulatorLauncher: %s', e)
     # copybara:strip_end
