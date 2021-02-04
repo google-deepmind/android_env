@@ -23,12 +23,16 @@ class AndroidEnv(dm_env.Environment):
   """An environment to play Android games."""
 
   def __init__(self,
-               config: Dict[str, Any],
+               simulator: base_simulator.BaseSimulator,
                task_config: task_pb2.Task,
-               simulator: base_simulator.BaseSimulator):
+               max_bad_states: int = 3,
+               dumpsys_check_frequency: int = 150,
+               max_failed_current_activity: int = 10,
+               step_timeout_sec: int = 10,
+               expected_fps: int = 5,
+               periodic_restart_time_min: float = 0.0):
     """Instantiate an Android environment."""
 
-    self._config = config
     self._task_config = task_config
     self._is_closed = False
     self._latest_action = {}
@@ -45,9 +49,14 @@ class AndroidEnv(dm_env.Environment):
 
     # Initialize remote controller
     self._remote_controller = remote_controller.RemoteController(
-        task_config=self._task_config,
         simulator=simulator,
-        **self._config.get('remote_controller_config', dict()))
+        task_config=task_config,
+        max_bad_states=max_bad_states,
+        dumpsys_check_frequency=dumpsys_check_frequency,
+        max_failed_current_activity=max_failed_current_activity,
+        step_timeout_sec=step_timeout_sec,
+        expected_fps=expected_fps,
+        periodic_restart_time_min=periodic_restart_time_min)
 
     # Logging settings
     self._log_dict = {
@@ -65,7 +74,6 @@ class AndroidEnv(dm_env.Environment):
         self._log_dict[f'{prefix}_action_type_{act_type.name}'] = 0.0
 
     # Log init info
-    logging.info('AndroidEnv config: %r', self._config)
     logging.info('Task config: %s', self._task_config)
     logging.info('Action spec: %s', self.action_spec())
     logging.info('Observation spec: %s', self.observation_spec())
@@ -202,6 +210,7 @@ class AndroidEnv(dm_env.Environment):
     if self._remote_controller.check_player_exited():
       self._log_dict['reset_count_player_exited'] += 1
       logging.warning('Player exited the game. Ending episode.')
+      logging.info('************* END OF EPISODE *************')
       return True
 
     # Check if episode has ended

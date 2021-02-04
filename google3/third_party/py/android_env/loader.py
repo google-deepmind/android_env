@@ -39,5 +39,4 @@ def load(adb_path: str,
   return android_env.AndroidEnv(
       simulator=simulator,
       task_config=task_config,
-      config={},
   )
