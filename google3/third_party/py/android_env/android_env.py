@@ -49,9 +49,6 @@ class AndroidEnv(dm_env.Environment):
         simulator=simulator,
         **self._config.get('remote_controller_config', dict()))
 
-    # Fetch max duration
-    self._set_max_episode_length()
-
     # Logging settings
     self._log_dict = {
         'wrong_step_type_count': 0,
@@ -73,30 +70,6 @@ class AndroidEnv(dm_env.Environment):
     logging.info('Action spec: %s', self.action_spec())
     logging.info('Observation spec: %s', self.observation_spec())
     logging.info('Task extras spec: %s', self.task_extras_spec())
-
-  def _set_max_episode_length(self):
-    """Determines maximum length of an episode in steps or in time."""
-
-    max_num_steps = self._task_config.max_num_steps
-    config_max_num_steps = self._config.get('max_duration_steps', -1)
-    if config_max_num_steps > 0:
-      max_num_steps = config_max_num_steps
-
-    if max_num_steps > 0:
-      self._task_max_duration_steps = int(max_num_steps)
-    else:  # Will rely on max_duration_sec instead
-      self._task_max_duration_steps = None
-
-    max_duration_sec = self._config.get(
-        'max_duration_sec', self._task_config.max_duration_sec)
-    if max_duration_sec == 0:  # No time limit
-      self._task_max_duration_sec = None
-    elif max_duration_sec < 0:   # Default time limit
-      self._task_max_duration_sec = datetime.timedelta(
-          seconds=int(self._task_config.max_duration_sec))
-    else:  # Custom time limit
-      self._task_max_duration_sec = datetime.timedelta(
-          seconds=int(max_duration_sec))
 
   def action_spec(self) -> Dict[str, dm_env.specs.Array]:
     return specs.base_action_spec()
@@ -239,17 +212,18 @@ class AndroidEnv(dm_env.Environment):
       return True
 
     # Check if step limit or time limit has been reached
-    if self._task_max_duration_steps:
+    if self._task_config.max_num_steps > 0:
       episode_steps = self._log_dict['androidenv_episode_steps']
-      if episode_steps > self._task_max_duration_steps:
+      if episode_steps > self._task_config.max_num_steps:
         self._log_dict['reset_count_max_duration_reached'] += 1
         logging.info('Maximum task duration (steps) reached. Ending episode.')
         logging.info('************* END OF EPISODE *************')
         return True
 
-    elif self._task_max_duration_sec:
+    if self._task_config.max_duration_sec > 0.0:
       task_duration = datetime.datetime.now() - self._task_start_time
-      if task_duration > self._task_max_duration_sec:
+      max_duration_sec = self._task_config.max_duration_sec
+      if task_duration > datetime.timedelta(seconds=int(max_duration_sec)):
         self._log_dict['reset_count_max_duration_reached'] += 1
         logging.info('Maximum task duration (sec) reached. Ending episode.')
         logging.info('************* END OF EPISODE *************')
