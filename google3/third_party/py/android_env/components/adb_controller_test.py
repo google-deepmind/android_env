@@ -11,6 +11,10 @@ from android_env.components import errors
 from android_env.proto import task_pb2
 import mock
 
+# Timeout to be used by default in tests below. Set to a small value to avoid
+# hanging on a failed test.
+_TIMEOUT = 2
+
 
 class AdbControllerTest(parameterized.TestCase):
 
@@ -29,35 +33,40 @@ class AdbControllerTest(parameterized.TestCase):
       adb_controller.AdbController, '_wait_for_device', autospec=True)
   def test_set_touch_indicators(self, mock_wait_for_device):
     self._adb_controller.set_touch_indicators(
-        show_touches=True, pointer_location=False)
+        show_touches=True, pointer_location=False, timeout=_TIMEOUT)
     mock_wait_for_device.assert_called_once()
     self._mock_execute_command.assert_has_calls([
         mock.call(self._adb_controller,
-                  ['shell', 'settings', 'put', 'system', 'show_touches', '1']),
+                  ['shell', 'settings', 'put', 'system', 'show_touches', '1'],
+                  _TIMEOUT),
         mock.call(
             self._adb_controller,
-            ['shell', 'settings', 'put', 'system', 'pointer_location', '0'])
+            ['shell', 'settings', 'put', 'system', 'pointer_location', '0'],
+            _TIMEOUT)
     ])
 
   def test_force_stop(self):
-    self._adb_controller.force_stop('com.amazing.package')
+    self._adb_controller.force_stop('com.amazing.package', timeout=_TIMEOUT)
     self._mock_execute_command.assert_called_once_with(
         self._adb_controller,
-        ['shell', 'am', 'force-stop', 'com.amazing.package'])
+        ['shell', 'am', 'force-stop', 'com.amazing.package'], _TIMEOUT)
 
   def test_clear_cache(self):
-    self._adb_controller.clear_cache('com.amazing.package')
+    self._adb_controller.clear_cache('com.amazing.package', timeout=_TIMEOUT)
     self._mock_execute_command.assert_called_with(
-        self._adb_controller, ['shell', 'pm', 'clear', 'com.amazing.package'])
+        self._adb_controller, ['shell', 'pm', 'clear', 'com.amazing.package'],
+        _TIMEOUT)
 
   def test_grant_permissions(self):
-    self._adb_controller.grant_permissions('com.amazing.package',
-                                           ['hey.READ', 'ho.WRITE'])
+    self._adb_controller.grant_permissions(
+        'com.amazing.package', ['hey.READ', 'ho.WRITE'], timeout=_TIMEOUT)
     self._mock_execute_command.assert_has_calls([
         mock.call(self._adb_controller,
-                  ['shell', 'pm', 'grant', 'com.amazing.package', 'hey.READ']),
+                  ['shell', 'pm', 'grant', 'com.amazing.package', 'hey.READ'],
+                  _TIMEOUT),
         mock.call(self._adb_controller,
-                  ['shell', 'pm', 'grant', 'com.amazing.package', 'ho.WRITE']),
+                  ['shell', 'pm', 'grant', 'com.amazing.package', 'ho.WRITE'],
+                  _TIMEOUT),
     ])
 
   def test_installed_packages(self):
@@ -67,7 +76,7 @@ package:com.android.phone
 package:com.android.shell
 package:com.android.wallpaperbackup
 """
-    packages = self._adb_controller._installed_packages()
+    packages = self._adb_controller._installed_packages(timeout=_TIMEOUT)
     self.assertEqual(packages, [
         'com.google.android.apps.wallpaper',
         'com.android.phone',
@@ -76,20 +85,21 @@ package:com.android.wallpaperbackup
     ])
 
   def test_start_activity(self):
-    self._adb_controller.start_activity('hello.world/hello.world.MainActivity',
-                                        [])
+    self._adb_controller.start_activity(
+        'hello.world/hello.world.MainActivity', [], timeout=_TIMEOUT)
     self._adb_controller.start_activity(
         full_activity='hello.world/hello.world.MainActivity',
-        extra_args=['Planet 1', 'Planet 2'])
+        extra_args=['Planet 1', 'Planet 2'],
+        timeout=_TIMEOUT)
     self._mock_execute_command.assert_has_calls([
         mock.call(self._adb_controller, [
             'shell', 'am', 'start', '-S', '-n',
             'hello.world/hello.world.MainActivity'
-        ], 10),
+        ], _TIMEOUT),
         mock.call(self._adb_controller, [
             'shell', 'am', 'start', '-S', '-n',
             'hello.world/hello.world.MainActivity', 'Planet 1', 'Planet 2'
-        ], 10)
+        ], _TIMEOUT)
     ])
 
   def test_start_intent(self):
@@ -97,64 +107,72 @@ package:com.android.wallpaperbackup
         action='action',
         data_uri='data',
         package_name='my.package',
-        timeout=3.0)
+        timeout=_TIMEOUT)
 
     self._mock_execute_command.assert_called_once_with(
         self._adb_controller,
         ['shell', 'am', 'start', '-a', 'action', '-d', 'data', 'my.package'],
-        3.0)
+        _TIMEOUT)
 
   def test_broadcast(self):
-    self._adb_controller.broadcast('hello.world/hello.world.BroadcastReceiver',
-                                   'android.intent.action.TEST', [])
+    self._adb_controller.broadcast(
+        'hello.world/hello.world.BroadcastReceiver',
+        'android.intent.action.TEST', [],
+        timeout=_TIMEOUT)
     self._adb_controller.broadcast(
         receiver='hello.world/hello.world.BroadcastReceiver',
         action='android.intent.action.TEST',
-        extra_args=['--es', 'KEY', 'VALUE'])
+        extra_args=['--es', 'KEY', 'VALUE'],
+        timeout=_TIMEOUT)
     self._mock_execute_command.assert_has_calls([
         mock.call(self._adb_controller, [
             'shell', 'am', 'broadcast', '-n',
             'hello.world/hello.world.BroadcastReceiver', '-a',
             'android.intent.action.TEST'
-        ]),
+        ], _TIMEOUT),
         mock.call(self._adb_controller, [
             'shell', 'am', 'broadcast', '-n',
             'hello.world/hello.world.BroadcastReceiver', '-a',
             'android.intent.action.TEST', '--es', 'KEY', 'VALUE'
-        ])
+        ], _TIMEOUT)
     ])
 
   def test_setprop(self):
-    self._adb_controller.setprop('myprop', 'true')
-    self._adb_controller.setprop('myotherprop', 'false')
+    self._adb_controller.setprop('myprop', 'true', timeout=_TIMEOUT)
+    self._adb_controller.setprop('myotherprop', 'false', timeout=_TIMEOUT)
     self._mock_execute_command.assert_has_calls([
-        mock.call(self._adb_controller, ['shell', 'setprop', 'myprop', 'true']),
+        mock.call(self._adb_controller, ['shell', 'setprop', 'myprop', 'true'],
+                  _TIMEOUT),
         mock.call(self._adb_controller,
-                  ['shell', 'setprop', 'myotherprop', 'false']),
+                  ['shell', 'setprop', 'myotherprop', 'false'], _TIMEOUT),
     ])
 
   def test_rotate_device(self):
     self._adb_controller.rotate_device(
-        task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90)
+        task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90, timeout=_TIMEOUT)
     self._adb_controller.rotate_device(
-        task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_0)
+        task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_0, timeout=_TIMEOUT)
     self._adb_controller.rotate_device(
-        task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270)
+        task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270, timeout=_TIMEOUT)
     self._adb_controller.rotate_device(
-        task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180)
+        task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180, timeout=_TIMEOUT)
     self._mock_execute_command.assert_has_calls([
         mock.call(
             self._adb_controller,
-            args=['shell', 'settings', 'put', 'system', 'user_rotation', '1']),
+            args=['shell', 'settings', 'put', 'system', 'user_rotation', '1'],
+            timeout=_TIMEOUT),
         mock.call(
             self._adb_controller,
-            args=['shell', 'settings', 'put', 'system', 'user_rotation', '0']),
+            args=['shell', 'settings', 'put', 'system', 'user_rotation', '0'],
+            timeout=_TIMEOUT),
         mock.call(
             self._adb_controller,
-            args=['shell', 'settings', 'put', 'system', 'user_rotation', '3']),
+            args=['shell', 'settings', 'put', 'system', 'user_rotation', '3'],
+            timeout=_TIMEOUT),
         mock.call(
             self._adb_controller,
-            args=['shell', 'settings', 'put', 'system', 'user_rotation', '2'])
+            args=['shell', 'settings', 'put', 'system', 'user_rotation', '2'],
+            timeout=_TIMEOUT)
     ])
 
   @mock.patch.object(
@@ -171,48 +189,50 @@ package:com.android.wallpaperbackup
       adb_controller.AdbController, '_wait_for_device', autospec=True)
   def test_get_screen_dimensions_success(self, mock_wait_for_device):
     self._mock_execute_command.return_value = b'Physical size: 1280x800'
-    screen_dimensions = self._adb_controller.get_screen_dimensions()
+    screen_dimensions = self._adb_controller.get_screen_dimensions(
+        timeout=_TIMEOUT)
     mock_wait_for_device.assert_called()
     self._mock_execute_command.assert_called_with(self._adb_controller,
-                                                  ['shell', 'wm', 'size'])
+                                                  ['shell', 'wm', 'size'],
+                                                  _TIMEOUT)
     self.assertEqual(screen_dimensions, (800, 1280))
 
   def test_activity_dumpsys(self):
     package_name = 'com.world.hello'
     self._mock_execute_command.return_value = b'My awesome dumpsys output!!!'
-    activity_dumpsys = self._adb_controller.get_activity_dumpsys(package_name)
+    activity_dumpsys = self._adb_controller.get_activity_dumpsys(
+        package_name, timeout=_TIMEOUT)
     self._mock_execute_command.assert_called_once_with(
         self._adb_controller,
-        ['shell', 'dumpsys', 'activity', package_name, package_name])
+        ['shell', 'dumpsys', 'activity', package_name, package_name], _TIMEOUT)
     # Compare activity_dumpsys to what we want. Notice that we expect a UTF-8
     # string, NOT bytes.
     self.assertEqual(activity_dumpsys, 'My awesome dumpsys output!!!')
 
   def test_input_tap(self):
     self._mock_execute_command.return_value = b''
-    self._adb_controller.input_tap(123, 456)
+    self._adb_controller.input_tap(123, 456, timeout=_TIMEOUT)
     self._mock_execute_command.assert_called_once_with(
-        self._adb_controller, ['shell', 'input', 'tap', '123', '456'])
+        self._adb_controller, ['shell', 'input', 'tap', '123', '456'], _TIMEOUT)
 
   def test_input_text(self):
     self._mock_execute_command.return_value = b''
-    self._adb_controller.input_text('my_text')
+    self._adb_controller.input_text('my_text', timeout=_TIMEOUT)
     self._mock_execute_command.assert_called_once_with(
-        self._adb_controller, ['shell', 'input', 'text', 'my_text'])
+        self._adb_controller, ['shell', 'input', 'text', 'my_text'], _TIMEOUT)
 
   def test_input_key(self):
-
     self._mock_execute_command.return_value = b''
-    self._adb_controller.input_key('KEYCODE_HOME')
-    self._adb_controller.input_key('KEYCODE_BACK')
-    self._adb_controller.input_key('KEYCODE_ENTER')
+    self._adb_controller.input_key('KEYCODE_HOME', timeout=_TIMEOUT)
+    self._adb_controller.input_key('KEYCODE_BACK', timeout=_TIMEOUT)
+    self._adb_controller.input_key('KEYCODE_ENTER', timeout=_TIMEOUT)
     self._mock_execute_command.assert_has_calls([
         mock.call(self._adb_controller,
-                  ['shell', 'input', 'keyevent', 'KEYCODE_HOME']),
+                  ['shell', 'input', 'keyevent', 'KEYCODE_HOME'], _TIMEOUT),
         mock.call(self._adb_controller,
-                  ['shell', 'input', 'keyevent', 'KEYCODE_BACK']),
+                  ['shell', 'input', 'keyevent', 'KEYCODE_BACK'], _TIMEOUT),
         mock.call(self._adb_controller,
-                  ['shell', 'input', 'keyevent', 'KEYCODE_ENTER']),
+                  ['shell', 'input', 'keyevent', 'KEYCODE_ENTER'], _TIMEOUT),
     ])
 
     # A key code outside of the accepted codes should raise an exception.
@@ -228,21 +248,21 @@ package:com.android.wallpaperbackup
                                   'my_app.apk')
     with open(local_apk_path, 'wb') as f:
       f.write(b'blah. whatever')
-    self._adb_controller.install_apk(local_apk_path, timeout=2.0)
+    self._adb_controller.install_apk(local_apk_path, timeout=_TIMEOUT)
     self._mock_execute_command.assert_has_calls([
-        mock.call(
-            self._adb_controller, ['install', '-r', '-t', '-g', local_apk_path],
-            timeout=2.0),
+        mock.call(self._adb_controller,
+                  ['install', '-r', '-t', '-g', local_apk_path], _TIMEOUT),
     ])
 
   def test_start_accessibility_service(self):
     self._mock_execute_command.return_value = b''
-    self._adb_controller.start_accessibility_service('my.service')
+    self._adb_controller.start_accessibility_service(
+        'my.service', timeout=_TIMEOUT)
     self._mock_execute_command.assert_has_calls([
         mock.call(self._adb_controller, [
             'shell', 'settings', 'put', 'secure',
             'enabled_accessibility_services', 'my.service'
-        ])
+        ], _TIMEOUT)
     ])
 
   @mock.patch.object(
@@ -251,7 +271,8 @@ package:com.android.wallpaperbackup
                                                mock_fetch_current_task_id):
     self._mock_execute_command.return_value = b''
     mock_fetch_current_task_id.return_value = -1
-    self._adb_controller.start_screen_pinning('my.app.CoolActivity')
+    self._adb_controller.start_screen_pinning(
+        'my.app.CoolActivity', timeout=_TIMEOUT)
     self._mock_execute_command.assert_not_called()
 
   @mock.patch.object(
@@ -259,9 +280,11 @@ package:com.android.wallpaperbackup
   def test_start_screen_pinning(self, mock_fetch_current_task_id):
     self._mock_execute_command.return_value = b''
     mock_fetch_current_task_id.return_value = 123
-    self._adb_controller.start_screen_pinning('my.app.CoolActivity')
+    self._adb_controller.start_screen_pinning(
+        'my.app.CoolActivity', timeout=_TIMEOUT)
     self._mock_execute_command.assert_has_calls([
-        mock.call(self._adb_controller, ['shell', 'am', 'task', 'lock', '123'])
+        mock.call(self._adb_controller, ['shell', 'am', 'task', 'lock', '123'],
+                  _TIMEOUT)
     ])
 
   def test_fetch_current_task_id(self):
@@ -284,7 +307,9 @@ package:com.android.wallpaperbackup
     self._mock_execute_command.return_value = stack_list
 
     self.assertEqual(
-        50, self._adb_controller._fetch_current_task_id(full_activity_name))
+        50,
+        self._adb_controller._fetch_current_task_id(
+            full_activity_name, timeout=_TIMEOUT))
 
   def test_check_install_not_installed(self):
     self._mock_execute_command.return_value = b"""
@@ -292,7 +317,8 @@ package:foo
 package:bar
 package:baz
 """
-    self.assertFalse(self._adb_controller.is_package_installed('faz'))
+    self.assertFalse(
+        self._adb_controller.is_package_installed('faz', timeout=_TIMEOUT))
 
   def test_check_install_installed(self):
     self._mock_execute_command.return_value = b"""
@@ -300,22 +326,24 @@ package:foo
 package:bar
 package:baz
 """
-    self.assertTrue(self._adb_controller.is_package_installed('baz'))
+    self.assertTrue(
+        self._adb_controller.is_package_installed('baz', timeout=_TIMEOUT))
 
   def test_tcp_connect(self):
     connect_msg = b'connected to myhost:12345'
     self._mock_execute_command.return_value = connect_msg
-    cmd_out = self._adb_controller.tcp_connect('myhost:12345')
-    self._mock_execute_command.assert_has_calls(
-        [mock.call(self._adb_controller, ['connect', 'myhost:12345'])])
+    cmd_out = self._adb_controller.tcp_connect('myhost:12345', timeout=_TIMEOUT)
+    self._mock_execute_command.assert_has_calls([
+        mock.call(self._adb_controller, ['connect', 'myhost:12345'], _TIMEOUT)
+    ])
     self.assertEqual(connect_msg, cmd_out)
 
   def test_connect_already_connected(self):
     connect_msg = b'already connected to myhost:12345'
     self._mock_execute_command.return_value = connect_msg
-    cmd_out = self._adb_controller.tcp_connect('myhost:12345')
+    cmd_out = self._adb_controller.tcp_connect('myhost:12345', timeout=_TIMEOUT)
     self._mock_execute_command.assert_called_once_with(
-        self._adb_controller, ['connect', 'myhost:12345'])
+        self._adb_controller, ['connect', 'myhost:12345'], _TIMEOUT)
     self.assertEqual(connect_msg, cmd_out)
 
   def test_connect_retry(self):
@@ -323,10 +351,10 @@ package:baz
     self._mock_execute_command.side_effect = [
         b'connection refused', connect_msg
     ]
-    cmd_out = self._adb_controller.tcp_connect('myhost:12345')
+    cmd_out = self._adb_controller.tcp_connect('myhost:12345', timeout=_TIMEOUT)
     self._mock_execute_command.assert_has_calls([
-        mock.call(self._adb_controller, ['connect', 'myhost:12345']),
-        mock.call(self._adb_controller, ['connect', 'myhost:12345']),
+        mock.call(self._adb_controller, ['connect', 'myhost:12345'], _TIMEOUT),
+        mock.call(self._adb_controller, ['connect', 'myhost:12345'], _TIMEOUT),
     ])
     self.assertEqual(2, self._mock_execute_command.call_count)
     self.assertEqual(connect_msg, cmd_out)
@@ -346,18 +374,18 @@ package:baz
   def test_disconnect(self):
     disconnect_msg = b'disconnecting...'
     self._mock_execute_command.return_value = disconnect_msg
-    cmd_out = self._adb_controller.tcp_disconnect()
+    cmd_out = self._adb_controller.tcp_disconnect(timeout=_TIMEOUT)
     self._mock_execute_command.assert_called_once_with(self._adb_controller,
-                                                       ['disconnect'])
+                                                       ['disconnect'], _TIMEOUT)
     self.assertEqual(disconnect_msg, cmd_out)
 
   def test_disconnect_fail(self):
     # If the disconnect command fails, we just ignore it.
     self._mock_execute_command.side_effect = subprocess.CalledProcessError(
         1, '', None)
-    cmd_out = self._adb_controller.tcp_disconnect()
+    cmd_out = self._adb_controller.tcp_disconnect(timeout=_TIMEOUT)
     self._mock_execute_command.assert_called_once_with(self._adb_controller,
-                                                       ['disconnect'])
+                                                       ['disconnect'], _TIMEOUT)
     self.assertIsNone(cmd_out)
 
   @parameterized.parameters(
@@ -374,18 +402,19 @@ package:baz
     self.assertEqual(
         expected_output,
         self._adb_controller.set_bar_visibility(
-            navigation=navigation, status=status))
+            navigation=navigation, status=status, timeout=_TIMEOUT))
     self._mock_execute_command.assert_has_calls([
         mock.call(
             self._adb_controller,
-            ['shell', 'settings', 'put', 'global', 'policy_control', expected]),
+            ['shell', 'settings', 'put', 'global', 'policy_control', expected],
+            _TIMEOUT),
     ])
 
   @mock.patch.object(time, 'sleep', autospec=True)
   def test_init_server(self, mock_sleep):
-    self._adb_controller.init_server()
+    self._adb_controller.init_server(timeout=_TIMEOUT)
     self._mock_execute_command.assert_called_once_with(self._adb_controller,
-                                                       ['devices'])
+                                                       ['devices'], _TIMEOUT)
     mock_sleep.assert_called_once()
 
 
@@ -398,7 +427,8 @@ class AdbControllerInitTest(absltest.TestCase):
         adb_path='my_adb',
         device_name='awesome_device',
         server_port=9999,
-        shell_prompt='l33t>')
+        shell_prompt='l33t>',
+        default_timeout=_TIMEOUT)
     self.assertNotIn('ANDROID_HOME', os.environ)
     self.assertNotIn('ANDROID_ADB_SERVER_PORT', os.environ)
 
