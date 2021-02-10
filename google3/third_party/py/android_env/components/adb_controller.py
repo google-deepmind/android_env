@@ -555,7 +555,7 @@ class AdbController():
 
       try:
         logging.info('Spawning ADB shell...')
-        self._adb_shell = pexpect.spawn(command, timeout=timeout)
+        self._adb_shell = pexpect.spawn(command, use_poll=True, timeout=timeout)
         # Setting this to None prevents a 50ms wait for each sendline.
         self._adb_shell.delaybeforesend = None
         self._adb_shell.delayafterread = None

@@ -13,6 +13,8 @@ from android_env.proto import raw_observation_pb2
 
 import numpy as np
 
+_READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
+
 
 class EmulatorConsole():
   """Handles communication with the emulator."""
@@ -70,8 +72,11 @@ class EmulatorConsole():
       self._pipe = os.open(self._fifo, os.O_RDONLY)
 
     start_time = time.time()
-    timeout_sec = 5.0
+    timeout_sec = 25.0
+    chunk_timeout_ms = timeout_sec * 1000
     data = None
+    poller = select.poll()
+    poller.register(self._pipe, _READ_ONLY)
     while True:
       try:
         # Wait for up to 1 second for `pipe` to be ready to read, and then read
@@ -81,18 +86,17 @@ class EmulatorConsole():
         # raise an error.
         # NOTE: This timeout introduces a delay of around 20% on this os.read()
         #       call. As of 2019.06.05 in local benchmarks it was observed that
-        #       this extra select() call increases the latency from ~1.8ms to
-        #       ~1.5ms. We deemed this cost small for the added protection.
-        r, _, _ = select.select([self._pipe], [], [], 1.0)
-        if self._pipe in r:
-          data = os.read(self._pipe, int(2**17))
+        #       this extra select() call increases the latency from ~1.5ms to
+        #       ~1.8ms. We deemed this cost small for the added protection.
+        for fd, _ in poller.poll(chunk_timeout_ms):
+          if fd == self._pipe:
+            data = os.read(self._pipe, int(2**17))
       except OSError as err:
         raise err
       if data:
         encoded_obs += data
       elif time.time() - start_time > timeout_sec:
         logging.error('Timed out on reading observation.')
-        # The pipe stayed empty passed the timeout time.
         raise errors.PipeTimedOutError()
       else:
         if encoded_obs:

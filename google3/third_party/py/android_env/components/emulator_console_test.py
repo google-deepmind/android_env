@@ -32,6 +32,19 @@ class EmulatorConsoleTest(absltest.TestCase):
     self._mock_fifo_file = mock.MagicMock()
     self._mock_fifo_file.read.return_value = 'some encoded image'
 
+    # Create a mock poller for select.poll()
+    self._mock_poller = mock.create_autospec(select).poll()
+    self._mock_poller.poll.return_value = ([self._mock_fifo_file, None],
+                                           [None, None],
+                                           [None, None])
+
+    # Create a mock poller for select.poll() that returns a file descriptor that
+    # will simply time out.
+    self._mock_poller_for_timeout = mock.create_autospec(select).poll()
+    self._mock_poller_for_timeout.poll.return_value = ([123, None],
+                                                       [None, None],
+                                                       [None, None])
+
     self._mock_os_open = mock.patch.object(os, 'open', autospec=True).start()
     self._mock_os_open.return_value = self._mock_fifo_file
 
@@ -132,8 +145,8 @@ class EmulatorConsoleTest(absltest.TestCase):
     mock_close.assert_has_calls([])
     mock_remove.assert_has_calls([])
 
-  @mock.patch.object(select, 'select', autospec=True)
-  def test_fetch_screenshot_timedout(self, mock_select):
+  @mock.patch.object(select, 'poll', autospec=True)
+  def test_fetch_screenshot_timedout(self, mock_select_poll):
     telnet_connection = mock.create_autospec(telnetlib.Telnet)
     telnet_connection.read_until.return_value = 'OK'
 
@@ -147,13 +160,13 @@ class EmulatorConsoleTest(absltest.TestCase):
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
 
-    mock_select.return_value = ([123], None, None)
+    mock_select_poll.return_value = self._mock_poller_for_timeout
 
     self.assertRaises(errors.PipeTimedOutError, console.fetch_screenshot)
 
   @mock.patch.object(os, 'read', autospec=True)
-  @mock.patch.object(select, 'select', autospec=True)
-  def test_fetch_screenshot_os_error(self, mock_select, mock_os_read):
+  @mock.patch.object(select, 'poll', autospec=True)
+  def test_fetch_screenshot_os_error(self, mock_select_poll, mock_os_read):
     telnet_connection = mock.create_autospec(telnetlib.Telnet)
     telnet_connection.read_until.return_value = 'OK'
 
@@ -167,7 +180,7 @@ class EmulatorConsoleTest(absltest.TestCase):
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
 
-    mock_select.return_value = ([self._mock_fifo_file], None, None)
+    mock_select_poll.return_value = self._mock_poller
 
     # Create a fake flat image with 4 channels.
     fake_img = np.array(list(range(10)) * 4, dtype=np.uint8)
@@ -188,8 +201,9 @@ class EmulatorConsoleTest(absltest.TestCase):
     self.assertRaises(OSError, console.fetch_screenshot)
 
   @mock.patch.object(os, 'read', autospec=True)
-  @mock.patch.object(select, 'select', autospec=True)
-  def test_fetch_screenshot_decoding_error(self, mock_select, mock_os_read):
+  @mock.patch.object(select, 'poll', autospec=True)
+  def test_fetch_screenshot_decoding_error(self, mock_select_poll,
+                                           mock_os_read):
     telnet_connection = mock.create_autospec(telnetlib.Telnet)
     telnet_connection.read_until.return_value = 'OK'
 
@@ -203,7 +217,7 @@ class EmulatorConsoleTest(absltest.TestCase):
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
 
-    mock_select.return_value = ([self._mock_fifo_file], None, None)
+    mock_select_poll.return_value = self._mock_poller
 
     mock_os_read.side_effect = [
         b'',  # 1st call.
@@ -214,11 +228,11 @@ class EmulatorConsoleTest(absltest.TestCase):
     self.assertRaises(errors.ObservationDecodingError, console.fetch_screenshot)
 
   @mock.patch.object(os, 'read', autospec=True)
-  @mock.patch.object(select, 'select', autospec=True)
+  @mock.patch.object(select, 'poll', autospec=True)
   @mock.patch.object(os, 'remove', autospec=True)
   @mock.patch.object(os, 'close', autospec=True)
   def test_fetch_screenshot_ok(self, mock_close, unused_mock_remove,
-                               mock_select, mock_os_read):
+                               mock_select_poll, mock_os_read):
     telnet_connection = mock.create_autospec(telnetlib.Telnet)
     telnet_connection.read_until.return_value = 'OK'
 
@@ -232,7 +246,7 @@ class EmulatorConsoleTest(absltest.TestCase):
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
 
-    mock_select.return_value = ([self._mock_fifo_file], None, None)
+    mock_select_poll.return_value = self._mock_poller
 
     # Create a fake flat image with 4 channels.
     fake_img = np.array(list(range(10)) * 4, dtype=np.uint8)
