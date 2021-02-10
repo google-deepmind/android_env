@@ -73,7 +73,7 @@ class EmulatorConsole():
 
     start_time = time.time()
     timeout_sec = 25.0
-    chunk_timeout_ms = timeout_sec * 1000
+    chunk_timeout_ms = 5000.0
     data = None
     poller = select.poll()
     poller.register(self._pipe, _READ_ONLY)
@@ -82,8 +82,8 @@ class EmulatorConsole():
         # Wait for up to 1 second for `pipe` to be ready to read, and then read
         # up to 2**17 bytes, which is a bit above the maximum when reading from
         # a pipe in linux (around 69k bytes, which is > 2**16).
-        # If the pipe is still empty after 5 secs, something is wrong and we
-        # raise an error.
+        # If the pipe is still empty after `timeout_sec`, something is wrong and
+        # we raise an error.
         # NOTE: This timeout introduces a delay of around 20% on this os.read()
         #       call. As of 2019.06.05 in local benchmarks it was observed that
         #       this extra select() call increases the latency from ~1.5ms to
