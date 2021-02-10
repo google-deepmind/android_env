@@ -6,7 +6,7 @@ from typing import Callable, List, Optional, Sequence, Pattern
 
 from absl import logging
 
-from android_env.components import adb_controller
+from android_env.components import adb_controller as adb_control
 from android_env.proto import task_pb2
 
 
@@ -170,9 +170,10 @@ class AppScreenChecker():
     # The current view hierarchy does not match the expected view hierarchy.
     UNEXPECTED_VIEW_HIERARCHY = 4
 
-  def __init__(self, adb_control: adb_controller.AdbController,
+  def __init__(self,
+               adb_controller: adb_control.AdbController,
                expected_app_screen: task_pb2.AppScreen):
-    self._adb_control = adb_control
+    self._adb_controller = adb_controller
     self._expected_activity = expected_app_screen.activity
     self._expected_view_hierarchy_path = [
         re.compile(regex) for regex in expected_app_screen.view_hierarchy_path
@@ -185,7 +186,7 @@ class AppScreenChecker():
       return AppScreenChecker.Outcome.EMPTY_EXPECTED_ACTIVITY
 
     # Check if we are still on the expected Activity.
-    current_activity = self._adb_control.get_current_activity()
+    current_activity = self._adb_controller.get_current_activity()
     if current_activity is None:
       return AppScreenChecker.Outcome.FAILED_ACTIVITY_EXTRACTION
 
@@ -199,7 +200,7 @@ class AppScreenChecker():
 
     # Check if we are in the expected view hierarchy path.
     if self._expected_view_hierarchy_path:
-      dumpsys_activity_output = self._adb_control.get_activity_dumpsys(
+      dumpsys_activity_output = self._adb_controller.get_activity_dumpsys(
           package_name)
       if dumpsys_activity_output:
         if not matches_path(
