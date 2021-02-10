@@ -10,7 +10,6 @@ from typing import List, Optional, Sequence, Tuple
 
 from absl import logging
 from android_env.components import errors
-from android_env.components import logcat_thread
 from android_env.proto import task_pb2
 import pexpect
 
@@ -25,13 +24,13 @@ class AdbController():
 
   def __init__(self,
                adb_path: str = 'adb',
+               adb_server_port: int = 5037,
                device_name: str = '',
-               server_port: int = 5037,
                shell_prompt: str = r'generic_x86:/ \$',
                default_timeout: float = _DEFAULT_TIMEOUT_SECONDS):
     self._execute_command_lock = threading.Lock()
     self._adb_path = adb_path
-    self._server_port = str(server_port)
+    self._adb_server_port = str(adb_server_port)
     self._shell_is_ready = False
     self._prompt = shell_prompt
     self._adb_shell = None
@@ -43,6 +42,13 @@ class AdbController():
       del os.environ['ANDROID_HOME']
     if 'ANDROID_ADB_SERVER_PORT' in os.environ:
       del os.environ['ANDROID_ADB_SERVER_PORT']
+
+  def command_prefix(self) -> List[str]:
+    """The command for instantiating an adb client to this server."""
+    command_prefix = [self._adb_path, '-P', self._adb_server_port]
+    if self._device_name:
+      command_prefix.extend(['-s', self._device_name])
+    return command_prefix
 
   def init_server(self, timeout: Optional[float] = None):
     """Initialize the ADB server deamon on the given port.
@@ -169,21 +175,6 @@ class AdbController():
               timeout: Optional[float] = None):
     self._execute_command(['shell', 'setprop', prop_name, value],
                           timeout=timeout)
-
-  def create_logcat_thread(
-      self,
-      filters: Optional[Sequence[str]] = None,
-      log_prefix: Optional[str] = None,
-      print_all_lines: bool = False) -> logcat_thread.LogcatThread:
-    return logcat_thread.LogcatThread(
-        filters,
-        log_prefix=log_prefix,
-        block_input=True,
-        block_output=False,
-        print_all_lines=print_all_lines,
-        device_name=self._device_name,
-        adb_path=self._adb_path,
-        adb_port=self._server_port)
 
   def get_orientation(self, timeout: Optional[float] = None) -> Optional[str]:
     """Returns the device orientation."""
@@ -397,6 +388,7 @@ class AdbController():
 
     Args:
       key_code: The keyboard key to press.
+      timeout: Optional time limit in seconds.
 
     Returns:
       The output of running such command as a string, None if it fails.
@@ -527,12 +519,6 @@ class AdbController():
       return self._execute_command(
           policy_control_cmd + ['immersive.full=*'], timeout=timeout)
 
-  def _get_command_prefix(self) -> List[str]:
-    command_prefix = [self._adb_path, '-P', self._server_port]
-    if self._device_name:
-      command_prefix.extend(['-s', self._device_name])
-    return command_prefix
-
   def _init_shell(self, timeout: Optional[float] = None) -> None:
     """Starts an ADB shell process.
 
@@ -543,7 +529,7 @@ class AdbController():
         errors.AdbControllerShellInitError when adb shell cannot be initialized.
     """
 
-    command = ' '.join(self._get_command_prefix() + ['shell'])
+    command = ' '.join(self.command_prefix() + ['shell'])
     logging.info('Initialising ADB shell with command: %s', command)
 
     timeout = self._resolve_timeout(timeout)
@@ -581,7 +567,7 @@ class AdbController():
       timeout: Optional[float] = None) -> Optional[bytes]:
     """Executes `adb args` and returns its output."""
     timeout = self._resolve_timeout(timeout)
-    command = self._get_command_prefix() + args
+    command = self.command_prefix() + args
     logging.info('Executing ADB command: %s', command)
     try:
       cmd_output = subprocess.check_output(

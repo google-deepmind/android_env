@@ -96,8 +96,8 @@ class BaseSimulator(metaclass=abc.ABCMeta):
   def create_adb_controller(self):
     return adb_controller.AdbController(
         adb_path=self._adb_path,
+        adb_server_port=self._adb_server_port,
         device_name=self.adb_device_name(),
-        server_port=self._adb_server_port,
         shell_prompt=self._prompt_regex)
 
   def _base_post_launch_setup(self):

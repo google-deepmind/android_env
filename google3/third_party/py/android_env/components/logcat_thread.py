@@ -18,15 +18,13 @@ class LogcatThread(thread_function.ThreadFunction):
 
   def __init__(
       self,
+      adb_command_prefix: List[str],
       filters: Optional[List[str]] = None,
       log_prefix: Optional[str] = None,
+      print_all_lines: bool = False,
       block_input: bool = True,
       block_output: bool = False,
-      print_all_lines: bool = False,
       name: str = 'logcat',
-      device_name: str = '',
-      adb_path: str = 'adb',
-      adb_port: str = '5037',
   ):
     """Initializes this LogcatThread with optional filters.
 
@@ -34,21 +32,19 @@ class LogcatThread(thread_function.ThreadFunction):
     info on `logcat`
 
     Args:
+      adb_command_prefix: Command for connecting to a particular ADB.
       filters: list of strings. Each element should specify a filter such as
           'NostalgicRacer:V' ("everything from NostalgicRacer") or '*:S'
             ("nothing from other processes").
       log_prefix: Expected prefix in the log message. Messages without the
         prefix will be ignored, and the prefix will be trimmed from messages
         when matched.
+      print_all_lines: Whether to print all lines we observe in the logcat
+        stream. This is useful to debug problems in Android itself.
       block_input: Whether to block this thread when reading its input queue.
       block_output: Whether to block this thread when writing to its output
         queue.
-      print_all_lines: Whether to print all lines we observe in the logcat
-        stream. This is useful to debug problems in Android itself.
       name: Name of the thread.
-      device_name: The device that adb should connect to.
-      adb_path: Path to the adb executable.
-      adb_port: Port for the adb server.
     """
     self._filters = filters
     self._log_prefix = log_prefix
@@ -56,28 +52,18 @@ class LogcatThread(thread_function.ThreadFunction):
     self._lock = threading.Lock()
     self._latest_score = 0.0
     self._latest_reward = 0.0
+    self._latest_extras = {}
     self._message_regexp = None
     self._message_received = False
-    # self._latest_extras are analogous to self._latest_score but for each extra
-    # in this dictionary.
-    # Each entry is a mapping from extra name to the latest extra value.
-    self._latest_extras = {}
-
     self._episode_ended = False
-    self._adb_path = adb_path
-    self._adb_port = adb_port
-    self._device_name = device_name
     self._max_buffer_size = 100
 
-    cmd = [self._adb_path, '-P', self._adb_port]
-    if self._device_name:
-      cmd.extend(['-s', self._device_name])
-
+    cmd = adb_command_prefix
     cmd.extend(['logcat', '-v', 'epoch'])
-
     if self._filters:
       cmd += self._filters
     logging.info('Logcat command: %s', ' '.join(cmd))
+
     self._proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -85,6 +71,7 @@ class LogcatThread(thread_function.ThreadFunction):
         bufsize=1,
         universal_newlines=True)
     self._stdout = self._proc.stdout
+
     super().__init__(
         block_input=block_input, block_output=block_output, name=name)
 

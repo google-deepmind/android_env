@@ -26,7 +26,7 @@ class AdbControllerTest(parameterized.TestCase):
     self._adb_controller = adb_controller.AdbController(
         adb_path='my_adb',
         device_name='awesome_device',
-        server_port=9999,
+        adb_server_port=9999,
         shell_prompt='l33t>')
 
   @mock.patch.object(
@@ -426,7 +426,7 @@ class AdbControllerInitTest(absltest.TestCase):
     adb_controller.AdbController(
         adb_path='my_adb',
         device_name='awesome_device',
-        server_port=9999,
+        adb_server_port=9999,
         shell_prompt='l33t>',
         default_timeout=_TIMEOUT)
     self.assertNotIn('ANDROID_HOME', os.environ)

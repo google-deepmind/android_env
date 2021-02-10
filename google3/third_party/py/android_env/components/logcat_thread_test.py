@@ -71,7 +71,8 @@ class LogcatThreadTest(absltest.TestCase):
     super().tearDown()
 
   def test_base(self):
-    logcat = logcat_thread.LogcatThread(adb_path='adb_bin')
+    logcat = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb_bin', '-P', '12345'])
     self.mock_popen.assert_called_once()
     self.assertEqual(0, logcat.get_and_reset_reward())
     self.assertEqual({}, logcat.get_and_reset_extras())
@@ -80,10 +81,8 @@ class LogcatThreadTest(absltest.TestCase):
 
   def test_cmd(self):
     _ = logcat_thread.LogcatThread(
-        filters=None,
-        device_name='my_device',
-        adb_path='adb_bin',
-        adb_port='12345')
+        adb_command_prefix=['adb_bin', '-P', '12345', '-s', 'my_device'],
+        filters=None)
     expected_cmd = [
         'adb_bin', '-P', '12345', '-s', 'my_device', 'logcat', '-v', 'epoch'
     ]
@@ -95,7 +94,9 @@ class LogcatThreadTest(absltest.TestCase):
         universal_newlines=True)
 
   def test_cmd_with_filters(self):
-    _ = logcat_thread.LogcatThread(filters=['filter1', 'filter2'])
+    _ = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb', '-P', '5037'],
+        filters=['filter1', 'filter2'])
     expected_cmd = [
         'adb', '-P', '5037', 'logcat', '-v', 'epoch', 'filter1', 'filter2'
     ]
@@ -107,13 +108,15 @@ class LogcatThreadTest(absltest.TestCase):
         universal_newlines=True)
 
   def test_kill(self):
-    logcat = logcat_thread.LogcatThread()
+    logcat = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb', '-P', '5037'])
     self.assertTrue(self.fake_proc.is_alive)
     logcat.kill()
     self.assertFalse(self.fake_proc.is_alive)
 
   def test_score_parsing(self):
-    logcat = logcat_thread.LogcatThread()
+    logcat = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb', '-P', '5037'])
     self.mock_popen.assert_called_once()
     self.assertEqual(0, logcat.get_and_reset_reward())
     self.fake_proc.stdout.send_value('Invalid_log_string Score: 10.0')
@@ -137,7 +140,8 @@ class LogcatThreadTest(absltest.TestCase):
     self.assertAlmostEqual(10.0, logcat.get_and_reset_reward())
 
   def test_reward_parsing(self):
-    logcat = logcat_thread.LogcatThread()
+    logcat = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb', '-P', '5037'])
     self.mock_popen.assert_called_once()
     self.assertEqual(0, logcat.get_and_reset_reward())
     self.fake_proc.stdout.send_value(make_stdout('Reward: 3.0'))
@@ -156,7 +160,8 @@ class LogcatThreadTest(absltest.TestCase):
     self.assertAlmostEqual(0.0, logcat.get_and_reset_reward())
 
   def test_episode_end(self):
-    logcat = logcat_thread.LogcatThread()
+    logcat = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb', '-P', '5037'])
     self.mock_popen.assert_called_once()
     self.assertEqual(False, logcat.get_and_reset_episode_end())
     self.fake_proc.stdout.send_value(make_stdout('episode end'))
@@ -167,7 +172,8 @@ class LogcatThreadTest(absltest.TestCase):
     self.assertEqual(False, logcat.get_and_reset_episode_end())
 
   def test_episode_end_with_underscore(self):
-    logcat = logcat_thread.LogcatThread()
+    logcat = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb', '-P', '5037'])
     self.mock_popen.assert_called_once()
     self.assertEqual(False, logcat.get_and_reset_episode_end())
     self.fake_proc.stdout.send_value(make_stdout('episode_end'))
@@ -178,7 +184,8 @@ class LogcatThreadTest(absltest.TestCase):
     self.assertEqual(False, logcat.get_and_reset_episode_end())
 
   def test_extras(self):
-    logcat = logcat_thread.LogcatThread()
+    logcat = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb', '-P', '5037'])
     self.mock_popen.assert_called_once()
     self.assertEqual({}, logcat.get_and_reset_extras())
     self.fake_proc.stdout.send_value(make_stdout('extra: an_extra [1,2,3]'))
@@ -201,7 +208,8 @@ class LogcatThreadTest(absltest.TestCase):
     self.assertEqual({}, logcat.get_and_reset_extras())
 
   def test_messsage(self):
-    logcat = logcat_thread.LogcatThread()
+    logcat = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb', '-P', '5037'])
     self.mock_popen.assert_called_once()
 
     self.assertFalse(logcat.has_received_message())
@@ -225,7 +233,8 @@ class LogcatThreadTest(absltest.TestCase):
     self.assertFalse(logcat.has_received_message())
 
   def test_reset(self):
-    logcat = logcat_thread.LogcatThread()
+    logcat = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb', '-P', '5037'])
     self.mock_popen.assert_called_once()
     self.fake_proc.stdout.send_value(make_stdout('extra: an_extra [1,2,3]'))
     self.fake_proc.stdout.send_value(make_stdout('Reward: 4.0'))
@@ -259,7 +268,8 @@ class LogcatThreadTest(absltest.TestCase):
         'extra_string': ['a_string', 'a_new_string'],
         'extra_float': [0.6]
     }
-    logcat = logcat_thread.LogcatThread()
+    logcat = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb', '-P', '5037'])
     self.mock_popen.assert_called_once()
     self.fake_proc.stdout.send_value(
         make_stdout('json_extra: %s' % json.dumps(extra)))
@@ -281,7 +291,9 @@ class LogcatThreadTest(absltest.TestCase):
         expected_extra.get('extra_dict'), extras.get('extra_dict'))
 
   def test_log_prefix(self):
-    logcat = logcat_thread.LogcatThread(log_prefix='prefix:')
+    logcat = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb', '-P', '5037'],
+        log_prefix='prefix:')
     self.fake_proc.stdout.send_value(make_stdout('prefix: Reward: 4.0'))
     self.fake_proc.stdout.send_value(make_stdout('episode end'))
     # Wait until the logs have been processed by the thread.
