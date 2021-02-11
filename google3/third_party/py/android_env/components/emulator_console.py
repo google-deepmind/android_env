@@ -44,18 +44,12 @@ class EmulatorConsole():
       os.remove(self._fifo)
 
   def fetch_screenshot(self) -> Optional[List[np.ndarray]]:
-    """Returns the observation using the telnet output pixels.
+    """Returns the observation via telnet through a pipe.
 
-    This functionality is not present in the current emulator code. kenjitoyama@
-    has a local git repo with the necessary modification. We eventually will
-    push
-    something like this to the emulator open source code, but it is not a
-    priority
-    now.
-
-    This is much faster than fetching from the saved PNG file above and we
-    expect
-    a latency of around 3ms.
+    This makes use of a feature in the AndroidEmulator
+    (https://android-review.googlesource.com/c/platform/external/qemu/+/891716)
+    that saves screenshots as a binary protobuf instead of a compressed PNG,
+    greatly improving the performance and latency.
 
     Returns: Observation
 
