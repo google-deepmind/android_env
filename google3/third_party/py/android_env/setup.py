@@ -30,4 +30,8 @@ setup(
         'pexpect',
         'pygame',
     ],
+    extras_require={
+        'acme': ['dm-acme'],
+        'gym': ['gym'],
+    },
 )
