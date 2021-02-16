@@ -1,19 +1,15 @@
 """ACME agent (DQN) interacting with AndroidEnv."""
 
-from typing import Dict, Tuple
-
 from absl import app
 from absl import flags
 from absl import logging
 import acme
 from acme import specs
+from acme import wrappers as acme_wrappers
 from acme.agents.tf import dqn
 from acme.tf import networks
 import android_env
 from android_env import wrappers
-from android_env.components import specs
-import dm_env
-import numpy as np
 
 # Simulator args
 flags.DEFINE_string('emulator_path', None, 'Path to emulator.')
@@ -37,7 +33,7 @@ def apply_wrappers(env):
   env = wrappers.DiscreteActionWrapper(env, action_grid=(10, 10))
   env = wrappers.ImageRescaleWrapper(env, zoom_factors=(0.25, 0.25))
   env = wrappers.FloatPixelsWrapper(env)
-  env = acme.wrappers.SinglePrecisionWrapper(env)
+  env = acme_wrappers.SinglePrecisionWrapper(env)
   return env
 
 
@@ -48,6 +44,7 @@ def main(_):
       android_sdk_root=FLAGS.android_sdk_root,
       android_avd_home=FLAGS.android_avd_home,
       avd_name=FLAGS.avd_name,
+      adb_path=FLAGS.adb_path,
       task_path=FLAGS.task_path,
       run_headless=FLAGS.run_headless,
   )
