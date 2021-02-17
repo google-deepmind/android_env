@@ -33,7 +33,7 @@ class VanadiumSimulatorTest(absltest.TestCase):
     simulator = vanadium_simulator.VanadiumSimulator(
         vanadium_launcher_args={},
         adb_path='/my/adb',
-        adb_port=5037,
+        adb_server_port=5037,
         tmp_dir=tmp_dir,
         prompt_regex='awesome>',
         communication_binaries_path='')
@@ -51,7 +51,7 @@ class VanadiumSimulatorTest(absltest.TestCase):
     simulator = vanadium_simulator.VanadiumSimulator(
         vanadium_launcher_args={},
         adb_path='/my/adb',
-        adb_port=5037,
+        adb_server_port=5037,
         tmp_dir=tmp_dir,
         prompt_regex='awesome>',
         communication_binaries_path='')
@@ -83,7 +83,7 @@ class VanadiumSimulatorTest(absltest.TestCase):
     simulator = vanadium_simulator.VanadiumSimulator(
         vanadium_launcher_args={},
         adb_path='/my/adb',
-        adb_port=5037,
+        adb_server_port=5037,
         tmp_dir=tmp_dir,
         prompt_regex='awesome>',
         communication_binaries_path='')
@@ -129,7 +129,7 @@ class VanadiumSimulatorTest(absltest.TestCase):
     simulator = vanadium_simulator.VanadiumSimulator(
         vanadium_launcher_args={},
         adb_path='/my/adb',
-        adb_port=5037,
+        adb_server_port=5037,
         tmp_dir=tmp_dir,
         prompt_regex='awesome>',
         communication_binaries_path='')

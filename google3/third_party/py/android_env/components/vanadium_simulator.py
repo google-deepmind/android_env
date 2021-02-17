@@ -24,13 +24,16 @@ class VanadiumSimulator(base_simulator.BaseSimulator):
   """Controls an Android on Vanadium.
   """
 
-  def __init__(self, vanadium_launcher_args: Dict[str, Any],
-               communication_binaries_path: str, **kwargs):
-    self._adb_local_port = portpicker.pick_unused_port()
-    super().__init__(**kwargs)
-    self._communication_binaries_path = communication_binaries_path
-    self._vmm_ssh_port = portpicker.pick_unused_port()
+  def __init__(self,
+               vanadium_launcher_args: Dict[str, Any],
+               communication_binaries_path: str,
+               **kwargs):
 
+    self._adb_local_port = portpicker.pick_unused_port()
+    self._vmm_ssh_port = portpicker.pick_unused_port()
+    super().__init__(**kwargs)
+
+    # Create VanadiumLauncher.
     vanadium_launcher_args.update({
         'adb_local_port': self._adb_local_port,
         'local_tmp_dir': self._local_tmp_dir,
@@ -40,6 +43,9 @@ class VanadiumSimulator(base_simulator.BaseSimulator):
     logging.info('vanadium_launcher_args: %r', vanadium_launcher_args)
     self._launcher = vanadium_launcher.VanadiumLauncher(
         **vanadium_launcher_args)
+
+    # Prepare VanadiumCommunicator.
+    self._communication_binaries_path = communication_binaries_path
     self._communicator = None
 
   def adb_device_name(self) -> str:

@@ -36,7 +36,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
         emulator_launcher_args={},
         emulator_console_args={},
         adb_path='/my/adb',
-        adb_port=5037,
+        adb_server_port=5037,
         tmp_dir=tmp_dir,
         prompt_regex='awesome>')
     self.assertNotEmpty(simulator.adb_device_name())
@@ -48,7 +48,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
         emulator_launcher_args={},
         emulator_console_args={},
         adb_path='/my/adb',
-        adb_port=5037,
+        adb_server_port=5037,
         tmp_dir=tmp_dir,
         prompt_regex='awesome>')
 
@@ -68,7 +68,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
         emulator_launcher_args={},
         emulator_console_args={},
         adb_path='/my/adb',
-        adb_port=5037,
+        adb_server_port=5037,
         tmp_dir=tmp_dir,
         prompt_regex='awesome>')
 
@@ -89,7 +89,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
         emulator_launcher_args={},
         emulator_console_args={},
         adb_path='/my/adb',
-        adb_port=5037,
+        adb_server_port=5037,
         tmp_dir=tmp_dir,
         prompt_regex='awesome>')
 
@@ -111,7 +111,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
         emulator_launcher_args={},
         emulator_console_args={},
         adb_path='/my/adb',
-        adb_port=5037,
+        adb_server_port=5037,
         tmp_dir=tmp_dir,
         prompt_regex='awesome>')
 
@@ -142,7 +142,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
         emulator_launcher_args={},
         emulator_console_args={},
         adb_path='/my/adb',
-        adb_port=5037,
+        adb_server_port=5037,
         tmp_dir=tmp_dir,
         prompt_regex='awesome>')
 

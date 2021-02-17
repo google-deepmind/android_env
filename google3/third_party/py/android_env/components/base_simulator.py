@@ -28,7 +28,7 @@ class BaseSimulator(metaclass=abc.ABCMeta):
 
   def __init__(self,
                adb_path: str,
-               adb_port: int,
+               adb_server_port: int,
                prompt_regex: str,
                tmp_dir: str = '/tmp',
                show_touches: bool = True,
@@ -38,7 +38,7 @@ class BaseSimulator(metaclass=abc.ABCMeta):
                kvm_device: str = '/dev/kvm'):
 
     self._adb_path = adb_path
-    self._adb_server_port = adb_port
+    self._adb_server_port = adb_server_port
     self._prompt_regex = prompt_regex
     self._show_touches = show_touches
     self._pointer_location = pointer_location
@@ -48,7 +48,7 @@ class BaseSimulator(metaclass=abc.ABCMeta):
 
     self._local_tmp_dir_handle = tempfile.TemporaryDirectory(dir=tmp_dir)
     self._local_tmp_dir = self._local_tmp_dir_handle.name
-    logging.info('local_tmp_dir: %s', self._local_tmp_dir)
+    logging.info('Simulator local_tmp_dir: %s', self._local_tmp_dir)
 
     self._adb_controller = None
     self._orientation = np.zeros(4, dtype=np.uint8)

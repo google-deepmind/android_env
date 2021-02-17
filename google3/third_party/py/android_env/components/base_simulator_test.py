@@ -48,7 +48,7 @@ class BaseSimulatorTest(absltest.TestCase):
     tmp_dir = absltest.get_default_test_tmpdir()
     self._simulator = FakeSimulator(
         adb_path='/my/adb',
-        adb_port=5037,
+        adb_server_port=5037,
         tmp_dir=tmp_dir,
         prompt_regex='awesome>',
         injected_adb_controller=self._adb_controller)

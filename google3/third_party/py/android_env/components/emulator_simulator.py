@@ -19,11 +19,12 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
                emulator_launcher_args: Dict[str, Any],
                emulator_console_args: Dict[str, Any],
                **kwargs):
+
     self._adb_port = portpicker.pick_unused_port()
     self._console_port = portpicker.pick_unused_port()
-
     super().__init__(**kwargs)
-    self._console = None
+
+    # Create EmulatorLauncher.
     emulator_launcher_args.update({
         'adb_port': self._adb_port,
         'adb_server_port': self._adb_server_port,
@@ -35,12 +36,14 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     self._launcher = emulator_launcher.EmulatorLauncher(
         **emulator_launcher_args)
 
+    # Prepare EmulatorConsole.
     emulator_console_args.update({
         'console_port': self._console_port,
         'tmp_dir': self._local_tmp_dir,
     })
-    self._emulator_console_args = emulator_console_args
     logging.info('emulator_console_args: %r', emulator_console_args)
+    self._emulator_console_args = emulator_console_args
+    self._console = None
 
   def _start_console(self) -> None:
     self._console = emulator_console.EmulatorConsole(
