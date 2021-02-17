@@ -69,21 +69,6 @@ class AdbControllerTest(parameterized.TestCase):
                   _TIMEOUT),
     ])
 
-  def test_installed_packages(self):
-    self._mock_execute_command.return_value = b"""
-package:com.google.android.apps.wallpaper
-package:com.android.phone
-package:com.android.shell
-package:com.android.wallpaperbackup
-"""
-    packages = self._adb_controller._installed_packages(timeout=_TIMEOUT)
-    self.assertEqual(packages, [
-        'com.google.android.apps.wallpaper',
-        'com.android.phone',
-        'com.android.shell',
-        'com.android.wallpaperbackup',
-    ])
-
   def test_start_activity(self):
     self._adb_controller.start_activity(
         'hello.world/hello.world.MainActivity', [], timeout=_TIMEOUT)
