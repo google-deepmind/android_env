@@ -197,13 +197,16 @@ class AdbController():
     """Returns the correct timeout to be used for external calls."""
     return self._default_timeout if timeout is None else timeout
 
-  def sendline(self,
-               line: str,
-               expect: str = '',
-               decode_output=True,
-               timeout: Optional[float] = None) -> Optional[bytes]:
+  def _sendline(self,
+                args: List[str],
+                expect: str = '',
+                decode_output=True,
+                timeout: Optional[float] = None) -> Optional[bytes]:
     """Sends line to the shell and returns output up to the expect regex."""
+
     timeout = self._resolve_timeout(timeout)
+    line = ' '.join(args)
+
     self._adb_shell.sendline(line)
     if expect:
       try:
@@ -639,7 +642,7 @@ class AdbController():
       output = self._execute_command(
           ['connect', tcp_address],
           timeout=timeout)
-      logging.info(output)
+      logging.info('TCP connect output: %r', output)
       # Checking for 'connected to XXX:YYY' or 'already connected to XXX:YYY'
       if (output is not None and
           ('connected to %s' % tcp_address).encode('utf8') in output):
@@ -660,3 +663,29 @@ class AdbController():
     except subprocess.CalledProcessError:
       logging.info('Disconnect unsuccessful, tcp connection is probably '
                    'already closed.')
+
+  def sendevents(self,
+                 bin_dir: str,
+                 target: str,
+                 timeout: Optional[float] = None):
+    self._sendline(
+        [os.path.join(bin_dir, 'sendevents'), target], expect='',
+        timeout=timeout)
+
+  def screencaps(self,
+                 bin_dir: str,
+                 timeout: Optional[float] = None):
+    self._sendline(
+        [os.path.join(bin_dir, 'screencaps'), '-p'], expect='Ready.',
+        timeout=timeout)
+
+  def send_mouse_event(self,
+                       event_str: str,
+                       timeout: Optional[float] = None):
+    self._sendline([event_str], expect='', timeout=timeout)
+
+  def fetch_screenshot(self, timeout: Optional[float] = None):
+    output = self._sendline(
+        [], expect='Done.', decode_output=False,
+        timeout=timeout)
+    return output

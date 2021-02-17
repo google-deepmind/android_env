@@ -13,7 +13,7 @@ import pexpect
 import PIL
 
 
-BIN_DIR = '/data/bin/'
+_BIN_DIR = '/data/bin/'
 
 
 class VanadiumCommunicator():
@@ -25,18 +25,18 @@ class VanadiumCommunicator():
       adb_control_screencap: adb_controller.AdbController,
       communication_binaries_path: str = '',
   ):
-    self._communication_binaries_path = communication_binaries_path
+
     self._adb_control_sendevent = adb_control_sendevent
     self._adb_control_sendevent.install_binary(
-        os.path.join(self._communication_binaries_path, 'sendevents'), BIN_DIR)
-    self._adb_control_sendevent.sendline(
-        os.path.join(BIN_DIR, 'sendevents') + ' /dev/input/event3')
+        os.path.join(communication_binaries_path, 'sendevents'), _BIN_DIR)
+    self._adb_control_sendevent.sendevents(bin_dir=_BIN_DIR,
+                                           target='/dev/input/event3')
 
     self._adb_control_screencap = adb_control_screencap
     self._adb_control_screencap.install_binary(
-        os.path.join(self._communication_binaries_path, 'screencaps'), BIN_DIR)
-    self._adb_control_screencap.sendline(
-        os.path.join(BIN_DIR, 'screencaps') + ' -p', expect='Ready.')
+        os.path.join(communication_binaries_path, 'screencaps'), _BIN_DIR)
+    self._adb_control_screencap.screencaps(bin_dir=_BIN_DIR)
+
     logging.info('Done initializing Vanadium communicator.')
 
   def fetch_screenshot(self) -> Optional[np.ndarray]:
@@ -48,8 +48,7 @@ class VanadiumCommunicator():
       n_tries += 1
       if n_tries > 1:
         logging.info('fetch_screenshot try %d', n_tries)
-      sendline_output = self._adb_control_screencap.sendline(
-          '', expect='Done.', decode_output=False)
+      sendline_output = self._adb_control_screencap.fetch_screenshot()
       if not sendline_output:
         logging.error('No sendline output.')
         continue
@@ -118,7 +117,7 @@ class VanadiumCommunicator():
       ]
     event_str = os.linesep.join(events)
     try:
-      self._adb_control_sendevent.sendline(event_str)
+      self._adb_control_sendevent.send_mouse_event(event_str)
     except pexpect.exceptions.TIMEOUT as e:
       raise errors.SendActionError('Sendevent timed out: %s' % e)
 
