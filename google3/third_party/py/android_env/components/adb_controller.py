@@ -110,9 +110,11 @@ class AdbController():
       args: List[str],
       timeout: Optional[float] = None) -> Optional[bytes]:
     """Executes `adb args` and returns its output."""
+
     timeout = self._resolve_timeout(timeout)
     command = self.command_prefix() + args
     logging.info('Executing ADB command: %s', command)
+
     try:
       cmd_output = subprocess.check_output(
           command, stderr=subprocess.STDOUT, timeout=timeout)
@@ -121,41 +123,37 @@ class AdbController():
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
       logging.exception('Failed to execute ADB command %s', command)
       raise error
-    return None
 
   def _execute_shell_command(
       self,
       args: List[str],
-      timeout: Optional[float] = None) -> Optional[bytes]:
+      timeout: Optional[float] = None,
+      max_num_retries: int = 3) -> Optional[bytes]:
     """Execute shell command."""
+
+    timeout = self._resolve_timeout(timeout)
     if not self._shell_is_ready:
       self._init_shell(timeout=timeout)
     shell_args = ' '.join(args)
     logging.info('Executing ADB shell command: %s', shell_args)
-    try:
-      self._send_shell_command(shell_args, timeout=timeout)
-      logging.info('Done executing ADB shell command: %s', shell_args)
-    except (pexpect.exceptions.EOF, pexpect.exceptions.TIMEOUT):
-      logging.exception('Shell command failed. Reinitializing the shell.')
-      logging.warning('self._adb_shell.before: %r', self._adb_shell.before)
-      self._init_shell(timeout=timeout)
-      try:
-        # Try one more time after the re-init of the shell.
-        self._send_shell_command(shell_args, timeout=timeout)
-      except (pexpect.exceptions.EOF, pexpect.exceptions.TIMEOUT):
-        logging.exception('Reinitializing the shell did not solve the issue.')
-        raise errors.AdbControllerPexpectError()
-    output = self._adb_shell.before.partition(
-        '\n'.encode('utf-8'))[2]  # Consume command.
-    return output
 
-  def _send_shell_command(
-      self,
-      shell_args: str,
-      timeout: Optional[float] = None):
-    timeout = self._resolve_timeout(timeout)
-    self._adb_shell.sendline(shell_args)
-    self._adb_shell.expect(self._prompt, timeout=timeout)
+    num_tries = 0
+    while num_tries < max_num_retries:
+      num_tries += 1
+      try:
+        self._adb_shell.sendline(shell_args)
+        self._adb_shell.expect(self._prompt, timeout=timeout)
+        logging.info('Done executing ADB shell command: %s', shell_args)
+        output = self._adb_shell.before.partition(
+            '\n'.encode('utf-8'))[2]  # Consume command.
+        return output
+      except (pexpect.exceptions.EOF, pexpect.exceptions.TIMEOUT):
+        logging.exception('Shell command failed. Reinitializing the shell.')
+        logging.warning('self._adb_shell.before: %r', self._adb_shell.before)
+        self._init_shell(timeout=timeout)
+
+    logging.exception('Reinitializing the shell did not solve the issue.')
+    raise errors.AdbControllerPexpectError()
 
   def _init_shell(self, timeout: Optional[float] = None) -> None:
     """Starts an ADB shell process.
@@ -167,16 +165,13 @@ class AdbController():
         errors.AdbControllerShellInitError when adb shell cannot be initialized.
     """
 
+    timeout = self._resolve_timeout(timeout)
     command = ' '.join(self.command_prefix() + ['shell'])
     logging.info('Initialising ADB shell with command: %s', command)
 
-    timeout = self._resolve_timeout(timeout)
-
     num_tries = 0
     while num_tries < _MAX_INIT_RETRIES:
-
       num_tries += 1
-
       try:
         logging.info('Spawning ADB shell...')
         self._adb_shell = pexpect.spawn(command, use_poll=True, timeout=timeout)
@@ -188,12 +183,11 @@ class AdbController():
         logging.info('Done consuming first prompt.')
         self._shell_is_ready = True
         return
-
       except (pexpect.ExceptionPexpect, ValueError) as e:
         logging.exception(e)
         logging.error('self._adb_shell.before: %r', self._adb_shell.before)
-        logging.error('Could not start ADB shell. Try %r of %r.', num_tries,
-                      _MAX_INIT_RETRIES)
+        logging.error('Could not start ADB shell. Try %r of %r.',
+                      num_tries, _MAX_INIT_RETRIES)
         time.sleep(_INIT_RETRY_SLEEP_SEC)
 
     raise errors.AdbControllerShellInitError(
@@ -280,11 +274,11 @@ class AdbController():
                      dest_dir: str,
                      timeout: Optional[float] = None):
     """Installs the specified binary on the device."""
-    self._execute_shell_command(
-        ['su', '0', 'mkdir', '-p', dest_dir],
+    self._execute_command(
+        ['shell', 'su', '0', 'mkdir', '-p', dest_dir],
         timeout=timeout)
-    self._execute_shell_command(
-        ['su', '0', 'chown', '-R', 'shell:', dest_dir],
+    self._execute_command(
+        ['shell', 'su', '0', 'chown', '-R', 'shell:', dest_dir],
         timeout=timeout)
     bin_name = pathlib.PurePath(src).name
     dest = pathlib.PurePath(dest_dir) / bin_name
