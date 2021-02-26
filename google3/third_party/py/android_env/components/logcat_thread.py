@@ -5,10 +5,11 @@ import json
 import re
 import subprocess
 import threading
-from typing import List, Optional
+from typing import List
 
 from absl import logging
 from android_env.components import thread_function
+from android_env.proto import task_pb2
 
 import numpy as np
 
@@ -19,8 +20,7 @@ class LogcatThread(thread_function.ThreadFunction):
   def __init__(
       self,
       adb_command_prefix: List[str],
-      filters: Optional[List[str]] = None,
-      log_prefix: Optional[str] = None,
+      log_parsing_config: task_pb2.LogParsingConfig,
       print_all_lines: bool = False,
       block_input: bool = True,
       block_output: bool = False,
@@ -29,16 +29,12 @@ class LogcatThread(thread_function.ThreadFunction):
     """Initializes this LogcatThread with optional filters.
 
     Please see https://developer.android.com/studio/command-line/logcat for more
-    info on `logcat`
+    info on `logcat`.
 
     Args:
       adb_command_prefix: Command for connecting to a particular ADB.
-      filters: list of strings. Each element should specify a filter such as
-          'NostalgicRacer:V' ("everything from NostalgicRacer") or '*:S'
-            ("nothing from other processes").
-      log_prefix: Expected prefix in the log message. Messages without the
-        prefix will be ignored, and the prefix will be trimmed from messages
-        when matched.
+      log_parsing_config: Determines the types of messages we want logcat to
+        match. Contains `filters`, `log_prefix` and `log_regexps`.
       print_all_lines: Whether to print all lines we observe in the logcat
         stream. This is useful to debug problems in Android itself.
       block_input: Whether to block this thread when reading its input queue.
@@ -46,8 +42,7 @@ class LogcatThread(thread_function.ThreadFunction):
         queue.
       name: Name of the thread.
     """
-    self._filters = filters
-    self._log_prefix = log_prefix
+
     self._print_all_lines = print_all_lines
     self._lock = threading.Lock()
     self._latest_score = 0.0
@@ -58,10 +53,11 @@ class LogcatThread(thread_function.ThreadFunction):
     self._episode_ended = False
     self._max_buffer_size = 100
 
-    cmd = adb_command_prefix
-    cmd.extend(['logcat', '-v', 'epoch'])
-    if self._filters:
-      cmd += self._filters
+    self._log_prefix = log_parsing_config.log_prefix
+    self._regexps = log_parsing_config.log_regexps
+
+    filters = list(log_parsing_config.filters) + ['*:S']
+    cmd = adb_command_prefix + ['logcat', '-v', 'epoch'] + filters
     logging.info('Logcat command: %s', ' '.join(cmd))
 
     self._proc = subprocess.Popen(
@@ -75,9 +71,25 @@ class LogcatThread(thread_function.ThreadFunction):
     super().__init__(
         block_input=block_input, block_output=block_output, name=name)
 
+  def reset_counters(self) -> None:
+    with self._lock:
+      self._latest_score = 0.0
+      self._latest_reward = 0.0
+      self._latest_extras = {}
+      self._episode_ended = False
+      self._message_received = False
+
   def kill(self):
     self._proc.kill()
     super().kill()
+
+  def listen_for_message(self, message: str):
+    with self._lock:
+      self._message_regexp = re.compile(r'^%s$' % message)
+      self._message_received = False
+
+  def has_received_message(self) -> bool:
+    return self._message_received
 
   def get_and_reset_reward(self) -> float:
     with self._lock:
@@ -85,20 +97,11 @@ class LogcatThread(thread_function.ThreadFunction):
       self._latest_reward = 0.0
       return r
 
-  def listen_for_message(self, message: str):
-    """Sets a listener for the given message .
-
-    Once that message is received, has_received_message will return True.
-
-    Args:
-      message: Message to listen for.
-    """
+  def get_and_reset_episode_end(self) -> bool:
     with self._lock:
-      self._message_regexp = re.compile(r'^%s$' % message)
-      self._message_received = False
-
-  def has_received_message(self) -> bool:
-    return self._message_received
+      end = self._episode_ended
+      self._episode_ended = False
+      return end
 
   def get_and_reset_extras(self):
     with self._lock:
@@ -112,28 +115,12 @@ class LogcatThread(thread_function.ThreadFunction):
     extra = np.array(extra)
     with self._lock:
       if extra_name in self._latest_extras:
-
         # If latest extra is not flushed, append.
         if len(self._latest_extras[extra_name]) >= self._max_buffer_size:
           self._latest_extras[extra_name].pop(0)
         self._latest_extras[extra_name].append(extra)
-
       else:
         self._latest_extras[extra_name] = [extra]
-
-  def reset_counters(self) -> None:
-    with self._lock:
-      self._latest_score = 0.0
-      self._latest_reward = 0.0
-      self._latest_extras = {}
-      self._episode_ended = False
-      self._message_received = False
-
-  def get_and_reset_episode_end(self) -> bool:
-    with self._lock:
-      end = self._episode_ended
-      self._episode_ended = False
-      return end
 
   def main(self) -> None:
     # pylint: disable=g-line-too-long
@@ -155,18 +142,17 @@ class LogcatThread(thread_function.ThreadFunction):
       [ ]+(?P<tag>[^:]*):                 # Spaces and any char that's not ':'.
     """
     if self._log_prefix:
-      regexp += '[ ]+%s' % self._log_prefix
+      regexp += f'[ ]+{self._log_prefix}'
 
     regexp += r"""[ ](?P<message>.*)$"""
     logline_re = re.compile(regexp, re.VERBOSE)
 
-    float_re = r'([-+]?[0-9]*\.?[0-9]*)'
-    score_regexp = re.compile(r'^[Ss]core: ' + float_re + r'$')
-    reward_regexp = re.compile(r'^[Rr]eward: ' + float_re + r'$')
-    extra_regexp = re.compile(r'^extra: (?P<name>[^ ]*)[ ]?(?P<extra>.*)$')
-    json_extra_regexp = re.compile(r'^json_extra: (?P<json_extra>.*)$')
-    # Episode boundaries can be tagged by 'episode end' or 'episode_end'
-    episode_end_regexp = re.compile(r'^episode[ _]end$')
+    # Defaults to 'a^' since that regex matches no string by definition.
+    score_regexp = re.compile(self._regexps.score or 'a^')
+    reward_regexp = re.compile(self._regexps.reward or 'a^')
+    episode_end_regexp = re.compile(self._regexps.episode_end or 'a^')
+    extra_regexp = re.compile(self._regexps.extra or 'a^')
+    json_extra_regexp = re.compile(self._regexps.json_extra or 'a^')
 
     for line in self._stdout:
       # We never hand back control to ThreadFunction._run() so we need to
@@ -199,12 +185,16 @@ class LogcatThread(thread_function.ThreadFunction):
       # to be the current score - the previous score.
       # If the app directly specifies the reward, then the score will be
       # ignored.
+
+      # Match rewards.
       reward_matches = reward_regexp.match(matches.group('message'))
       if reward_matches:
         reward = float(reward_matches.group(1))
         with self._lock:
           self._latest_reward += reward
         continue
+
+      # Match scores.
       score_matches = score_regexp.match(matches.group('message'))
       if score_matches:
         current_score = float(score_matches.group(1))
@@ -214,27 +204,32 @@ class LogcatThread(thread_function.ThreadFunction):
           self._latest_reward += current_reward
         continue
 
-      # Also search for extras in the log message.
+      # Match episode ends.
+      episode_end_matches = episode_end_regexp.match(matches.group('message'))
+      if episode_end_matches:
+        with self._lock:
+          self._episode_ended = True
+        continue
+
+      # Match extras.
       extra_matches = extra_regexp.match(matches.group('message'))
       if extra_matches:
         extra_name = extra_matches.group('name')
         extra = extra_matches.group('extra')
         if extra:
           try:
-            extra = ast.literal_eval(extra_matches.group('extra'))
-
+            extra = ast.literal_eval(extra)
           # Except all to avoid unnecessary crashes, only log error.
-          except Exception as e:  # pylint: disable=broad-except
-            logging.exception('Could not parse extra: %s, error: %s',
-                              extra_matches.group('extra'), e)
+          except Exception:  # pylint: disable=broad-except
+            logging.exception('Could not parse extra: %s', extra)
             continue
         else:
           # No extra value provided for boolean extra. Setting value to True.
           extra = 1
-
         self._process_extra(extra_name, extra)
         continue
 
+      # Match JSON extras.
       json_extra_matches = json_extra_regexp.match(matches.group('message'))
       if json_extra_matches:
         extra_data = json_extra_matches.group('json_extra')
@@ -246,10 +241,4 @@ class LogcatThread(thread_function.ThreadFunction):
           continue
         for extra_name, extra_value in extra.items():
           self._process_extra(extra_name, extra_value)
-        continue
-
-      episode_end_matches = episode_end_regexp.match(matches.group('message'))
-      if episode_end_matches:
-        with self._lock:
-          self._episode_ended = True
         continue

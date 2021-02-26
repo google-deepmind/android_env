@@ -246,6 +246,49 @@ message ArraySpec {
   DataType dtype = 3;
 }
 
+
+message LogParsingConfig {
+
+  // `filters` are tags used by the app's logging system so that we can
+  // identify them in logcat's output. It's the first argument to logging calls
+  // such as Log.e("ActivityManager", "My message").
+  // Example: "ActivityManager"
+  repeated string filters = 1;
+
+  // Optional prefix used to filter logcat outputs. This prefix will be expected
+  // to follow the log_tag in logcat's output.
+  string log_prefix = 2;
+
+  // Regular expressions that define how we can extract RL information such as
+  // score, extras and episode end from raw logcat messages.
+  message LogRegexps {
+
+    // Regexp expected to match:
+    // ...a floating point value which gets accumulated over time.
+    string score = 1;
+
+    // Regexp expected to match:
+    // ...a floating point value directly forwarded by the environment.
+    string reward = 2;
+
+    // Regexp expected to match:
+    // ...a signal marking the end of an episode.
+    string episode_end = 3;
+
+    // Regexp expected to match:
+    // ...a string representing pairs of extra names and values.
+    string extra = 4;
+
+    // Regexp expected to match:
+    // ...a dict of extra names and values in json format.
+    string json_extra = 5;
+
+  }
+
+  LogRegexps log_regexps = 3;
+
+}
+
 // Description of a reinforcement learning task to be solved by an agent.
 message Task {
   // A globally unique identifier for this task.
@@ -268,27 +311,24 @@ message Task {
   repeated SetupStep setup_steps = 6;
   repeated SetupStep reset_steps = 7;
 
-  // `log_tag` is the tag used by the app's logging system so that we can
-  // identify it in logcat's output. It's the first argument to logging calls
-  // such as Log.e("ActivityManager", "My message").
-  // Example: "ActivityManager"
-  string log_tag = 8;
-
-  AppScreen expected_app_screen = 9;
+  AppScreen expected_app_screen = 8;
 
   // AndroidEnv resets the episode after `max_duration_sec` is passed since the
   // last reset().
   // Note that this is real time as measured by AndroidEnv and is independent of
   // the speed of simulation of Android.
   // If <= 0.0, this logic is disabled.
-  float max_duration_sec = 10;
+  float max_duration_sec = 9;
 
   // The maximum number of interactions in a single episode between the
   // environment and an agent.
   // This setting is appropriate for tasks that are not time-dependent or when
   // the performance of the simulation varies dramatically between runs.
   // If <= 0, this logic is disabled.
-  int32 max_num_steps = 13;
+  int32 max_num_steps = 10;
+
+  // Defines parameters for parsing messages from logcat.
+  LogParsingConfig log_parsing_config = 11;
 
   // (Optional): The task may also define extras to help the RL agent.
   // An Extra in AndroidEnv is any information that apps may send to aid the
@@ -304,9 +344,6 @@ message Task {
   // This specification ensures that only extras specified in the Task
   // definition will be passed to the agent, everything else is excluded.
   // The name of an extra must be unique across all extras.
-  repeated ArraySpec extras_spec = 11;
+  repeated ArraySpec extras_spec = 12;
 
-  // Optional prefix used to filter logcat outputs. This prefix will be expected
-  // to follow the log_tag in logcat's output.
-  string log_prefix = 12;
 }

@@ -323,13 +323,9 @@ class RemoteController():
 
   def _start_logcat_thread(self):
     """Starts a logcat thread."""
-    logcat_filters = ['AndroidRLTask:V', '*:S']
-    if self._task_config.log_tag:
-      logcat_filters.append('{}:V'.format(self._task_config.log_tag))
     self._logcat_thread = logcat_thread.LogcatThread(
         adb_command_prefix=self._adb_controller.command_prefix(),
-        filters=logcat_filters,
-        log_prefix=self._task_config.log_prefix,
+        log_parsing_config=self._task_config.log_parsing_config,
         print_all_lines=False,
         block_input=True,
         block_output=False)
