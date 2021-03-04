@@ -24,7 +24,7 @@ class AndroidEnv(dm_env.Environment):
 
   def __init__(self,
                simulator: base_simulator.BaseSimulator,
-               task_config: task_pb2.Task,
+               task: task_pb2.Task,
                max_bad_states: int = 3,
                dumpsys_check_frequency: int = 150,
                max_failed_current_activity: int = 10,
@@ -33,7 +33,7 @@ class AndroidEnv(dm_env.Environment):
                periodic_restart_time_min: float = 0.0):
     """Instantiate an Android environment."""
 
-    self._task_config = task_config
+    self._task = task
     self._is_closed = False
     self._latest_action = {}
     self._latest_observation = {}
@@ -50,7 +50,7 @@ class AndroidEnv(dm_env.Environment):
     # Initialize remote controller
     self._remote_controller = remote_controller.RemoteController(
         simulator=simulator,
-        task_config=task_config,
+        task=task,
         max_bad_states=max_bad_states,
         dumpsys_check_frequency=dumpsys_check_frequency,
         max_failed_current_activity=max_failed_current_activity,
@@ -74,7 +74,7 @@ class AndroidEnv(dm_env.Environment):
         self._log_dict[f'{prefix}_action_type_{act_type.name}'] = 0.0
 
     # Log init info
-    logging.info('Task config: %s', self._task_config)
+    logging.info('Task config: %s', self._task)
     logging.info('Action spec: %s', self.action_spec())
     logging.info('Observation spec: %s', self.observation_spec())
     logging.info('Task extras spec: %s', self.task_extras_spec())
@@ -87,7 +87,7 @@ class AndroidEnv(dm_env.Environment):
         screen_dimension=self._remote_controller.screen_dimensions)
 
   def task_extras_spec(self) -> Dict[str, dm_env.specs.Array]:
-    return specs.task_extras_spec(task_config=self._task_config)
+    return specs.task_extras_spec(task=self._task)
 
   @property
   def raw_action(self):
@@ -221,17 +221,17 @@ class AndroidEnv(dm_env.Environment):
       return True
 
     # Check if step limit or time limit has been reached
-    if self._task_config.max_num_steps > 0:
+    if self._task.max_num_steps > 0:
       episode_steps = self._log_dict['androidenv_episode_steps']
-      if episode_steps > self._task_config.max_num_steps:
+      if episode_steps > self._task.max_num_steps:
         self._log_dict['reset_count_max_duration_reached'] += 1
         logging.info('Maximum task duration (steps) reached. Ending episode.')
         logging.info('************* END OF EPISODE *************')
         return True
 
-    if self._task_config.max_duration_sec > 0.0:
+    if self._task.max_duration_sec > 0.0:
       task_duration = datetime.datetime.now() - self._task_start_time
-      max_duration_sec = self._task_config.max_duration_sec
+      max_duration_sec = self._task.max_duration_sec
       if task_duration > datetime.timedelta(seconds=int(max_duration_sec)):
         self._log_dict['reset_count_max_duration_reached'] += 1
         logging.info('Maximum task duration (sec) reached. Ending episode.')

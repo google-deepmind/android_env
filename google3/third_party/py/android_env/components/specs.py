@@ -73,13 +73,12 @@ def base_observation_spec(
   }
 
 
-def task_extras_spec(
-    task_config: task_pb2.Task) -> Dict[str, dm_env.specs.Array]:
-  """Task extras spec for AndroidEnv, as read from task_config."""
+def task_extras_spec(task: task_pb2.Task) -> Dict[str, dm_env.specs.Array]:
+  """Task extras spec for AndroidEnv, as read from a task_pb2.Task."""
 
   return {
       spec.name: _convert_spec(spec)
-      for spec in task_config.extras_spec
+      for spec in task.extras_spec
   }
 
 

@@ -31,12 +31,12 @@ def load(adb_path: str,
   )
 
   # Prepare task.
-  task_config = task_pb2.Task()
+  task = task_pb2.Task()
   with open(task_path, 'r') as proto_file:
-    text_format.Parse(proto_file.read(), task_config)
+    text_format.Parse(proto_file.read(), task)
 
   # Load environment.
   return android_env.AndroidEnv(
       simulator=simulator,
-      task_config=task_config,
+      task=task,
   )

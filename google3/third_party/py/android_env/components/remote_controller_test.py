@@ -45,12 +45,12 @@ class RemoteControllerTest(absltest.TestCase):
 
     self._remote_controller = remote_controller.RemoteController(
         self._simulator,
+        task=task_pb2.Task(),
         max_bad_states=3,
         dumpsys_check_frequency=100,
         max_failed_current_activity=3,
         step_timeout_sec=2,
         expected_fps=60,
-        task_config=task_pb2.Task(),
         periodic_restart_time_min=0)
 
   def test_restart(self):

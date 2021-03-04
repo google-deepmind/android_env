@@ -29,7 +29,7 @@ class RemoteController():
   def __init__(
       self,
       simulator: base_simulator.BaseSimulator,
-      task_config: task_pb2.Task,
+      task: task_pb2.Task,
       max_bad_states: int = 3,
       dumpsys_check_frequency: int = 150,
       max_failed_current_activity: int = 10,
@@ -41,7 +41,7 @@ class RemoteController():
 
     Args:
       simulator: A BaseSimulator Instance.
-      task_config: A task proto defining the RL task.
+      task: A task proto defining the RL task.
       max_bad_states: How many bad states in a row are allowed before a restart
         of the simulator is triggered.
       dumpsys_check_frequency: Frequency, in steps, at which to check
@@ -58,12 +58,12 @@ class RemoteController():
         once the time has been reached.
     """
     self._simulator = simulator
+    self._task = task
     self._max_bad_states = max_bad_states
     self._dumpsys_check_frequency = dumpsys_check_frequency
     self._max_failed_current_activity = max_failed_current_activity
     self._step_timeout_sec = step_timeout_sec
     self._expected_fps = expected_fps
-    self._task_config = task_config
     self._periodic_restart_time_min = periodic_restart_time_min
 
     # Logging settings
@@ -94,7 +94,7 @@ class RemoteController():
 
     # Execute setup steps
     try:
-      self._setup_step_interpreter.interpret(self._task_config.setup_steps)
+      self._setup_step_interpreter.interpret(self._task.setup_steps)
     except errors.StepCommandError:
       logging.exception('Failed to execute setup steps. Restarting simulator.')
       self._log_dict['restart_count_simulator_setup'] += 1
@@ -147,7 +147,7 @@ class RemoteController():
 
       # Execute setup steps
       try:
-        self._setup_step_interpreter.interpret(self._task_config.setup_steps)
+        self._setup_step_interpreter.interpret(self._task.setup_steps)
       except errors.StepCommandError:
         logging.error('Failed to execute setup steps. Restarting simulator.')
         self._log_dict['restart_count_restart_setup_steps'] += 1
@@ -198,7 +198,7 @@ class RemoteController():
 
     # Execute reset steps
     try:
-      self._setup_step_interpreter.interpret(self._task_config.reset_steps)
+      self._setup_step_interpreter.interpret(self._task.reset_steps)
     except errors.StepCommandError:
       logging.exception('Failed to execute reset steps. Restarting simulator.')
       self._log_dict['restart_count_simulator_reset'] += 1
@@ -325,7 +325,7 @@ class RemoteController():
     """Starts a logcat thread."""
     self._logcat_thread = logcat_thread.LogcatThread(
         adb_command_prefix=self._adb_controller.command_prefix(),
-        log_parsing_config=self._task_config.log_parsing_config,
+        log_parsing_config=self._task.log_parsing_config,
         print_all_lines=False,
         block_input=True,
         block_output=False)
@@ -334,7 +334,7 @@ class RemoteController():
     """Starts a dumpsys thread."""
     self._dumpsys_thread = dumpsys_thread.DumpsysThread(
         app_screen_checker=app_screen_checker.AppScreenChecker(
-            self._adb_controller, self._task_config.expected_app_screen),
+            self._adb_controller, self._task.expected_app_screen),
         check_frequency=self._dumpsys_check_frequency,
         max_failed_current_activity=self._max_failed_current_activity,
         block_input=True,
