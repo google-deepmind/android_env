@@ -252,14 +252,11 @@ class RemoteController():
   def get_current_observation(
       self,
       action: Optional[Dict[str, np.ndarray]],
-      wait_for_next_frame: bool = True
   ) -> Optional[Dict[str, np.ndarray]]:
     """Returns pixels from the screen."""
 
     self._execute_action(action)
-
-    if wait_for_next_frame:
-      self._wait_for_next_frame()
+    self._wait_for_next_frame()
 
     try:
       self._latest_observation_local_time = time.time()
@@ -269,14 +266,6 @@ class RemoteController():
       self._log_dict['restart_count_fetch_observation'] += 1
       self._should_restart = True
       return None
-
-  def check_timeout(self) -> bool:
-    """Checks if timeout between steps have exceeded."""
-    if self._step_timeout_sec:
-      time_since_last_obs = self._get_time_since_last_observation()
-      if time_since_last_obs > self._step_timeout_sec:
-        return True
-    return False
 
   def _execute_action(self, action: Optional[Dict[str, np.ndarray]]) -> None:
     """Applies the action from the agent."""
@@ -293,6 +282,30 @@ class RemoteController():
       logging.exception('Unable to execute action. Restarting simulator.')
       self._log_dict['restart_count_execute_action'] += 1
       self._should_restart = True
+
+  def _wait_for_next_frame(self) -> None:
+    """Pauses the environment so that the interaction is around 1/FPS."""
+
+    time_since_observation = self._get_time_since_last_observation()
+    logging.debug('Time since obs: %0.6f', time_since_observation)
+
+    time_to_wait = 1. / self._expected_fps - time_since_observation
+    if time_to_wait > 0.0:
+      time.sleep(time_to_wait)
+
+  def _get_time_since_last_observation(self) -> float:
+    if self._latest_observation_local_time is not None:
+      return time.time() - self._latest_observation_local_time
+    else:
+      return np.inf
+
+  def check_timeout(self) -> bool:
+    """Checks if timeout between steps have exceeded."""
+    if self._step_timeout_sec:
+      time_since_last_obs = self._get_time_since_last_observation()
+      if time_since_last_obs > self._step_timeout_sec:
+        return True
+    return False
 
   def create_adb_controller(self) -> adb_controller.AdbController:
     """Creates an adb_controller and transfer ownership to the caller."""
@@ -361,22 +374,6 @@ class RemoteController():
       return reward
     else:
       return 0.0
-
-  def _get_time_since_last_observation(self) -> float:
-    if self._latest_observation_local_time is not None:
-      return time.time() - self._latest_observation_local_time
-    else:
-      return np.inf
-
-  def _wait_for_next_frame(self) -> None:
-    """Pauses the environment so that the interaction is around 1/FPS."""
-
-    time_since_observation = self._get_time_since_last_observation()
-    logging.debug('Time since obs: %0.6f', time_since_observation)
-
-    time_to_wait = 1. / self._expected_fps - time_since_observation
-    if time_to_wait > 0.0:
-      time.sleep(time_to_wait)
 
   def _increment_bad_state(self) -> None:
     """Increments the bad state counter.

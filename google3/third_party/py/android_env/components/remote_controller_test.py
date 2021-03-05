@@ -91,15 +91,13 @@ class RemoteControllerTest(absltest.TestCase):
   def test_get_current_observation(self):
     self._simulator.get_observation.return_value = {'observation': 0}
     observation = self._remote_controller.get_current_observation(
-        action={'action_type': np.array(action_type.ActionType.LIFT)},
-        wait_for_next_frame=False)
+        action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertDictEqual(observation, {'observation': 0})
 
   def test_get_current_observation_error(self):
     self._simulator.get_observation.side_effect = errors.ReadObservationError()
     observation = self._remote_controller.get_current_observation(
-        action={'action_type': np.array(action_type.ActionType.LIFT)},
-        wait_for_next_frame=False)
+        action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertTrue(self._remote_controller._should_restart)
     self.assertIsNone(observation)
 
