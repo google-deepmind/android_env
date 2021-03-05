@@ -109,7 +109,7 @@ class AndroidEnv(dm_env.Environment):
     self._task_start_time = datetime.datetime.now()
 
     # Fetch observation and task_extras from remote controller
-    observation = self._remote_controller.get_current_observation()
+    observation = self._remote_controller.get_current_observation(None)
     task_extras = self._remote_controller.get_current_extras()
     if observation is not None:
       self._latest_observation = observation.copy()
@@ -159,11 +159,10 @@ class AndroidEnv(dm_env.Environment):
 
     # Validate and perform action
     self._validate_action(action)
-    self._remote_controller.execute_action(action)
     self._update_log_dict(act_type=action['action_type'].item())
 
     # Fetch observation, reward and task_extras from remote controller
-    observation = self._remote_controller.get_current_observation()
+    observation = self._remote_controller.get_current_observation(action)
     task_extras = self._remote_controller.get_current_extras()
     reward = self._remote_controller.get_current_reward()
     if observation is not None:

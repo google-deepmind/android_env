@@ -181,7 +181,7 @@ class RemoteController():
     logging.info('Resetting the remote controller...')
 
     # Execute a lift action before resetting
-    self.execute_action({
+    self._execute_action({
         'action_type': np.array(action_type.ActionType.LIFT),
         'touch_position': np.array([0, 0])
     })
@@ -251,9 +251,12 @@ class RemoteController():
 
   def get_current_observation(
       self,
+      action: Optional[Dict[str, np.ndarray]],
       wait_for_next_frame: bool = True
   ) -> Optional[Dict[str, np.ndarray]]:
     """Returns pixels from the screen."""
+
+    self._execute_action(action)
 
     if wait_for_next_frame:
       self._wait_for_next_frame()
@@ -275,8 +278,11 @@ class RemoteController():
         return True
     return False
 
-  def execute_action(self, action: Dict[str, np.ndarray]):
+  def _execute_action(self, action: Optional[Dict[str, np.ndarray]]) -> None:
     """Applies the action from the agent."""
+
+    if action is None:
+      return
 
     if action['action_type'].item() == action_type.ActionType.REPEAT:
       return
