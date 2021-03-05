@@ -62,25 +62,33 @@ class RemoteControllerTest(absltest.TestCase):
     assert hasattr(self._remote_controller, '_logcat_thread')
     assert hasattr(self._remote_controller, '_dumpsys_thread')
 
-  def test_get_current_reward(self):
+  def test_get_reward(self):
+    self._simulator.get_observation.return_value = {'observation': 0}
     self._remote_controller._logcat_thread.get_and_reset_reward.return_value = 1.0
-    reward = self._remote_controller.get_current_reward()
+    _, reward, _ = self._remote_controller.execute_action(
+        action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertEqual(reward, 1.0)
 
-  def test_get_current_reward_none(self):
+  def test_get_reward_none(self):
+    self._simulator.get_observation.return_value = {'observation': 0}
     self._remote_controller._logcat_thread.get_and_reset_reward.return_value = None
-    reward = self._remote_controller.get_current_reward()
+    _, reward, _ = self._remote_controller.execute_action(
+        action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertEqual(reward, 0.0)
 
-  def test_get_current_extras(self):
+  def test_get_extras(self):
+    self._simulator.get_observation.return_value = {'observation': 0}
     expected_extra = {'extra': 0}
     self._remote_controller._logcat_thread.get_and_reset_extras.return_value = expected_extra
-    extra = self._remote_controller.get_current_extras()
+    _, _, extra = self._remote_controller.execute_action(
+        action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertDictEqual(extra, expected_extra)
 
-  def test_get_current_extras_none(self):
+  def test_get_extras_none(self):
+    self._simulator.get_observation.return_value = {'observation': 0}
     self._remote_controller._logcat_thread.get_and_reset_extras.return_value = {}
-    extra = self._remote_controller.get_current_extras()
+    _, _, extra = self._remote_controller.execute_action(
+        action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertDictEqual(extra, {})
 
   def test_check_episode_end(self):
@@ -88,15 +96,15 @@ class RemoteControllerTest(absltest.TestCase):
     episode_end = self._remote_controller.check_episode_end()
     self.assertTrue(episode_end)
 
-  def test_get_current_observation(self):
+  def test_process_action(self):
     self._simulator.get_observation.return_value = {'observation': 0}
-    observation = self._remote_controller.get_current_observation(
+    observation, _, _ = self._remote_controller.execute_action(
         action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertDictEqual(observation, {'observation': 0})
 
-  def test_get_current_observation_error(self):
+  def test_process_action_error(self):
     self._simulator.get_observation.side_effect = errors.ReadObservationError()
-    observation = self._remote_controller.get_current_observation(
+    observation, _, _ = self._remote_controller.execute_action(
         action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertTrue(self._remote_controller._should_restart)
     self.assertIsNone(observation)
@@ -105,20 +113,20 @@ class RemoteControllerTest(absltest.TestCase):
     self._simulator.get_observation.return_value = {'observation': 0}
     self._simulator.send_action.return_value = True
     action = {'action_type': np.array(action_type.ActionType.TOUCH)}
-    _ = self._remote_controller.get_current_observation(action)
+    _, _, _ = self._remote_controller.execute_action(action)
     self._simulator.send_action.assert_called_once_with(action)
 
   def test_execute_action_repeat(self):
     self._simulator.get_observation.return_value = {'observation': 0}
     self._simulator.send_action.return_value = True
-    self._remote_controller.get_current_observation(
+    _, _, _ = self._remote_controller.execute_action(
         {'action_type': np.array(action_type.ActionType.REPEAT)})
     self._simulator.send_action.assert_not_called()
 
   def test_execute_action_error(self):
     self._simulator.get_observation.return_value = {'observation': 0}
     self._simulator.send_action.side_effect = errors.SendActionError
-    self._remote_controller.get_current_observation(
+    _, _, _ = self._remote_controller.execute_action(
         {'action_type': np.array(action_type.ActionType.TOUCH)})
     self.assertTrue(self._remote_controller._should_restart)
 

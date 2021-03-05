@@ -4,7 +4,7 @@ import copy
 import queue
 import socket
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from absl import logging
 from android_env.components import action_type
@@ -84,7 +84,6 @@ class RemoteController():
     self._bad_state_counter = 0
     self._is_bad_episode = False
     self._latest_observation_local_time = None
-    self._latest_reward = None
     self._simulator_start_time = None
     self._launch_simulator()
     self._start_logcat_thread()
@@ -188,7 +187,6 @@ class RemoteController():
 
     # Reset counters
     self._latest_observation_local_time = None
-    self._latest_reward = None
     if not self._is_bad_episode:
       self._bad_state_counter = 0
     self._is_bad_episode = False
@@ -212,13 +210,6 @@ class RemoteController():
     self._start_dumpsys_thread()
 
     logging.info('Done resetting the remote controller.')
-
-  def get_current_reward(self) -> float:
-    self._latest_reward = self._logcat_thread.get_and_reset_reward()
-    return self._fetch_latest_reward()
-
-  def get_current_extras(self) -> Dict[str, Any]:
-    return self._logcat_thread.get_and_reset_extras()
 
   def check_player_exited(self) -> bool:
     """Returns whether the player has exited the game."""
@@ -249,23 +240,27 @@ class RemoteController():
     """Returns whether the episode ended from the output of `adb logcat`."""
     return self._logcat_thread.get_and_reset_episode_end()
 
-  def get_current_observation(
+  def execute_action(
       self,
       action: Optional[Dict[str, np.ndarray]],
-  ) -> Optional[Dict[str, np.ndarray]]:
-    """Returns pixels from the screen."""
+  ) -> Tuple[Optional[Dict[str, np.ndarray]], float, Dict[str, Any]]:
+    """Returns the observation (pixels) from the screen, rewards and extras."""
 
     self._execute_action(action)
     self._wait_for_next_frame()
 
+    obs = None
     try:
       self._latest_observation_local_time = time.time()
-      return self._simulator.get_observation()
+      obs = self._simulator.get_observation()
     except (errors.ReadObservationError, socket.error):
       logging.exception('Unable to fetch observation. Restarting simulator.')
       self._log_dict['restart_count_fetch_observation'] += 1
       self._should_restart = True
-      return None
+
+    reward = self._get_current_reward()
+    extras = self._logcat_thread.get_and_reset_extras()
+    return (obs, reward, extras)
 
   def _execute_action(self, action: Optional[Dict[str, np.ndarray]]) -> None:
     """Applies the action from the agent."""
@@ -298,6 +293,10 @@ class RemoteController():
       return time.time() - self._latest_observation_local_time
     else:
       return np.inf
+
+  def _get_current_reward(self) -> float:
+    reward = self._logcat_thread.get_and_reset_reward()
+    return 0.0 if reward is None else reward
 
   def check_timeout(self) -> bool:
     """Checks if timeout between steps have exceeded."""
@@ -366,14 +365,6 @@ class RemoteController():
   def _stop_dumpsys_thread(self):
     if hasattr(self, '_dumpsys_thread'):
       self._dumpsys_thread.kill()
-
-  def _fetch_latest_reward(self):
-    if self._latest_reward is not None:
-      reward = self._latest_reward
-      self._latest_reward = None
-      return reward
-    else:
-      return 0.0
 
   def _increment_bad_state(self) -> None:
     """Increments the bad state counter.

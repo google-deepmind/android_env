@@ -109,8 +109,8 @@ class AndroidEnv(dm_env.Environment):
     self._task_start_time = datetime.datetime.now()
 
     # Fetch observation and task_extras from remote controller
-    observation = self._remote_controller.get_current_observation(None)
-    task_extras = self._remote_controller.get_current_extras()
+    observation, reward, task_extras = self._remote_controller.execute_action(
+        action=None)
     if observation is not None:
       self._latest_observation = observation.copy()
     self._latest_extras = task_extras.copy()
@@ -129,7 +129,7 @@ class AndroidEnv(dm_env.Environment):
     return dm_env.TimeStep(
         step_type=self._latest_step_type,
         observation=self._latest_observation,
-        reward=0.0,
+        reward=reward,
         discount=0.0)
 
   def step(self, action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
@@ -162,9 +162,8 @@ class AndroidEnv(dm_env.Environment):
     self._update_log_dict(act_type=action['action_type'].item())
 
     # Fetch observation, reward and task_extras from remote controller
-    observation = self._remote_controller.get_current_observation(action)
-    task_extras = self._remote_controller.get_current_extras()
-    reward = self._remote_controller.get_current_reward()
+    observation, reward, task_extras = self._remote_controller.execute_action(
+        action=action)
     if observation is not None:
       self._latest_observation = observation.copy()
     self._latest_extras = task_extras.copy()
