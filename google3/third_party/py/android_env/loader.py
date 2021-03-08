@@ -1,9 +1,11 @@
 """Function for loading AndroidEnv."""
 
 import os
+
 from android_env import android_env
 from android_env.components import emulator_simulator
 from android_env.proto import task_pb2
+
 from google3.net.proto2.python.public import text_format
 
 
@@ -23,7 +25,9 @@ def load(adb_path: str,
           android_sdk_root=os.path.expanduser(android_sdk_root),
           android_avd_home=os.path.expanduser(android_avd_home),
           avd_name=avd_name,
-          run_headless=run_headless),
+          run_headless=run_headless,
+          gpu_mode='swiftshader_indirect',
+      ),
       emulator_console_args={},
       adb_path=adb_path,
       adb_port=5037,

@@ -27,6 +27,7 @@ class EmulatorLauncher():
       avd_name: str = '',
       run_headless: bool = False,
       kvm_device: str = '/dev/kvm',
+      gpu_mode: str = 'swiftshader_indirect',
       android_avd_home: str = '',
       startup_wait_time_sec: int = 300,
   ):
@@ -42,6 +43,8 @@ class EmulatorLauncher():
       avd_name: Name of the AVD.
       run_headless: Whether to run in headless mode.
       kvm_device: Path to the KVM device.
+      gpu_mode: GPU mode override. Supported values are listed at:
+        https://developer.android.com/studio/run/emulator-acceleration#accel-graphics
       android_avd_home: Local directory for AVDs.
       startup_wait_time_sec: Timeout for booting the emulator.
     """
@@ -54,6 +57,7 @@ class EmulatorLauncher():
     self._avd_name = avd_name
     self._run_headless = run_headless
     self._kvm_device = kvm_device
+    self._gpu_mode = gpu_mode
     self._android_avd_home = android_avd_home
     self._startup_wait_time_sec = startup_wait_time_sec
     self._emulator = None
@@ -94,7 +98,7 @@ class EmulatorLauncher():
         self._emulator_path,
         '-no-snapshot',
         '-gpu',
-        'swiftshader_indirect',
+        self._gpu_mode,
         '-no-audio',
         '-verbose',
         '-avd',
