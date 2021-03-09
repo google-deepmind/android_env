@@ -33,6 +33,7 @@ class AndroidEnv(dm_env.Environment):
                periodic_restart_time_min: float = 0.0):
     """Instantiate an Android environment."""
 
+    self._simulator = simulator
     self._task = task
     self._is_closed = False
     self._latest_action = {}
@@ -83,8 +84,7 @@ class AndroidEnv(dm_env.Environment):
     return specs.base_action_spec()
 
   def observation_spec(self) -> Dict[str, dm_env.specs.Array]:
-    return specs.base_observation_spec(
-        screen_dimension=self._remote_controller.screen_dimensions)
+    return specs.base_observation_spec(self._simulator.screen_dimensions)
 
   def task_extras_spec(self) -> Dict[str, dm_env.specs.Array]:
     return specs.task_extras_spec(task=self._task)

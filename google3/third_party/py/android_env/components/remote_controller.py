@@ -101,10 +101,6 @@ class RemoteController():
       return
 
   @property
-  def screen_dimensions(self) -> np.ndarray:
-    return self._simulator.screen_dimensions
-
-  @property
   def should_restart(self) -> bool:
     return self._should_restart
 
