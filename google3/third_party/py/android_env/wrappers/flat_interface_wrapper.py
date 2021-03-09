@@ -3,7 +3,6 @@
 Removes the structure from observation and action. Keeps only the pixel
 observation. Exposes action as an int32 scalar. This makes it easier to plug in
 to conventional agents. This wrapper expects a discretized action space.
-This wrapper should be applied agent-side.
 """
 
 from typing import Union, Dict, Any
