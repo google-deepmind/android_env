@@ -155,5 +155,6 @@ class EmulatorLauncher():
       logging.info('Shutting down the emulator...')
       self._emulator.kill(signal.SIGKILL)
       self._emulator.wait()
+      self._emulator = None
       self._emulator_output.close()
       logging.info('Done shutting down the emulator.')
