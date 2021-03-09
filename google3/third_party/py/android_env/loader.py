@@ -30,7 +30,7 @@ def load(adb_path: str,
       ),
       emulator_console_args={},
       adb_path=adb_path,
-      adb_port=5037,
+      adb_server_port=5037,
       prompt_regex=r'\w*:\/ \$',
   )
 
