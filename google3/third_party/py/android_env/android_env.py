@@ -7,7 +7,6 @@ import time
 from typing import Any, Dict
 from absl import logging
 from android_env.components import action_type
-from android_env.components import adb_controller
 from android_env.components import base_simulator
 from android_env.components import remote_controller
 from android_env.components import specs
@@ -315,10 +314,6 @@ class AndroidEnv(dm_env.Environment):
     self._episode_cumulative_external_time = 0.0
     self._episode_max_external_time = 0.0
     self._episode_max_internal_time = 0.0
-
-  def create_adb_controller(self) -> adb_controller.AdbController:
-    """Creates an adb_controller and transfer ownership to the caller."""
-    return self._remote_controller.create_adb_controller()
 
   def close(self) -> None:
     """Clean up running processes, threads and local files."""

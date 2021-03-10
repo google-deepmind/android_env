@@ -8,7 +8,6 @@ from typing import Any, Dict, Optional, Tuple
 
 from absl import logging
 from android_env.components import action_type
-from android_env.components import adb_controller
 from android_env.components import app_screen_checker
 from android_env.components import base_simulator
 from android_env.components import dumpsys_thread
@@ -301,10 +300,6 @@ class RemoteController():
       if time_since_last_obs > self._step_timeout_sec:
         return True
     return False
-
-  def create_adb_controller(self) -> adb_controller.AdbController:
-    """Creates an adb_controller and transfer ownership to the caller."""
-    return self._simulator.create_adb_controller()
 
   def close(self):
     """Cleans up the state of this RemoteController."""
