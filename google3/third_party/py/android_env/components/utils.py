@@ -83,21 +83,6 @@ def get_class_default_params(class_object) -> Dict[str, Any]:
                if v.default is not funcsigs.Parameter.empty])
 
 
-def flatten_dict(dictionary):
-  """Flatten a dictionary by joining keys using the character '.'."""
-  output_dict = {}
-  for key, value in dictionary.items():
-    if isinstance(value, dict):
-      if value:
-        output_dict.update(
-            {'{}.{}'.format(key, k): v for k, v in flatten_dict(value).items()})
-      else:  # For empty dict values.
-        output_dict[key] = value
-    else:
-      output_dict[key] = value
-  return output_dict
-
-
 def parse_dict(d):
   """Parses string values in a settings dictionary into Python objects."""
   for k, v in d.items():

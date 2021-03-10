@@ -67,43 +67,6 @@ class UtilsTest(parameterized.TestCase):
     # Also verify that it produced what we expect.
     self.assertEqual(array_spec, specs.Array(shape=(1, 2, 3), dtype=np.uint16))
 
-  def test_flatten_dict_empty(self):
-    self.assertEqual(utils.flatten_dict({}), {})
-
-  def test_flatten_dict_already_flat(self):
-    d = {'hello': 123, 'world': 'foo'}
-    self.assertEqual(utils.flatten_dict(d), d)
-
-  def test_flatten_dict_one_level(self):
-    self.assertEqual(
-        utils.flatten_dict({
-            'hello': {
-                'world': 123
-            },
-            'dont_touch_this': 456
-        }), {
-            'hello.world': 123,
-            'dont_touch_this': 456
-        })
-
-  def test_flatten_dict_two_levels(self):
-    self.assertEqual(
-        utils.flatten_dict({
-            'hello': {
-                'world': {
-                    'foo': 123,
-                    'bar': 789
-                },
-                'korg': 'triton'
-            },
-            'dont_touch_this': 456
-        }), {
-            'hello.world.foo': 123,
-            'hello.world.bar': 789,
-            'hello.korg': 'triton',
-            'dont_touch_this': 456
-        })
-
   def test_get_class_default_params(self):
 
     class TestClass():
