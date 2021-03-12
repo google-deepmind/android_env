@@ -2,7 +2,6 @@
 
 import builtins
 import os
-import select
 import telnetlib
 import time
 
@@ -25,28 +24,17 @@ class EmulatorConsoleTest(absltest.TestCase):
     self._mock_auth_file.__enter__ = mock.MagicMock(
         return_value=self._mock_auth_file)
     self._mock_auth_file.read.return_value = 'some_code_i_dont_care'
-    self._mock_open = mock.patch.object(builtins, 'open', autospec=True).start()
-    self._mock_open.return_value = self._mock_auth_file
 
     # Create a mock file to hold the FIFO.
     self._mock_fifo_file = mock.MagicMock()
-    self._mock_fifo_file.read.return_value = 'some encoded image'
+    self._mock_fifo_file.__enter__ = mock.MagicMock(
+        return_value=self._mock_fifo_file)
 
-    # Create a mock poller for select.poll()
-    self._mock_poller = mock.create_autospec(select).poll()
-    self._mock_poller.poll.return_value = ([self._mock_fifo_file, None],
-                                           [None, None],
-                                           [None, None])
-
-    # Create a mock poller for select.poll() that returns a file descriptor that
-    # will simply time out.
-    self._mock_poller_for_timeout = mock.create_autospec(select).poll()
-    self._mock_poller_for_timeout.poll.return_value = ([123, None],
-                                                       [None, None],
-                                                       [None, None])
-
-    self._mock_os_open = mock.patch.object(os, 'open', autospec=True).start()
-    self._mock_os_open.return_value = self._mock_fifo_file
+    self._mock_open = mock.patch.object(builtins, 'open', autospec=True).start()
+    self._mock_open.side_effect = [
+        self._mock_auth_file,
+        self._mock_fifo_file,
+    ]
 
   @mock.patch.object(time, 'sleep', autospec=True)
   @mock.patch.object(
@@ -145,8 +133,8 @@ class EmulatorConsoleTest(absltest.TestCase):
     mock_close.assert_has_calls([])
     mock_remove.assert_has_calls([])
 
-  @mock.patch.object(select, 'poll', autospec=True)
-  def test_fetch_screenshot_timedout(self, mock_select_poll):
+  def test_fetch_screenshot_timedout(self):
+    """Ensures that we get an exception if `fetch_screenshot` takes >5s."""
     telnet_connection = mock.create_autospec(telnetlib.Telnet)
     telnet_connection.read_until.return_value = 'OK'
 
@@ -160,13 +148,10 @@ class EmulatorConsoleTest(absltest.TestCase):
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
 
-    mock_select_poll.return_value = self._mock_poller_for_timeout
-
+    self._mock_fifo_file.read.side_effect = lambda: time.sleep(10)
     self.assertRaises(errors.PipeTimedOutError, console.fetch_screenshot)
 
-  @mock.patch.object(os, 'read', autospec=True)
-  @mock.patch.object(select, 'poll', autospec=True)
-  def test_fetch_screenshot_os_error(self, mock_select_poll, mock_os_read):
+  def test_fetch_screenshot_io_error(self):
     telnet_connection = mock.create_autospec(telnetlib.Telnet)
     telnet_connection.read_until.return_value = 'OK'
 
@@ -179,8 +164,6 @@ class EmulatorConsoleTest(absltest.TestCase):
           tmp_dir=absltest.get_default_test_tmpdir())
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
-
-    mock_select_poll.return_value = self._mock_poller
 
     # Create a fake flat image with 4 channels.
     fake_img = np.array(list(range(10)) * 4, dtype=np.uint8)
@@ -191,19 +174,14 @@ class EmulatorConsoleTest(absltest.TestCase):
     fake_raw_obs.screen.num_channels = 4
     fake_raw_obs.timestamp_us = 123456789
 
-    mock_os_read.side_effect = [
-        b'',  # 1st call.
-        fake_raw_obs.SerializeToString(),  # 2nd call.
-        OSError('Nooo, os.read() crashed!'),
+    self._mock_fifo_file.read.side_effect = [
+        fake_raw_obs.SerializeToString(),
+        IOError('Nooo, f.read() crashed!'),
         b''  # final call.
     ]
+    self.assertRaises(IOError, console.fetch_screenshot)
 
-    self.assertRaises(OSError, console.fetch_screenshot)
-
-  @mock.patch.object(os, 'read', autospec=True)
-  @mock.patch.object(select, 'poll', autospec=True)
-  def test_fetch_screenshot_decoding_error(self, mock_select_poll,
-                                           mock_os_read):
+  def test_fetch_screenshot_decoding_error(self):
     telnet_connection = mock.create_autospec(telnetlib.Telnet)
     telnet_connection.read_until.return_value = 'OK'
 
@@ -217,22 +195,14 @@ class EmulatorConsoleTest(absltest.TestCase):
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
 
-    mock_select_poll.return_value = self._mock_poller
-
-    mock_os_read.side_effect = [
-        b'',  # 1st call.
-        b'I am definitely not a RawObservation!',  # 2nd call.
+    self._mock_fifo_file.read.side_effect = [
+        b'I am definitely not a RawObservation!',
         b''  # final call.
     ]
 
     self.assertRaises(errors.ObservationDecodingError, console.fetch_screenshot)
 
-  @mock.patch.object(os, 'read', autospec=True)
-  @mock.patch.object(select, 'poll', autospec=True)
-  @mock.patch.object(os, 'remove', autospec=True)
-  @mock.patch.object(os, 'close', autospec=True)
-  def test_fetch_screenshot_ok(self, mock_close, unused_mock_remove,
-                               mock_select_poll, mock_os_read):
+  def test_fetch_screenshot_ok(self):
     telnet_connection = mock.create_autospec(telnetlib.Telnet)
     telnet_connection.read_until.return_value = 'OK'
 
@@ -246,8 +216,6 @@ class EmulatorConsoleTest(absltest.TestCase):
       telnet_init.assert_called_once_with('localhost', 1234)
       self._mock_open.assert_called_once()
 
-    mock_select_poll.return_value = self._mock_poller
-
     # Create a fake flat image with 4 channels.
     fake_img = np.array(list(range(10)) * 4, dtype=np.uint8)
     fake_raw_obs = raw_observation_pb2.RawObservation()
@@ -257,10 +225,9 @@ class EmulatorConsoleTest(absltest.TestCase):
     fake_raw_obs.screen.num_channels = 4
     fake_raw_obs.timestamp_us = 123456789
 
-    mock_os_read.side_effect = [
-        b'',  # 1st call.
-        fake_raw_obs.SerializeToString(),  # 2nd call.
-        b''  # final call.
+    self._mock_fifo_file.read.side_effect = [
+        fake_raw_obs.SerializeToString(),
+        b'',
     ]
 
     observation = console.fetch_screenshot()
@@ -272,9 +239,6 @@ class EmulatorConsoleTest(absltest.TestCase):
 
     # Close the console.
     console.close()
-
-    # It should cleanup the resources it acquired.
-    mock_close.assert_called_once()
 
 
 if __name__ == '__main__':
