@@ -33,7 +33,7 @@ class RemoteController():
       dumpsys_check_frequency: int = 150,
       max_failed_current_activity: int = 10,
       step_timeout_sec: int = 10,
-      expected_fps: int = 5,
+      max_steps_per_sec: int = 5,
       periodic_restart_time_min: float = 0.0,
   ):
     """Handles communication between AndroidEnv and AndroidOS.
@@ -50,8 +50,8 @@ class RemoteController():
       step_timeout_sec: Timeout in seconds between steps. If step is not called
         within that time, the episode will reset at the next step. Set to 0 to
         disable.
-      expected_fps: Maximum steps per second. If the simulator is faster,
-        RemoteController will wait before returning an observation.
+      max_steps_per_sec: Maximum steps per second. If the simulator is
+        faster, RemoteController will wait before returning an observation.
       periodic_restart_time_min: Time between periodic restarts in minutes. If >
         0.0, will trigger a simulator restart at the end of the next episode
         once the time has been reached.
@@ -62,7 +62,7 @@ class RemoteController():
     self._dumpsys_check_frequency = dumpsys_check_frequency
     self._max_failed_current_activity = max_failed_current_activity
     self._step_timeout_sec = step_timeout_sec
-    self._expected_fps = expected_fps
+    self._max_steps_per_sec = max_steps_per_sec
     self._periodic_restart_time_min = periodic_restart_time_min
 
     # Logging settings
@@ -279,7 +279,7 @@ class RemoteController():
     time_since_observation = self._get_time_since_last_observation()
     logging.debug('Time since obs: %0.6f', time_since_observation)
 
-    time_to_wait = 1. / self._expected_fps - time_since_observation
+    time_to_wait = 1. / self._max_steps_per_sec - time_since_observation
     if time_to_wait > 0.0:
       time.sleep(time_to_wait)
 

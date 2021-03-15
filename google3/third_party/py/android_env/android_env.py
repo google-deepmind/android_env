@@ -28,7 +28,7 @@ class AndroidEnv(dm_env.Environment):
                dumpsys_check_frequency: int = 150,
                max_failed_current_activity: int = 10,
                step_timeout_sec: int = 10,
-               expected_fps: int = 5,
+               max_steps_per_sec: int = 5.0,
                periodic_restart_time_min: float = 0.0):
     """Instantiate an Android environment."""
 
@@ -55,7 +55,7 @@ class AndroidEnv(dm_env.Environment):
         dumpsys_check_frequency=dumpsys_check_frequency,
         max_failed_current_activity=max_failed_current_activity,
         step_timeout_sec=step_timeout_sec,
-        expected_fps=expected_fps,
+        max_steps_per_sec=max_steps_per_sec,
         periodic_restart_time_min=periodic_restart_time_min)
 
     # Logging settings

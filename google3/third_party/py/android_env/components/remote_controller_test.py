@@ -50,7 +50,7 @@ class RemoteControllerTest(absltest.TestCase):
         dumpsys_check_frequency=100,
         max_failed_current_activity=3,
         step_timeout_sec=2,
-        expected_fps=60,
+        max_steps_per_sec=60,
         periodic_restart_time_min=0)
 
   def test_restart(self):
