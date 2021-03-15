@@ -33,7 +33,7 @@ class RemoteController():
       dumpsys_check_frequency: int = 150,
       max_failed_current_activity: int = 10,
       step_timeout_sec: int = 10,
-      max_steps_per_sec: int = 5,
+      max_steps_per_sec: float = 5.0,
       periodic_restart_time_min: float = 0.0,
   ):
     """Handles communication between AndroidEnv and AndroidOS.
