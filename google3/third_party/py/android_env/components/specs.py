@@ -62,8 +62,8 @@ def base_observation_spec(
                   3),  # [R, G, B]
               dtype=np.uint8,
               name='pixels'),
-      'timestamp':  # Time delta (in microseconds) since the last observation.
-          specs.Array(shape=(), dtype=np.int64, name='timestamp'),
+      'timedelta':  # Time delta (in microseconds) since the last observation.
+          specs.Array(shape=(), dtype=np.int64, name='timedelta'),
       'orientation':  # The latest orientation in a one-hot representation:
           #   [1, 0, 0, 0]: PORTRAIT  (0 degrees)
           #   [0, 1, 0, 0]: LANDSCAPE (90 degrees clockwise)

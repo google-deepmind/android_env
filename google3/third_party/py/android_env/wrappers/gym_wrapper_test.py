@@ -34,8 +34,8 @@ class GymInterfaceWrapperTest(absltest.TestCase):
                 shape=(480, 320, 3),
                 dtype=np.uint8,
                 name='pixels'),
-        'timestamp':
-            specs.Array(shape=(), dtype=np.int64, name='timestamp'),
+        'timedelta':
+            specs.Array(shape=(), dtype=np.int64, name='timedelta'),
         'orientation':
             specs.Array(
                 shape=np.array([4]),

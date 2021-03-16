@@ -89,7 +89,7 @@ class BaseSimulator(metaclass=abc.ABCMeta):
           has shape [height, width, num_channels] and can be loaded into PIL
           using Image.fromarray(img, mode='RGB') and be saved as a PNG file
           using my_pil.save('/tmp/my_screenshot.png', 'PNG').
-      [1] (timestamp): np.int64 The number of microseconds since Unix Epoch.
+      [1] (timedelta): np.int64 The number of microseconds since Unix Epoch.
     """
     pass
 
@@ -151,7 +151,7 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     self._last_obs_timestamp = timestamp
     return {
         'pixels': obs[0],
-        'timestamp': timestamp_delta,
+        'timedelta': timestamp_delta,
         'orientation': self._orientation
     }
 

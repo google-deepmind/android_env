@@ -129,7 +129,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
     observation = simulator.get_observation()
     # The observation should have three components:
     #   - an image
-    #   - the timestamp
+    #   - the timedelta
     #   - the orientation.
     self.assertLen(observation, 3)
     # The first element (the "image") should have the same screen dimensions as

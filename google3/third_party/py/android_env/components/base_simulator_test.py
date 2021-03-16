@@ -87,7 +87,7 @@ class BaseSimulatorTest(absltest.TestCase):
     np.testing.assert_equal(observation['pixels'].shape, [640, 480, 3])
     # Because there was only a single step, the timestamp delta should be just
     # the timestamp returned by FakeSimulator.
-    self.assertEqual(observation['timestamp'], 123456)
+    self.assertEqual(observation['timedelta'], 123456)
 
     # The orientation format should be a 4-dimension one-hot.
     np.testing.assert_equal(observation['orientation'].shape, [4])
@@ -105,7 +105,7 @@ class BaseSimulatorTest(absltest.TestCase):
     # After setting the initial timestamp, we expect the timestamp delta to be
     # the difference between the current timestamp and the initial timestamp:
     # 123459 - 123456 = 3
-    self.assertEqual(updated_observation['timestamp'], 3)
+    self.assertEqual(updated_observation['timedelta'], 3)
 
   def test_prepare_action(self):
     # The simulator should launch and not crash.
