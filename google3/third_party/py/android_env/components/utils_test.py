@@ -137,6 +137,49 @@ class UtilsTest(parameterized.TestCase):
       self.assertEqual(expected[k], v)
     self.assertEqual(expected, kwargs)
 
+  def test_merge_settings_error(self):
+    config = collections.ConfigDict({
+        'int_arg': 1,
+        'bool_arg': True,
+        'tuple_arg': (3, 3),
+        'float_arg': 2.3,
+        'dict_arg': {
+            'a': 'x',
+            'b': (2, 3),
+            'c': 'foo'
+        },
+        'list_arg': [2, 3, 4],
+        'nested_tuple_arg': ((2, 3), (4, 5, 6)),
+        'nested_list_arg': [[2, 3], [4, 5, 6]],
+        'extra_nested_list_arg': [[2, 2], [2]],
+        'extra_arg': 'extra',
+    })
+    # Settings is expected to be a flat dictionary of strings.
+    settings = {
+        'int_arg': '3',
+        'bool_arg': 'false',
+        'tuple_arg.1': '3',
+        'tuple_arg.2': '4',
+        'float_arg': '3.4',
+        'dict_arg.b.1': '5',
+        'dict_arg.a': 'y',
+        'dict_arg.d': 'wrong',
+        'list_arg.1': '5',
+        'list_arg.2': '6',
+        'nested_tuple_arg.1.1': '7.3',
+        'nested_tuple_arg.1.2': '8',
+        'nested_tuple_arg.1.3': '9',
+        'nested_tuple_arg.2.1': '1',
+        'nested_tuple_arg.2.2': '2',
+        'nested_list_arg.1.1': '1',
+        'nested_list_arg.1.2': '1',
+        'nested_list_arg.1.3': '1',
+        'nested_list_arg.2.1': '1',
+        'nested_list_arg.2.2': '1',
+    }
+    with self.assertRaises(ValueError):
+      utils.merge_settings(config, settings)
+
   def test_expand_vars(self):
     os.environ['VAR1'] = 'value1'
     dictionary = {

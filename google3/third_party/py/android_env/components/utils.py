@@ -153,18 +153,20 @@ def merge_settings(default_config: ml_collections.ConfigDict,
                    settings: Dict[str, str]) -> Dict[str, Any]:
   """Merges a default config dict with a flattenned settings string dict."""
   # The json encode/decode converts tuples to lists to remove type ambiguity.
-  config = json.loads(json.dumps(default_config.to_dict()))
+  defaults = json.loads(json.dumps(default_config.to_dict()))
   dict_settings = _unflatten_dict(settings)
 
   def update(d, u):
     for k, v in u.items():
       if isinstance(v, collections.Mapping):
         d[k] = update(d.get(k, {}), v)
-      else:
+      elif k in d:
         d[k] = v
+      else:
+        raise ValueError('No config item named "%s".' % k)
     return d
 
-  return update(config, dict_settings)
+  return update(defaults, dict_settings)
 
 
 def is_bounded(spec):
