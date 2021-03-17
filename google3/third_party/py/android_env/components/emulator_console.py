@@ -1,7 +1,7 @@
 """A class that talks directly to the telnet console of the Android emulator."""
 
 import os
-import signal
+import select
 import telnetlib
 import time
 from typing import List, Optional
@@ -13,12 +13,7 @@ from android_env.proto import raw_observation_pb2
 
 import numpy as np
 
-
-def _alarm_handler(signum: int, frame):
-  """A handler for the SIGALRM UNIX signal."""
-  del frame
-  logging.error('SIGALRM handler called! signum: %r', signum)
-  raise errors.PipeTimedOutError('Pipe timed out')
+_READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
 
 
 class EmulatorConsole():
@@ -40,10 +35,11 @@ class EmulatorConsole():
     self._setup_fifo()
     self._connect()
     self._authenticate_to_console(auth_code)
-    signal.signal(signal.SIGALRM, _alarm_handler)
 
   def close(self):
     self._connection.close()
+    if self._pipe is not None:  # Close the pipe if it was open.
+      os.close(self._pipe)
     if os.path.isfile(self._fifo):
       os.remove(self._fifo)
 
@@ -65,34 +61,46 @@ class EmulatorConsole():
     self._connection.write(b'screenrecord screenshot %s\n' %
                            self._fifo.encode('utf-8'))
     # Read the data from the pipe.
-    raw_obs = None
-    with open(self._fifo, 'rb') as f:
-      data = []
-      # Read data from the pipe in chunks.
-      while True:
-        # The call `f.read()` may block forever for all sorts of reasons, and
-        # unfortunately Python does not allow specifying a timeout. We use the
-        # SIGALRM Unix signal to transfer control to another section of the code
-        # to unblock it after 5 seconds (which is orders of magnitude longer
-        # than the expected time to read a chunk from the pipe).
-        signal.alarm(5)
-        chunk = f.read()
-        signal.alarm(0)
-        if not chunk:  # Writer closed the pipe.
-          break
-        data.append(chunk)
-      data = b''.join(data)  # Joining is much faster than string concatenation.
-      try:
-        raw_obs = raw_observation_pb2.RawObservation.FromString(data)
-        if (raw_obs.screen.height <= 0 or raw_obs.screen.width <= 0 or
-            raw_obs.screen.num_channels <= 0):
-          raise errors.ObservationDecodingError(
-              f'height: {raw_obs.screen.height} width: {raw_obs.screen.width} '
-              f'num_channels: {raw_obs.screen.num_channels} '
-              f'len(data): {len(data)}')
-      except:
-        raise errors.ObservationDecodingError(f'len(data): {len(data)}')
+    encoded_obs = b''
+    if self._pipe is None:
+      self._pipe = os.open(self._fifo, os.O_RDONLY)
 
+    start_time = time.time()
+    timeout_sec = 25.0
+    chunk_timeout_ms = 5000.0
+    data = None
+    poller = select.poll()
+    poller.register(self._pipe, _READ_ONLY)
+    while True:
+      try:
+        # Wait for up to 1 second for `pipe` to be ready to read, and then read
+        # up to 2**17 bytes, which is a bit above the maximum when reading from
+        # a pipe in linux (around 69k bytes, which is > 2**16).
+        # If the pipe is still empty after `timeout_sec`, something is wrong and
+        # we raise an error.
+        # NOTE: This timeout introduces a delay of around 20% on this os.read()
+        #       call. As of 2019.06.05 in local benchmarks it was observed that
+        #       this extra select() call increases the latency from ~1.5ms to
+        #       ~1.8ms. We deemed this cost small for the added protection.
+        for fd, _ in poller.poll(chunk_timeout_ms):
+          if fd == self._pipe:
+            data = os.read(self._pipe, int(2**17))
+      except OSError as err:
+        raise err
+      if data:
+        encoded_obs += data
+      elif time.time() - start_time > timeout_sec:
+        logging.error('Timed out on reading observation.')
+        raise errors.PipeTimedOutError()
+      else:
+        if encoded_obs:
+          # We are done reading. Exiting the loop.
+          break
+
+    try:
+      raw_obs = raw_observation_pb2.RawObservation.FromString(encoded_obs)
+    except:
+      raise errors.ObservationDecodingError()
     img = np.frombuffer(
         raw_obs.screen.data, dtype=np.uint8, count=len(raw_obs.screen.data))
     img = np.reshape(img, [
@@ -135,6 +143,9 @@ class EmulatorConsole():
     # Because we're executing this at the start of the server, we prefer to fail
     # fast and loud.
     os.mkfifo(self._fifo)
+
+    # The pipe to read in fetch_observation().
+    self._pipe = None
 
   def _connect(self):
     """Connects to the emulator console."""
