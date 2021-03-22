@@ -157,7 +157,6 @@ class AndroidEnv(dm_env.Environment):
       return self.reset()
 
     # Validate and perform action
-    self._validate_action(action)
     self._update_log_dict(act_type=action['action_type'].item())
 
     # Fetch observation, reward and task_extras from remote controller
@@ -236,13 +235,6 @@ class AndroidEnv(dm_env.Environment):
         return True
 
     return False
-
-  def _validate_action(self, action: Dict[str, np.ndarray]) -> None:
-    """Confirm that the action conforms to the action spec."""
-
-    assert set(action.keys()) == set(self.action_spec().keys())
-    for key, spec in self.action_spec().items():
-      spec.validate(action[key])
 
   def _validate_step_type(self, step_type: StepType) -> None:
     """Confirms that step_types follow each other in the correct order."""
