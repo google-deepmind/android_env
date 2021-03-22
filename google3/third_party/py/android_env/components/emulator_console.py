@@ -75,7 +75,7 @@ class _FifoReader(threading.Thread):
           # this thread will timeout when reading from `output`.
           try:
             chunk = f.read()
-          except Exception as e:
+          except Exception as e:  # pylint: disable=broad-except
             # It's nearly impossible to be exhaustive here so we use a generic
             # Exception to catch all errors, not only known ones such as IOError
             # and OSError,
@@ -109,7 +109,7 @@ class _FifoReader(threading.Thread):
                   f'len(data): {len(data)}')
               self._data_ready.notify()
             return
-        except:
+        except:  # pylint: disable=bare-except
           with self._data_ready:
             self._latest_exception = errors.ObservationDecodingError(
                 f'len(data): {len(data)}')
@@ -119,7 +119,7 @@ class _FifoReader(threading.Thread):
       if not raw_obs:
         with self._data_ready:
           self._latest_exception = errors.ObservationDecodingError(
-              f'No data in {fifo}')
+              f'No data in {self._fifo}')
           self._data_ready.notify()
         return
 
@@ -216,10 +216,6 @@ class EmulatorConsole():
     This functionality is already available in the emulator and is relatively
     fast. It sends a "one-finger" touch event to the screen (i.e. it does not
     support multitouch).
-    kenjitoyama@ encountered some strange behavior when sending everything
-    at once without sleeping for a little while, where the emulator's input
-    queue
-    would fill up and lots of events would be dropped.
 
     Args:
       x: Integer The absolute value for the x-coordinate.
