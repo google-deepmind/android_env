@@ -117,7 +117,6 @@ class AndroidEnv(dm_env.Environment):
     # Validate FIRST step type
     self._reset_next_step = False
     step_type = StepType.FIRST
-    self._validate_step_type(step_type)
     self._latest_step_type = step_type
 
     self._step_exit_time = time.time()
@@ -169,7 +168,6 @@ class AndroidEnv(dm_env.Environment):
     # Determine and validate step type
     self._reset_next_step = self._check_if_should_terminate()
     step_type = StepType.LAST if self._reset_next_step else StepType.MID
-    self._validate_step_type(step_type)
     self._latest_step_type = step_type
 
     self._step_exit_time = time.time()
@@ -190,7 +188,6 @@ class AndroidEnv(dm_env.Environment):
 
     self._reset_next_step = True
     step_type = StepType.LAST
-    self._validate_step_type(step_type)
     self._latest_step_type = step_type
 
     return dm_env.TimeStep(
@@ -235,18 +232,6 @@ class AndroidEnv(dm_env.Environment):
         return True
 
     return False
-
-  def _validate_step_type(self, step_type: StepType) -> None:
-    """Confirms that step_types follow each other in the correct order."""
-
-    if (self._latest_step_type, step_type) in [
-        (StepType.FIRST, StepType.FIRST),
-        (StepType.MID, StepType.FIRST),
-        (StepType.LAST, StepType.MID),
-        (StepType.LAST, StepType.LAST)
-    ]:
-      self._log_dict['wrong_step_type_count'] += 1
-      logging.warning('%r -> %r', self._latest_step_type.name, step_type.name)
 
   def task_extras(self, latest_only: bool = True) -> Dict[str, np.ndarray]:
     """Return latest task extras."""
