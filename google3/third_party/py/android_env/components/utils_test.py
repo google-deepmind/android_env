@@ -182,27 +182,6 @@ class UtilsTest(parameterized.TestCase):
     }
     self.assertEqual(expected_output, output)
 
-  def test_generate_empty_from_spec_dict(self):
-    spec = {
-        'array':
-            specs.Array(shape=(3, 4), dtype=np.uint8),
-        'bounded_array':
-            specs.BoundedArray(
-                shape=(2,),
-                dtype=np.float64,
-                minimum=[0.0, 0.0],
-                maximum=[1.0, 1.0],
-                name='bounded_array'),
-        'discrete_array':
-            specs.DiscreteArray(3, np.int64),
-    }
-    empty_obs = utils.get_empty_dict_from_spec(spec)
-    self.assertLen(empty_obs, 3)
-    np.testing.assert_equal(empty_obs['array'], np.zeros((3, 4), np.uint8))
-    np.testing.assert_equal(empty_obs['bounded_array'],
-                            np.zeros((2,), np.float64))
-    np.testing.assert_equal(empty_obs['discrete_array'], np.zeros((), np.int64))
-
   def test_convert_int_to_float_bounded_array(self):
     spec = specs.BoundedArray(
         shape=(4,),
@@ -232,70 +211,6 @@ class UtilsTest(parameterized.TestCase):
     float_data = utils.convert_int_to_float(data, spec, np.float32)
     np.testing.assert_equal(
         np.array([0.0, 128. / 255., 1.0], dtype=np.float32), float_data)
-
-  def test_maybe_discrete_not_bounded(self):
-    spec = specs.Array(shape=(1,), dtype=np.int8, name='array')
-    self.assertEqual(utils.maybe_convert_to_discrete(spec), spec)
-
-  def test_maybe_discrete_wrong_shape(self):
-    spec = specs.BoundedArray(
-        shape=(3,),
-        dtype=np.int32,
-        minimum=np.zeros(shape=(), dtype=np.int32),
-        maximum=np.ones(shape=(), dtype=np.int32),
-        name='bounded_array')
-    self.assertEqual(utils.maybe_convert_to_discrete(spec), spec)
-
-  def test_maybe_discrete_not_zero(self):
-    spec = specs.BoundedArray(
-        shape=(1,),
-        dtype=np.int32,
-        minimum=np.ones(shape=(1,), dtype=np.int32),
-        maximum=np.ones(shape=(1,), dtype=np.int32),
-        name='bounded_array')
-    self.assertEqual(utils.maybe_convert_to_discrete(spec), spec)
-
-  def test_maybe_discrete_float(self):
-    spec = specs.BoundedArray(
-        shape=(1,),
-        dtype=np.float32,
-        minimum=np.zeros(shape=(1,), dtype=np.float32),
-        maximum=np.ones(shape=(1,), dtype=np.float32),
-        name='bounded_array')
-    self.assertEqual(utils.maybe_convert_to_discrete(spec), spec)
-
-  def test_maybe_discrete_correct(self):
-    spec = specs.BoundedArray(
-        shape=(1,),
-        dtype=np.int32,
-        minimum=np.zeros(shape=(1,), dtype=np.int32),
-        maximum=np.ones(shape=(1,), dtype=np.int32),
-        name='bounded_array')
-    self.assertIsInstance(
-        utils.maybe_convert_to_discrete(spec), specs.DiscreteArray)
-
-  def test_maybe_discrete_correct_scalar(self):
-    spec = specs.BoundedArray(
-        shape=(),
-        dtype=np.int32,
-        minimum=np.zeros(shape=(), dtype=np.int32),
-        maximum=np.ones(shape=(), dtype=np.int32),
-        name='bounded_array')
-    self.assertIsInstance(
-        utils.maybe_convert_to_discrete(spec), specs.DiscreteArray)
-
-  def test_maybe_convert_discrete(self):
-    spec = specs.BoundedArray(
-        shape=(),
-        dtype=np.int32,
-        minimum=np.zeros(shape=(), dtype=np.int32),
-        maximum=np.ones(shape=(), dtype=np.int32),
-        name='bounded_array')
-    self.assertEqual(utils.maybe_convert_discrete(spec), spec)
-
-  def test_maybe_convert_discrete_correct(self):
-    spec = specs.DiscreteArray(num_values=5, name='discrete_array')
-    self.assertEqual(utils.maybe_convert_discrete(spec).shape, (1,))
   # copybara:strip_end
 
 if __name__ == '__main__':
