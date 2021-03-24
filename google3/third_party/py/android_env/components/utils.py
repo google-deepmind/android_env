@@ -1,11 +1,8 @@
 """Utils for AndroidEnv."""
 
 # copybara:strip_begin
-import collections
 import importlib
-import json
-import os
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import Any, Dict, Sequence, Tuple
 # copybara:strip_end_and_replace_begin
 # from typing import Sequence, Tuple
 # copybara:replace_end
@@ -16,7 +13,6 @@ from android_env.proto import task_pb2
 # copybara:strip_begin
 from dm_env import specs as dm_env_specs
 import funcsigs
-import ml_collections
 # copybara:strip_end
 import numpy as np
 
@@ -81,90 +77,6 @@ def get_class_default_params(class_object) -> Dict[str, Any]:
   return dict([(k, v.default)
                for k, v in funcsigs.signature(class_object).parameters.items()
                if v.default is not funcsigs.Parameter.empty])
-
-
-def parse_dict(d):
-  """Parses string values in a settings dictionary into Python objects."""
-  for k, v in d.items():
-    d[k] = _str_to_value(v)
-  return d
-
-
-def _str_to_value(v):
-  """Converts from a string back to a typed value."""
-  if isinstance(v, str):
-    if v.lower() == 'true':
-      return True
-    if v.lower() == 'false':
-      return False
-    if v.lower() == 'none':
-      return None
-    if v.isdigit():
-      return int(v)
-    try:
-      return float(v)
-    except ValueError:
-      pass
-  return v
-
-
-def _listify(
-    val: Union[Dict[str, Any], List[Any]]) -> Union[Dict[str, Any], List[Any]]:
-  """Converts dicts with purely numeric keys into lists."""
-  if isinstance(val, dict) and val:
-    if all(k.isdigit() for k in val):
-      return [
-          _listify(v)
-          for _, v in sorted(val.items(), key=lambda k__: int(k__[0]))
-      ]
-    else:
-      return {k: _listify(v) for k, v in val.items()}
-  return val
-
-
-def _unflatten_dict(flat_args: Dict[str, str]) -> Dict[str, Any]:
-  """Unflattens dict, does the reverse of `flatten_dict`."""
-
-  args_out = {}
-  for k, v in flat_args.items():
-    out = args_out
-    parts = k.split('.')
-    for p in parts[:-1]:
-      out = out.setdefault(p, {})
-    new_v = _str_to_value(v)
-    out[parts[-1]] = new_v
-  out_dict = _listify(args_out)
-  assert isinstance(out_dict, dict)
-  return out_dict
-
-
-def expand_vars(dictionary: Dict[Any, Any]) -> Dict[Any, Any]:
-  """Recursively expands environment variables in string values."""
-  for key in dictionary:
-    value = dictionary[key]
-    if isinstance(value, str):
-      dictionary[key] = os.path.expandvars(value)
-    elif isinstance(value, dict):
-      dictionary[key] = expand_vars(value)
-  return dictionary
-
-
-def merge_settings(default_config: ml_collections.ConfigDict,
-                   settings: Dict[str, str]) -> Dict[str, Any]:
-  """Merges a default config dict with a flattenned settings string dict."""
-  # The json encode/decode converts tuples to lists to remove type ambiguity.
-  config = json.loads(json.dumps(default_config.to_dict()))
-  dict_settings = _unflatten_dict(settings)
-
-  def update(d, u):
-    for k, v in u.items():
-      if isinstance(v, collections.Mapping):
-        d[k] = update(d.get(k, {}), v)
-      else:
-        d[k] = v
-    return d
-
-  return update(config, dict_settings)
 
 
 def convert_int_to_float(data: np.ndarray,

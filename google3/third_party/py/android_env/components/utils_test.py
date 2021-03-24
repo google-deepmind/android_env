@@ -1,14 +1,11 @@
 """Tests for android_env.components.utils."""
 
-import os  # copybara:strip
-
 from absl.testing import absltest
 from absl.testing import parameterized
 from android_env.components import utils
 # copybara:strip_begin
 from android_env.proto import task_pb2
 from dm_env import specs
-import ml_collections as collections
 # copybara:strip_end
 import numpy as np
 
@@ -76,111 +73,6 @@ class UtilsTest(parameterized.TestCase):
 
     kwargs = utils.get_class_default_params(TestClass)
     self.assertEqual({'arg1': 'arg1', 'arg2': 324, 'arg3': None}, kwargs)
-
-  def test_merge_settings(self):
-    config = collections.ConfigDict({
-        'int_arg': 1,
-        'bool_arg': True,
-        'tuple_arg': (3, 3),
-        'float_arg': 2.3,
-        'dict_arg': {
-            'a': 'x',
-            'b': (2, 3),
-            'c': 'foo'
-        },
-        'list_arg': [2, 3, 4],
-        'nested_tuple_arg': ((2, 3), (4, 5, 6)),
-        'nested_list_arg': [[2, 3], [4, 5, 6]],
-        'extra_nested_list_arg': [[2, 2], [2]],
-        'extra_arg': 'extra',
-    })
-    # Settings is expected to be a flat dictionary of strings.
-    settings = {
-        'int_arg': '3',
-        'bool_arg': 'false',
-        'tuple_arg.1': '3',
-        'tuple_arg.2': '4',
-        'float_arg': '3.4',
-        'dict_arg.b.1': '5',
-        'dict_arg.a': 'y',
-        'list_arg.1': '5',
-        'list_arg.2': '6',
-        'nested_tuple_arg.1.1': '7.3',
-        'nested_tuple_arg.1.2': '8',
-        'nested_tuple_arg.1.3': '9',
-        'nested_tuple_arg.2.1': '1',
-        'nested_tuple_arg.2.2': '2',
-        'nested_list_arg.1.1': '1',
-        'nested_list_arg.1.2': '1',
-        'nested_list_arg.1.3': '1',
-        'nested_list_arg.2.1': '1',
-        'nested_list_arg.2.2': '1',
-    }
-    kwargs = utils.merge_settings(config, settings)
-    expected = {
-        'int_arg': 3,
-        'bool_arg': False,
-        'tuple_arg': [3, 4],
-        'float_arg': 3.4,
-        'dict_arg': {
-            'a': 'y',
-            'b': [5,],
-            'c': 'foo',
-        },
-        'list_arg': [5, 6],
-        'nested_tuple_arg': [[7.3, 8, 9], [1, 2]],
-        'nested_list_arg': [[1, 1, 1], [1, 1]],
-        'extra_nested_list_arg': [[2, 2], [2]],
-        'extra_arg': 'extra',
-    }
-    for k, v in kwargs.items():
-      self.assertEqual(expected[k], v)
-    self.assertEqual(expected, kwargs)
-
-  def test_expand_vars(self):
-    os.environ['VAR1'] = 'value1'
-    dictionary = {
-        'not_expanded1': 'VAR1',
-        'not_expanded2': 100,
-        'not_expanded3': ['$VAR1', '${VAR1}'],
-        'not_expanded4': '${ENV_VAR_THAT_DOES_NOT_EXIST}',
-        'not_expanded5': '${ENV_VAR_THAT_DOES_NOT_EXIST:=default_value}',
-        'expanded1': '$VAR1',
-        'expanded2': '${VAR1}',
-        'expanded3': 'text$VAR1/text',
-        'expanded4': 'text${VAR1}moretext',
-        'expanded5': 'text${VAR1}moretext$VAR1',
-        '${VAR1}notexpandedinkeys': 'foo',
-        'nested_dict': {
-            'expanded': '$VAR1',
-            'not_expanded': 'VAR1',
-            'nested_nested_dict': {
-                'expanded': '$VAR1'
-            },
-        },
-    }
-    output = utils.expand_vars(dictionary)
-    expected_output = {
-        'not_expanded1': 'VAR1',
-        'not_expanded2': 100,
-        'not_expanded3': ['$VAR1', '${VAR1}'],
-        'not_expanded4': '${ENV_VAR_THAT_DOES_NOT_EXIST}',
-        'not_expanded5': '${ENV_VAR_THAT_DOES_NOT_EXIST:=default_value}',
-        'expanded1': 'value1',
-        'expanded2': 'value1',
-        'expanded3': 'textvalue1/text',
-        'expanded4': 'textvalue1moretext',
-        'expanded5': 'textvalue1moretextvalue1',
-        '${VAR1}notexpandedinkeys': 'foo',
-        'nested_dict': {
-            'expanded': 'value1',
-            'not_expanded': 'VAR1',
-            'nested_nested_dict': {
-                'expanded': 'value1'
-            },
-        },
-    }
-    self.assertEqual(expected_output, output)
 
   def test_convert_int_to_float_bounded_array(self):
     spec = specs.BoundedArray(
