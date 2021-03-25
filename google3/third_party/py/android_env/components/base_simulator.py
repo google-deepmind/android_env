@@ -61,6 +61,9 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     logging.info('Initialized simulator with ADB server port %r.',
                  self._adb_server_port)
 
+  def is_launched(self):
+    return self._launched
+
   @abc.abstractmethod
   def adb_device_name(self) -> str:
     """Returns the device name that the adb client will connect to."""

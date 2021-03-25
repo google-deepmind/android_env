@@ -35,6 +35,7 @@ class RemoteController():
       step_timeout_sec: int = 10,
       max_steps_per_sec: float = 5.0,
       periodic_restart_time_min: float = 0.0,
+      force_simulator_launch: bool = True,
   ):
     """Handles communication between AndroidEnv and AndroidOS.
 
@@ -55,6 +56,8 @@ class RemoteController():
       periodic_restart_time_min: Time between periodic restarts in minutes. If >
         0.0, will trigger a simulator restart at the end of the next episode
         once the time has been reached.
+      force_simulator_launch: Forces the simulator to relaunch even if it is
+        already launched.
     """
     self._simulator = simulator
     self._task = task
@@ -64,6 +67,7 @@ class RemoteController():
     self._step_timeout_sec = step_timeout_sec
     self._max_steps_per_sec = max_steps_per_sec
     self._periodic_restart_time_min = periodic_restart_time_min
+    self._force_simulator_launch = force_simulator_launch
 
     # Logging settings
     self._log_dict = {
@@ -84,6 +88,7 @@ class RemoteController():
     self._is_bad_episode = False
     self._latest_observation_local_time = None
     self._simulator_start_time = None
+
     self._launch_simulator()
     self._start_logcat_thread()
 
@@ -98,6 +103,27 @@ class RemoteController():
       self._log_dict['restart_count_simulator_setup'] += 1
       self.restart()
       return
+
+  def _launch_simulator(self):
+    """Launches the simulator for the first time."""
+
+    num_tries = 0
+    while num_tries < _MAX_SIMULATOR_INIT_TRIES:
+      num_tries += 1
+      try:
+        if self._force_simulator_launch or not self._simulator.is_launched():
+          self._simulator.launch()
+          self._simulator_start_time = time.time()
+        else:
+          logging.info('Simulator already launched. Will not relaunch it.')
+        self._adb_controller = self._simulator.create_adb_controller()
+        return
+      except errors.AdbControllerError:
+        logging.warning('Error launching the simulator. Try %d of %d',
+                        num_tries, _MAX_SIMULATOR_INIT_TRIES)
+
+    logging.error('Remote controller is unable to launch the simulator.')
+    raise errors.RemoteControllerInitError()
 
   @property
   def should_restart(self) -> bool:
@@ -159,18 +185,18 @@ class RemoteController():
   def reset(self):
     """Resets the episode."""
 
-    simulator_alive_time = (time.time() - self._simulator_start_time) / 60.0
-    logging.info('Simulator has been running for %f minutes',
-                 simulator_alive_time)
-    if (self._periodic_restart_time_min > 0.0 and
-        simulator_alive_time > self._periodic_restart_time_min):
-      logging.info(
-          'Max alive time for simulator has been reached. Triggering a restart.'
-      )
-      # These restarts will not be counted in the 'restart_count' logging, as
-      # this is part of the expected behavior.
-      self._log_dict['restart_count_periodic'] += 1
-      self.restart()
+    if self._simulator_start_time is not None:
+      simulator_alive_time = (time.time() - self._simulator_start_time) / 60.0
+      logging.info('Simulator has been running for %f minutes',
+                   simulator_alive_time)
+      if (self._periodic_restart_time_min > 0.0 and
+          simulator_alive_time > self._periodic_restart_time_min):
+        logging.info('Max alive time for simulator has been reached. '
+                     'Triggering a restart.')
+        # These restarts will not be counted in the 'restart_count' logging, as
+        # this is part of the expected behavior.
+        self._log_dict['restart_count_periodic'] += 1
+        self.restart()
 
     logging.info('Resetting the remote controller...')
 
@@ -311,24 +337,6 @@ class RemoteController():
     if hasattr(self, '_simulator'):
       self._simulator.close()
     logging.info('Done cleaning up remote controller.')
-
-  def _launch_simulator(self):
-    """Launches the simulator for the first time."""
-
-    num_tries = 0
-    while num_tries < _MAX_SIMULATOR_INIT_TRIES:
-      num_tries += 1
-      try:
-        self._simulator.launch()
-        self._adb_controller = self._simulator.create_adb_controller()
-        self._simulator_start_time = time.time()
-        return
-      except errors.AdbControllerError:
-        logging.warning('Error launching the simulator. Try %d of %d',
-                        num_tries, _MAX_SIMULATOR_INIT_TRIES)
-
-    logging.error('Remote controller is unable to launch the simulator.')
-    raise errors.RemoteControllerInitError()
 
   def _start_logcat_thread(self):
     """Starts a logcat thread."""

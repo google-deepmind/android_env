@@ -29,7 +29,8 @@ class AndroidEnv(dm_env.Environment):
                max_failed_current_activity: int = 10,
                step_timeout_sec: int = 10,
                max_steps_per_sec: float = 5.0,
-               periodic_restart_time_min: float = 0.0):
+               periodic_restart_time_min: float = 0.0,
+               force_simulator_launch: bool = True):
     """Instantiate an Android environment."""
 
     self._simulator = simulator
@@ -56,7 +57,8 @@ class AndroidEnv(dm_env.Environment):
         max_failed_current_activity=max_failed_current_activity,
         step_timeout_sec=step_timeout_sec,
         max_steps_per_sec=max_steps_per_sec,
-        periodic_restart_time_min=periodic_restart_time_min)
+        periodic_restart_time_min=periodic_restart_time_min,
+        force_simulator_launch=force_simulator_launch)
 
     # Logging settings
     self._log_dict = {
