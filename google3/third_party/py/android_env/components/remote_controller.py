@@ -330,10 +330,8 @@ class RemoteController():
   def close(self):
     """Cleans up the state of this RemoteController."""
     logging.info('Cleaning up remote controller...')
-    if hasattr(self, '_logcat_thread'):
-      self._logcat_thread.kill()
-    if hasattr(self, '_dumpsys_thread'):
-      self._dumpsys_thread.kill()
+    self._stop_logcat_thread()
+    self._stop_dumpsys_thread()
     if hasattr(self, '_simulator'):
       self._simulator.close()
     logging.info('Done cleaning up remote controller.')
