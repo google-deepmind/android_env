@@ -116,10 +116,8 @@ class AndroidEnv(dm_env.Environment):
       self._latest_observation = observation.copy()
     self._latest_extras = task_extras.copy()
 
-    # Validate FIRST step type
     self._reset_next_step = False
-    step_type = StepType.FIRST
-    self._latest_step_type = step_type
+    self._latest_step_type = StepType.FIRST
 
     self._step_exit_time = time.time()
 
@@ -146,12 +144,18 @@ class AndroidEnv(dm_env.Environment):
     if self._remote_controller.should_restart:
       self._log_dict['restart_count'] += 1
       self._remote_controller.restart()
-      return self._last_timestep()
+      self._reset_next_step = True
+      self._latest_step_type = StepType.LAST
+      return dm_env.termination(
+          observation=self._latest_observation, reward=0.0)
 
     if self._remote_controller.check_timeout():
       self._log_dict['reset_count_step_timeout'] += 1
       logging.info('Step has timed out. Ending episode.')
-      return self._last_timestep()
+      self._reset_next_step = True
+      self._latest_step_type = StepType.LAST
+      return dm_env.termination(
+          observation=self._latest_observation, reward=0.0)
 
     # Check if it's time to reset the episode
     if self._reset_next_step:
@@ -167,7 +171,7 @@ class AndroidEnv(dm_env.Environment):
       self._latest_observation = observation.copy()
     self._latest_extras = task_extras.copy()
 
-    # Determine and validate step type
+    # Determine step type
     self._reset_next_step = self._check_if_should_terminate()
     step_type = StepType.LAST if self._reset_next_step else StepType.MID
     self._latest_step_type = step_type
@@ -184,19 +188,6 @@ class AndroidEnv(dm_env.Environment):
         observation=self._latest_observation,
         reward=reward,
         discount=0.0 if self._reset_next_step else 1.0)
-
-  def _last_timestep(self) -> dm_env.TimeStep:
-    """Creates and returns the last timestep of an episode."""
-
-    self._reset_next_step = True
-    step_type = StepType.LAST
-    self._latest_step_type = step_type
-
-    return dm_env.TimeStep(
-        step_type=self._latest_step_type,
-        observation=self._latest_observation,
-        reward=0.0,
-        discount=0.0)
 
   def _check_if_should_terminate(self) -> bool:
     """Determines whether the episode should be terminated and reset."""
