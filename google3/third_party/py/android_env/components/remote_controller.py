@@ -69,7 +69,7 @@ class RemoteController():
     self._periodic_restart_time_min = periodic_restart_time_min
     self._force_simulator_launch = force_simulator_launch
 
-    # Logging settings
+    # Logging settings.
     self._log_dict = {
         'restart_count_adb_crash': 0,
         'restart_count_fetch_observation': 0,
@@ -82,7 +82,7 @@ class RemoteController():
         'restart_count_periodic': 0,
     }
 
-    # Initialize counters
+    # Initialize counters.
     self._should_restart = False
     self._bad_state_counter = 0
     self._is_bad_episode = False
@@ -90,13 +90,11 @@ class RemoteController():
     self._simulator_start_time = None
 
     self._launch_simulator()
-    self._start_logcat_thread()
-
-    self._setup_step_interpreter = setup_step_interpreter.SetupStepInterpreter(
-        self._adb_controller, logcat=self._logcat_thread)
 
     # Execute setup steps
     try:
+      self._start_logcat_thread()
+      self._start_setup_step_interpreter()
       self._setup_step_interpreter.interpret(self._task.setup_steps)
     except errors.StepCommandError:
       logging.exception('Failed to execute setup steps. Restarting simulator.')
@@ -167,6 +165,8 @@ class RemoteController():
 
       # Execute setup steps
       try:
+        self._start_logcat_thread()
+        self._start_setup_step_interpreter()
         self._setup_step_interpreter.interpret(self._task.setup_steps)
       except errors.StepCommandError:
         logging.error('Failed to execute setup steps. Restarting simulator.')
@@ -176,9 +176,6 @@ class RemoteController():
 
       # Restart was successful
       break
-
-    # Restart logcat thread
-    self._start_logcat_thread()
 
     logging.info('Done restarting the remote controller.')
 
@@ -335,6 +332,11 @@ class RemoteController():
     if hasattr(self, '_simulator'):
       self._simulator.close()
     logging.info('Done cleaning up remote controller.')
+
+  def _start_setup_step_interpreter(self):
+    self._setup_step_interpreter = setup_step_interpreter.SetupStepInterpreter(
+        adb_control=self._adb_controller,
+        logcat=self._logcat_thread)
 
   def _start_logcat_thread(self):
     """Starts a logcat thread."""
