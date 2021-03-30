@@ -18,7 +18,6 @@ from android_env.proto import task_pb2
 import numpy as np
 
 
-_MAX_SIMULATOR_INIT_TRIES = 3
 _MAX_RESTART_TRIES = 3
 
 
@@ -89,39 +88,7 @@ class Coordinator():
     self._latest_observation_local_time = None
     self._simulator_start_time = None
 
-    self._launch_simulator()
-
-    # Execute setup steps
-    try:
-      self._start_logcat_thread()
-      self._start_setup_step_interpreter()
-      self._setup_step_interpreter.interpret(self._task.setup_steps)
-    except errors.StepCommandError:
-      logging.exception('Failed to execute setup steps. Restarting simulator.')
-      self._log_dict['restart_count_simulator_setup'] += 1
-      self.restart_simulator()
-      return
-
-  def _launch_simulator(self):
-    """Launches the simulator for the first time."""
-
-    num_tries = 0
-    while num_tries < _MAX_SIMULATOR_INIT_TRIES:
-      num_tries += 1
-      try:
-        if self._force_simulator_launch or not self._simulator.is_launched():
-          self._simulator.launch()
-          self._simulator_start_time = time.time()
-        else:
-          logging.info('Simulator already launched. Will not relaunch it.')
-        self._adb_controller = self._simulator.create_adb_controller()
-        return
-      except errors.AdbControllerError:
-        logging.warning('Error launching the simulator. Try %d of %d',
-                        num_tries, _MAX_SIMULATOR_INIT_TRIES)
-
-    logging.error('Coordinator is unable to launch the simulator.')
-    raise errors.CoordinatorInitError()
+    self.restart_simulator()
 
   @property
   def should_restart(self) -> bool:
@@ -134,8 +101,6 @@ class Coordinator():
 
   def restart_simulator(self):
     """Restarts the simulation."""
-
-    logging.info('Restarting the coordinator...')
 
     # Reset counters
     self._should_restart = False
@@ -150,15 +115,16 @@ class Coordinator():
       if num_tries > _MAX_RESTART_TRIES:
         logging.error('Maximum number of restarts reached.')
         raise errors.TooManyRestartsError
-      logging.info('Restart attempt %d of %d', num_tries, _MAX_RESTART_TRIES)
+      logging.info('Launch attempt %d of %d', num_tries, _MAX_RESTART_TRIES)
 
-      # Restart the simulator
+      # Launch the simulator (will restart if already launched)
       try:
-        self._simulator.restart()
+        if self._force_simulator_launch or not self._simulator.is_launched():
+          self._simulator.launch()
+          self._simulator_start_time = time.time()
         self._adb_controller = self._simulator.create_adb_controller()
-        self._simulator_start_time = time.time()
       except errors.AdbControllerError:
-        logging.error('Error restarting the simulator.')
+        logging.error('Error launching the simulator.')
         self._log_dict['restart_count_simulator_restart'] += 1
         num_tries += 1
         continue
@@ -176,8 +142,6 @@ class Coordinator():
 
       # Restart was successful
       break
-
-    logging.info('Done restarting the coordinator.')
 
   def reset(self):
     """Resets the episode."""
