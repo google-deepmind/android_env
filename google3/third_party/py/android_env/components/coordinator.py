@@ -331,7 +331,7 @@ class Coordinator():
 
   def _start_setup_step_interpreter(self):
     self._setup_step_interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self._adb_controller,
+        adb_controller=self._adb_controller,
         logcat=self._logcat_thread)
 
   def _start_logcat_thread(self):

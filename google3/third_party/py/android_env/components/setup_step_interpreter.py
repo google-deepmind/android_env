@@ -6,7 +6,7 @@ import time
 from typing import Any, Dict, Optional, Sequence
 
 from absl import logging
-from android_env.components import adb_controller
+from android_env.components import adb_controller as adb_control
 from android_env.components import app_screen_checker
 from android_env.components import errors
 from android_env.components import logcat_thread
@@ -17,16 +17,16 @@ class SetupStepInterpreter():
   """An interpreter for SetupSteps."""
 
   def __init__(self,
-               adb_control: adb_controller.AdbController,
+               adb_controller: adb_control.AdbController,
                logcat: logcat_thread.LogcatThread):
     """Initializes this interpreter.
 
     Args:
-      adb_control: An object to communicate with Android via ADB.
+      adb_controller: An object to communicate with Android via ADB.
       logcat: A LogcatThread instance connected to the same Android simulator
         as adb_control.
     """
-    self._adb_controller = adb_control
+    self._adb_controller = adb_controller
     self._logcat_thread = logcat
     self._last_activity = ''
     self._log_dict = {

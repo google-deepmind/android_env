@@ -22,7 +22,7 @@ class SetupStepInterpreterTest(absltest.TestCase):
   def setUp(self):
     super().setUp()
     self.logcat = mock.create_autospec(logcat_thread.LogcatThread)
-    self.adb_control = mock.create_autospec(adb_controller.AdbController)
+    self.adb_controller = mock.create_autospec(adb_controller.AdbController)
 
   def test_empty_setup_steps(self):
     """Simple test where nothing should break, and nothing should be done.
@@ -30,7 +30,7 @@ class SetupStepInterpreterTest(absltest.TestCase):
     The test simply expects this test to not crash.
     """
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret([])
 
   def test_none_setup_steps(self):
@@ -39,13 +39,13 @@ class SetupStepInterpreterTest(absltest.TestCase):
     The test simply expects this test to not crash.
     """
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     # Empty setup steps should be ignored.
     interpreter.interpret([None])
 
   def test_invalid_setup_step(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     # Empty setup steps should be ignored.
     with self.assertRaises(AssertionError):
       interpreter.interpret([_to_proto(task_pb2.SetupStep, '')])
@@ -53,7 +53,7 @@ class SetupStepInterpreterTest(absltest.TestCase):
   def test_adb_install_apk_filesystem(self):
 
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret([
         _to_proto(
             task_pb2.SetupStep, """
@@ -65,35 +65,35 @@ adb_call: {
   }
 }""")
     ])
-    self.adb_control.install_apk.assert_called_once_with(
+    self.adb_controller.install_apk.assert_called_once_with(
         '/my/favorite/dir/my_apk.apk')
 
   def test_adb_force_stop(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret([
         _to_proto(
             task_pb2.SetupStep, """
 adb_call: { force_stop: { package_name: "my.app.Activity" } }""")
     ])
     # AdbController should be called exactly once with the following arguments.
-    self.adb_control.force_stop.assert_called_once_with('my.app.Activity')
+    self.adb_controller.force_stop.assert_called_once_with('my.app.Activity')
 
   def test_adb_clear_cache(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret([
         _to_proto(
             task_pb2.SetupStep, """
 adb_call: { clear_cache: { package_name: "my.app.Activity" } }""")
     ])
     # AdbController should be called exactly once with the following arguments.
-    self.adb_control.clear_cache.assert_called_once_with('my.app.Activity')
+    self.adb_controller.clear_cache.assert_called_once_with('my.app.Activity')
 
   def test_adb_grant_permissions(self):
 
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret([
         _to_proto(
             task_pb2.SetupStep, """
@@ -105,13 +105,13 @@ adb_call: {
 }""")
     ])
     # AdbController should be called exactly once with the following arguments.
-    self.adb_control.grant_permissions.assert_called_once_with(
+    self.adb_controller.grant_permissions.assert_called_once_with(
         'my.app.Activity',
         ['my.namespace.READ_DATA', 'another.namespace.WRITE'])
 
   def test_adb_start_activity(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret([
         _to_proto(
             task_pb2.SetupStep, """
@@ -124,12 +124,12 @@ adb_call: {
 }""")
     ])
     # AdbController should be called exactly once with the following arguments.
-    self.adb_control.start_activity.assert_called_once_with(
+    self.adb_controller.start_activity.assert_called_once_with(
         'my.app.Activity', ['arg1', 'arg2'])
 
   def test_adb_single_tap(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret([
         _to_proto(task_pb2.SetupStep, """
 adb_call: {
@@ -140,70 +140,70 @@ adb_call: {
 }""")
     ])
     # AdbController should be called exactly once with the following arguments.
-    self.adb_control.input_tap.assert_called_once_with(321, 654)
+    self.adb_controller.input_tap.assert_called_once_with(321, 654)
 
   def test_adb_rotate(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     # Check landscape.
     interpreter.interpret([
         _to_proto(task_pb2.SetupStep,
                   """ adb_call: { rotate: { orientation: LANDSCAPE_90 } }""")
     ])
     # AdbController should be called exactly once with the following arguments.
-    self.adb_control.rotate_device.assert_called_once_with(
+    self.adb_controller.rotate_device.assert_called_once_with(
         task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90)
 
-    self.adb_control.reset_mock()
+    self.adb_controller.reset_mock()
     # Check portrait.
     interpreter.interpret([
         _to_proto(task_pb2.SetupStep,
                   """ adb_call: { rotate: { orientation: PORTRAIT_0 } }""")
     ])
     # AdbController should be called exactly once with the following arguments.
-    self.adb_control.rotate_device.assert_called_once_with(
+    self.adb_controller.rotate_device.assert_called_once_with(
         task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_0)
 
-    self.adb_control.reset_mock()
+    self.adb_controller.reset_mock()
     # Check landscape inverted.
     interpreter.interpret([
         _to_proto(task_pb2.SetupStep,
                   """ adb_call: { rotate: { orientation: LANDSCAPE_270} }""")
     ])
     # AdbController should be called exactly once with the following arguments.
-    self.adb_control.rotate_device.assert_called_once_with(
+    self.adb_controller.rotate_device.assert_called_once_with(
         task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270)
 
-    self.adb_control.reset_mock()
+    self.adb_controller.reset_mock()
     # Check portrait up-side-down.
     interpreter.interpret([
         _to_proto(task_pb2.SetupStep,
                   """ adb_call: { rotate: { orientation: PORTRAIT_180 } }""")
     ])
     # AdbController should be called exactly once with the following arguments.
-    self.adb_control.rotate_device.assert_called_once_with(
+    self.adb_controller.rotate_device.assert_called_once_with(
         task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180)
 
   def test_adb_press_button(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret([
         _to_proto(task_pb2.SetupStep,
                   """ adb_call: { press_button: { button: HOME } }""")
     ])
     # AdbController should be called exactly once with the following arguments.
-    self.adb_control.input_key.assert_called_once_with('KEYCODE_HOME')
-    self.adb_control.reset_mock()
+    self.adb_controller.input_key.assert_called_once_with('KEYCODE_HOME')
+    self.adb_controller.reset_mock()
     interpreter.interpret([
         _to_proto(task_pb2.SetupStep,
                   """ adb_call: { press_button: { button: BACK } }""")
     ])
     # AdbController should be called exactly once with the following arguments.
-    self.adb_control.input_key.assert_called_once_with('KEYCODE_BACK')
+    self.adb_controller.input_key.assert_called_once_with('KEYCODE_BACK')
 
   def test_adb_start_accessibility_service(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret([
         _to_proto(
             task_pb2.SetupStep, """
@@ -214,12 +214,12 @@ adb_call: {
 }""")
     ])
     # AdbController should be called exactly once with the following arguments.
-    self.adb_control.start_accessibility_service.assert_called_once_with(
+    self.adb_controller.start_accessibility_service.assert_called_once_with(
         'my.app.AccessibilityService')
 
   def test_adb_start_screen_pinning(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret([
         _to_proto(
             task_pb2.SetupStep, """
@@ -230,13 +230,13 @@ adb_call: {
 }""")
     ])
     # AdbController should be called once with the following arguments.
-    self.adb_control.start_screen_pinning.assert_called_with(
+    self.adb_controller.start_screen_pinning.assert_called_with(
         u'my.app.HighlanderApp')
 
   @mock.patch('time.sleep')
   def test_time_sleep(self, mock_sleep):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret(
         [_to_proto(task_pb2.SetupStep, """sleep: { time_sec: 0.875 }""")])
     assert mock_sleep.call_count == 2
@@ -245,7 +245,7 @@ adb_call: {
   @mock.patch('time.sleep')
   def test_wait_for_app_screen_empty_activity(self, unused_mock_sleep):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     with self.assertRaises(errors.StepCommandError):
       interpreter.interpret([
           _to_proto(task_pb2.SetupStep,
@@ -255,7 +255,7 @@ adb_call: {
   @mock.patch('time.sleep')
   def test_wait_for_message_fail(self, unused_mock_sleep):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     self.logcat.has_received_message.return_value = False
     with self.assertRaises(errors.StepCommandError):
       interpreter.interpret([
@@ -273,7 +273,7 @@ success_condition: {
   @mock.patch('time.sleep')
   def test_wait_for_message_success(self, unused_mock_sleep):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     self.logcat.has_received_message.return_value = True
     # The test checks that this command raises no AssertionError.
     interpreter.interpret([
@@ -290,9 +290,9 @@ success_condition: {
 
   @mock.patch('time.sleep')
   def test_check_install_not_installed(self, unused_mock_sleep):
-    self.adb_control.is_package_installed.return_value = False
+    self.adb_controller.is_package_installed.return_value = False
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     with self.assertRaises(errors.StepCommandError):
       interpreter.interpret([
           _to_proto(
@@ -307,9 +307,9 @@ success_condition: {
       ])
 
   def test_check_install_installed(self):
-    self.adb_control.is_package_installed.return_value = True
+    self.adb_controller.is_package_installed.return_value = True
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     # The test checks that this command raises no AssertionError.
     interpreter.interpret([
         _to_proto(
@@ -321,12 +321,12 @@ success_condition: {
   }
 }""")
     ])
-    self.adb_control.is_package_installed.assert_called_once_with('baz')
+    self.adb_controller.is_package_installed.assert_called_once_with('baz')
 
   def test_num_retries_failure(self):
-    self.adb_control.is_package_installed.side_effect = [False] * 3
+    self.adb_controller.is_package_installed.side_effect = [False] * 3
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     with self.assertRaises(errors.StepCommandError):
       interpreter.interpret([
           _to_proto(
@@ -340,15 +340,15 @@ success_condition: {
 }""")
       ])
     # We retried 3 times after the first call, so we expect 3+1 calls.
-    self.assertEqual(3, self.adb_control.is_package_installed.call_count)
+    self.assertEqual(3, self.adb_controller.is_package_installed.call_count)
 
   @mock.patch('time.sleep')
   def test_num_retries_success(self, unused_mock_sleep):
-    self.adb_control.is_package_installed.side_effect = [
+    self.adb_controller.is_package_installed.side_effect = [
         False, False, True, False
     ]
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret([
         _to_proto(
             task_pb2.SetupStep, """
@@ -361,12 +361,12 @@ success_condition: {
 }""")
     ])
     # The check should succeed on the third try.
-    self.assertEqual(3, self.adb_control.is_package_installed.call_count)
+    self.assertEqual(3, self.adb_controller.is_package_installed.call_count)
 
   def test_retry_step(self):
-    self.adb_control.is_package_installed.side_effect = [False, True]
+    self.adb_controller.is_package_installed.side_effect = [False, True]
     interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_control=self.adb_control, logcat=self.logcat)
+        adb_controller=self.adb_controller, logcat=self.logcat)
     interpreter.interpret([
         _to_proto(
             task_pb2.SetupStep, """
@@ -380,8 +380,9 @@ success_condition: {
 }""")
     ])
     # We expect the check to fail twice and succeed on the third pass.
-    self.adb_control.input_key.assert_has_calls([mock.call('KEYCODE_HOME')] * 2)
-    self.assertEqual(2, self.adb_control.is_package_installed.call_count)
+    self.adb_controller.input_key.assert_has_calls(
+        [mock.call('KEYCODE_HOME')] * 2)
+    self.assertEqual(2, self.adb_controller.is_package_installed.call_count)
 
 
 if __name__ == '__main__':
