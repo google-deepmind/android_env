@@ -13,15 +13,15 @@ class PipeTimedOutError(ReadObservationError):
   """When the environment waited for too long for part of an observation."""
 
 
-class RemoteControllerError(Exception):
-  """Error raised by the RemoteController."""
+class CoordinatorError(Exception):
+  """Error raised by the Coordinator."""
 
 
-class RemoteControllerInitError(RemoteControllerError):
-  """Raised when RemoteController was not initialized correctly."""
+class CoordinatorInitError(CoordinatorError):
+  """Raised when Coordinator was not initialized correctly."""
 
 
-class TooManyRestartsError(RemoteControllerError):
+class TooManyRestartsError(CoordinatorError):
   """The number of restarts has exceeded _MAX_RESTART_TRIES."""
 
 

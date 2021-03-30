@@ -7,7 +7,7 @@ from typing import Any, Dict
 from absl import logging
 from android_env.components import action_type
 from android_env.components import base_simulator
-from android_env.components import remote_controller
+from android_env.components import coordinator
 from android_env.components import specs
 from android_env.proto import task_pb2
 import dm_env
@@ -42,8 +42,8 @@ class AndroidEnv(dm_env.Environment):
     self._reset_next_step = True
     self._task_start_time = None
 
-    # Initialize remote controller
-    self._remote_controller = remote_controller.RemoteController(
+    # Initialize coordinator
+    self._coordinator = coordinator.Coordinator(
         simulator=simulator,
         task=task,
         max_bad_states=max_bad_states,
@@ -96,15 +96,15 @@ class AndroidEnv(dm_env.Environment):
     """Reset the environment."""
 
     logging.info('Resetting AndroidEnv.')
-    self._remote_controller.reset()
+    self._coordinator.reset()
 
     # Reset relevant values
     self._latest_action = {}
     self._reset_log_dict()
     self._task_start_time = datetime.datetime.now()
 
-    # Fetch observation and task_extras from remote controller
-    observation, reward, task_extras = self._remote_controller.execute_action(
+    # Fetch observation and task_extras
+    observation, reward, task_extras = self._coordinator.execute_action(
         action=None)
     if observation is not None:
       self._latest_observation = observation.copy()
@@ -126,16 +126,16 @@ class AndroidEnv(dm_env.Environment):
     """Take a step in the environment."""
     self._latest_action = action.copy()
 
-    # Check if remote controller has to be restarted
-    if self._remote_controller.should_restart:
+    # Check if the simulation has to be restarted
+    if self._coordinator.should_restart:
       self._log_dict['restart_count'] += 1
-      self._remote_controller.restart()
+      self._coordinator.restart_simulator()
       self._reset_next_step = True
       self._latest_step_type = StepType.LAST
       return dm_env.termination(
           observation=self._latest_observation, reward=0.0)
 
-    if self._remote_controller.check_timeout():
+    if self._coordinator.check_timeout():
       self._log_dict['reset_count_step_timeout'] += 1
       logging.info('Step has timed out. Ending episode.')
       self._reset_next_step = True
@@ -149,8 +149,8 @@ class AndroidEnv(dm_env.Environment):
 
     self._update_log_dict(act_type=action['action_type'].item())
 
-    # Fetch observation, reward and task_extras from remote controller
-    observation, reward, task_extras = self._remote_controller.execute_action(
+    # Fetch observation, reward and task_extras.
+    observation, reward, task_extras = self._coordinator.execute_action(
         action=action)
     if observation is not None:
       self._latest_observation = observation.copy()
@@ -171,15 +171,15 @@ class AndroidEnv(dm_env.Environment):
   def _check_if_should_terminate(self) -> bool:
     """Determines whether the episode should be terminated and reset."""
 
-    # Fetch reward from remote controller
-    if self._remote_controller.check_player_exited():
+    # Check if the player has exited the task
+    if self._coordinator.check_player_exited():
       self._log_dict['reset_count_player_exited'] += 1
       logging.warning('Player exited the game. Ending episode.')
       logging.info('************* END OF EPISODE *************')
       return True
 
     # Check if episode has ended
-    if self._remote_controller.check_episode_end():
+    if self._coordinator.check_episode_end():
       self._log_dict['reset_count_episode_end'] += 1
       logging.info('End of episode from logcat! Ending episode.')
       logging.info('************* END OF EPISODE *************')
@@ -233,7 +233,7 @@ class AndroidEnv(dm_env.Environment):
     """Return internal counter values."""
 
     log_dict = copy.deepcopy(self._log_dict)
-    log_dict.update(self._remote_controller.log_dict())
+    log_dict.update(self._coordinator.log_dict())
     for prefix in self._log_prefixes:
       if log_dict[f'{prefix}_steps'] == 0:
         logging.warning('%s_steps is 0. Skipping ratio logs.', prefix)
@@ -256,8 +256,8 @@ class AndroidEnv(dm_env.Environment):
     """Clean up running processes, threads and local files."""
 
     logging.info('Cleaning up AndroidEnv...')
-    if hasattr(self, '_remote_controller'):
-      self._remote_controller.close()
+    if hasattr(self, '_coordinator'):
+      self._coordinator.close()
     self._is_closed = True
     logging.info('Done cleaning up AndroidEnv.')
 

@@ -1,4 +1,4 @@
-"""RemoteController handles the communication with AndroidOS."""
+"""Coordinator handles the communication with AndroidOS."""
 
 import copy
 import queue
@@ -22,8 +22,8 @@ _MAX_SIMULATOR_INIT_TRIES = 3
 _MAX_RESTART_TRIES = 3
 
 
-class RemoteController():
-  """Handles communication between AndroidEnv and AndroidOS."""
+class Coordinator():
+  """Handles interaction between internal components of AndroidEnv."""
 
   def __init__(
       self,
@@ -52,7 +52,7 @@ class RemoteController():
         within that time, the episode will reset at the next step. Set to 0 to
         disable.
       max_steps_per_sec: Maximum steps per second. If the simulator is
-        faster, RemoteController will wait before returning an observation.
+        faster, the Coordinator will wait before returning an observation.
       periodic_restart_time_min: Time between periodic restarts in minutes. If >
         0.0, will trigger a simulator restart at the end of the next episode
         once the time has been reached.
@@ -99,7 +99,7 @@ class RemoteController():
     except errors.StepCommandError:
       logging.exception('Failed to execute setup steps. Restarting simulator.')
       self._log_dict['restart_count_simulator_setup'] += 1
-      self.restart()
+      self.restart_simulator()
       return
 
   def _launch_simulator(self):
@@ -120,8 +120,8 @@ class RemoteController():
         logging.warning('Error launching the simulator. Try %d of %d',
                         num_tries, _MAX_SIMULATOR_INIT_TRIES)
 
-    logging.error('Remote controller is unable to launch the simulator.')
-    raise errors.RemoteControllerInitError()
+    logging.error('Coordinator is unable to launch the simulator.')
+    raise errors.CoordinatorInitError()
 
   @property
   def should_restart(self) -> bool:
@@ -132,10 +132,10 @@ class RemoteController():
     log_dict.update(self._setup_step_interpreter.log_dict())
     return log_dict
 
-  def restart(self):
-    """Restarts the remote controller."""
+  def restart_simulator(self):
+    """Restarts the simulation."""
 
-    logging.info('Restarting the remote controller...')
+    logging.info('Restarting the coordinator...')
 
     # Reset counters
     self._should_restart = False
@@ -177,7 +177,7 @@ class RemoteController():
       # Restart was successful
       break
 
-    logging.info('Done restarting the remote controller.')
+    logging.info('Done restarting the coordinator.')
 
   def reset(self):
     """Resets the episode."""
@@ -193,9 +193,7 @@ class RemoteController():
         # These restarts will not be counted in the 'restart_count' logging, as
         # this is part of the expected behavior.
         self._log_dict['restart_count_periodic'] += 1
-        self.restart()
-
-    logging.info('Resetting the remote controller...')
+        self.restart_simulator()
 
     # Execute a lift action before resetting
     self._execute_action({
@@ -226,8 +224,6 @@ class RemoteController():
 
     # Restart dumpsys thread
     self._start_dumpsys_thread()
-
-    logging.info('Done resetting the remote controller.')
 
   def check_player_exited(self) -> bool:
     """Returns whether the player has exited the game."""
@@ -325,13 +321,13 @@ class RemoteController():
     return False
 
   def close(self):
-    """Cleans up the state of this RemoteController."""
-    logging.info('Cleaning up remote controller...')
+    """Cleans up the state of this Coordinator."""
+    logging.info('Cleaning up coordinator...')
     self._stop_logcat_thread()
     self._stop_dumpsys_thread()
     if hasattr(self, '_simulator'):
       self._simulator.close()
-    logging.info('Done cleaning up remote controller.')
+    logging.info('Done cleaning up coordinator.')
 
   def _start_setup_step_interpreter(self):
     self._setup_step_interpreter = setup_step_interpreter.SetupStepInterpreter(

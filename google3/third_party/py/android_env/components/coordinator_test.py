@@ -1,22 +1,22 @@
-"""Tests for android_env.components.remote_controller."""
+"""Tests for coordinator.py."""
 
 import time
 
 from absl.testing import absltest
 from android_env.components import action_type
 from android_env.components import adb_controller
+from android_env.components import coordinator
 from android_env.components import dumpsys_thread
 from android_env.components import emulator_simulator
 from android_env.components import errors
 from android_env.components import logcat_thread
-from android_env.components import remote_controller
 from android_env.components import setup_step_interpreter
 from android_env.proto import task_pb2
 import mock
 import numpy as np
 
 
-class RemoteControllerTest(absltest.TestCase):
+class CoordinatorTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -43,7 +43,7 @@ class RemoteControllerTest(absltest.TestCase):
         logcat_thread, 'LogcatThread',
         return_value=self._logcat_thread).start()
 
-    self._remote_controller = remote_controller.RemoteController(
+    self._coordinator = coordinator.Coordinator(
         self._simulator,
         task=task_pb2.Task(),
         max_bad_states=3,
@@ -53,92 +53,92 @@ class RemoteControllerTest(absltest.TestCase):
         max_steps_per_sec=60,
         periodic_restart_time_min=0)
 
-  def test_restart(self):
-    self._remote_controller.restart()
-    assert hasattr(self._remote_controller, '_logcat_thread')
+  def test_restart_simulator(self):
+    self._coordinator.restart_simulator()
+    assert hasattr(self._coordinator, '_logcat_thread')
 
   def test_reset(self):
-    self._remote_controller.reset()
-    assert hasattr(self._remote_controller, '_logcat_thread')
-    assert hasattr(self._remote_controller, '_dumpsys_thread')
+    self._coordinator.reset()
+    assert hasattr(self._coordinator, '_logcat_thread')
+    assert hasattr(self._coordinator, '_dumpsys_thread')
 
   def test_get_reward(self):
     self._simulator.get_observation.return_value = {'observation': 0}
-    self._remote_controller._logcat_thread.get_and_reset_reward.return_value = 1.0
-    _, reward, _ = self._remote_controller.execute_action(
+    self._coordinator._logcat_thread.get_and_reset_reward.return_value = 1.0
+    _, reward, _ = self._coordinator.execute_action(
         action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertEqual(reward, 1.0)
 
   def test_get_reward_none(self):
     self._simulator.get_observation.return_value = {'observation': 0}
-    self._remote_controller._logcat_thread.get_and_reset_reward.return_value = None
-    _, reward, _ = self._remote_controller.execute_action(
+    self._coordinator._logcat_thread.get_and_reset_reward.return_value = None
+    _, reward, _ = self._coordinator.execute_action(
         action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertEqual(reward, 0.0)
 
   def test_get_extras(self):
     self._simulator.get_observation.return_value = {'observation': 0}
     expected_extra = {'extra': 0}
-    self._remote_controller._logcat_thread.get_and_reset_extras.return_value = expected_extra
-    _, _, extra = self._remote_controller.execute_action(
+    self._coordinator._logcat_thread.get_and_reset_extras.return_value = expected_extra
+    _, _, extra = self._coordinator.execute_action(
         action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertDictEqual(extra, expected_extra)
 
   def test_get_extras_none(self):
     self._simulator.get_observation.return_value = {'observation': 0}
-    self._remote_controller._logcat_thread.get_and_reset_extras.return_value = {}
-    _, _, extra = self._remote_controller.execute_action(
+    self._coordinator._logcat_thread.get_and_reset_extras.return_value = {}
+    _, _, extra = self._coordinator.execute_action(
         action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertDictEqual(extra, {})
 
   def test_check_episode_end(self):
-    self._remote_controller._logcat_thread.get_and_reset_episode_end.return_value = True
-    episode_end = self._remote_controller.check_episode_end()
+    self._coordinator._logcat_thread.get_and_reset_episode_end.return_value = True
+    episode_end = self._coordinator.check_episode_end()
     self.assertTrue(episode_end)
 
   def test_process_action(self):
     self._simulator.get_observation.return_value = {'observation': 0}
-    observation, _, _ = self._remote_controller.execute_action(
+    observation, _, _ = self._coordinator.execute_action(
         action={'action_type': np.array(action_type.ActionType.LIFT)})
     self.assertDictEqual(observation, {'observation': 0})
 
   def test_process_action_error(self):
     self._simulator.get_observation.side_effect = errors.ReadObservationError()
-    observation, _, _ = self._remote_controller.execute_action(
+    observation, _, _ = self._coordinator.execute_action(
         action={'action_type': np.array(action_type.ActionType.LIFT)})
-    self.assertTrue(self._remote_controller._should_restart)
+    self.assertTrue(self._coordinator._should_restart)
     self.assertIsNone(observation)
 
   def test_execute_action_touch(self):
     self._simulator.get_observation.return_value = {'observation': 0}
     self._simulator.send_action.return_value = True
     action = {'action_type': np.array(action_type.ActionType.TOUCH)}
-    _, _, _ = self._remote_controller.execute_action(action)
+    _, _, _ = self._coordinator.execute_action(action)
     self._simulator.send_action.assert_called_once_with(action)
 
   def test_execute_action_repeat(self):
     self._simulator.get_observation.return_value = {'observation': 0}
     self._simulator.send_action.return_value = True
-    _, _, _ = self._remote_controller.execute_action(
+    _, _, _ = self._coordinator.execute_action(
         {'action_type': np.array(action_type.ActionType.REPEAT)})
     self._simulator.send_action.assert_not_called()
 
   def test_execute_action_error(self):
     self._simulator.get_observation.return_value = {'observation': 0}
     self._simulator.send_action.side_effect = errors.SendActionError
-    _, _, _ = self._remote_controller.execute_action(
+    _, _, _ = self._coordinator.execute_action(
         {'action_type': np.array(action_type.ActionType.TOUCH)})
-    self.assertTrue(self._remote_controller._should_restart)
+    self.assertTrue(self._coordinator._should_restart)
 
   def test_check_timeout_false(self):
-    self._remote_controller._latest_observation_local_time = time.time()
-    timeout = self._remote_controller.check_timeout()
+    self._coordinator._latest_observation_local_time = time.time()
+    timeout = self._coordinator.check_timeout()
     self.assertFalse(timeout)
 
   def test_check_timeout_true(self):
-    self._remote_controller._latest_observation_local_time = time.time()
+    self._coordinator._latest_observation_local_time = time.time()
     time.sleep(3)
-    timeout = self._remote_controller.check_timeout()
+    timeout = self._coordinator.check_timeout()
     self.assertTrue(timeout)
 
   def test_max_restarts_adb_error(self):
@@ -147,7 +147,7 @@ class RemoteControllerTest(absltest.TestCase):
     self._simulator.create_adb_controller.side_effect = (
         errors.AdbControllerError)
     self.assertRaises(errors.TooManyRestartsError,
-                      self._remote_controller.restart)
+                      self._coordinator.restart_simulator)
     # The method was called three more times when attempting to restart.
     self.assertEqual(init_fn_call + 3,
                      self._simulator.create_adb_controller.call_count)
@@ -156,7 +156,7 @@ class RemoteControllerTest(absltest.TestCase):
     init_fn_call = self._setup_step_interpreter.interpret.call_count
     self._setup_step_interpreter.interpret.side_effect = errors.StepCommandError
     self.assertRaises(errors.TooManyRestartsError,
-                      self._remote_controller.restart)
+                      self._coordinator.restart_simulator)
     # The method was called three more times when attempting to restart.
     self.assertEqual(init_fn_call + 3,
                      self._setup_step_interpreter.interpret.call_count)
