@@ -12,6 +12,15 @@ import numpy as np
 import portpicker
 
 
+def is_existing_emulator_provided(launcher_args: Dict[str, Any]) -> bool:
+  """Returns true if all necessary args were provided."""
+  if (launcher_args.get('adb_port', 0) > 0 and
+      launcher_args.get('console_port', 0) > 0):
+    return True
+  else:
+    return False
+
+
 class EmulatorSimulator(base_simulator.BaseSimulator):
   """Controls an Android Emulator."""
 
@@ -20,8 +29,18 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
                emulator_console_args: Dict[str, Any],
                **kwargs):
 
-    self._adb_port = portpicker.pick_unused_port()
-    self._console_port = portpicker.pick_unused_port()
+    # If adb_port, console_port and device_name are all already provided,
+    # we assume the emulator already exists and there's no need to launch.
+    if is_existing_emulator_provided(emulator_launcher_args):
+      self._existing_emulator_provided = True
+      self._adb_port = emulator_launcher_args['adb_port']
+      self._console_port = emulator_launcher_args['emulator_console_port']
+      logging.info('Connecting to existing emulator "%r"', self._adb_port)
+    else:
+      self._existing_emulator_provided = False
+      self._adb_port = portpicker.pick_unused_port()
+      self._console_port = portpicker.pick_unused_port()
+
     super().__init__(**kwargs)
 
     # Create EmulatorLauncher.
@@ -52,12 +71,14 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   def _restart_impl(self) -> None:
     if self._console is not None:
       self._console.close()
-    self._launcher.restart()
+    if not self._existing_emulator_provided:
+      self._launcher.restart()
     self._start_console()
 
   def _launch_impl(self) -> None:
     try:
-      self._launcher.launch()
+      if not self._existing_emulator_provided:
+        self._launcher.launch()
       self._start_console()
     except (errors.ConsoleConnectionError, errors.SimulatorCrashError):
       # If we fail to connect to the console on the initial launch, we try to
@@ -75,7 +96,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   def close(self):
     if self._console is not None:
       self._console.close()
-    if hasattr(self, '_launcher'):
+    if hasattr(self, '_launcher') and not self._existing_emulator_provided:
       self._launcher.close()
     super().close()
 
