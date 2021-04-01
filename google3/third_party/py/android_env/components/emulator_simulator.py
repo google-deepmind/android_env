@@ -15,7 +15,7 @@ import portpicker
 def is_existing_emulator_provided(launcher_args: Dict[str, Any]) -> bool:
   """Returns true if all necessary args were provided."""
   if (launcher_args.get('adb_port', 0) > 0 and
-      launcher_args.get('console_port', 0) > 0):
+      launcher_args.get('emulator_console_port', 0) > 0):
     return True
   else:
     return False
@@ -52,8 +52,9 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
         'kvm_device': self._kvm_device,
     })
     logging.info('emulator_launcher_args: %r', emulator_launcher_args)
-    self._launcher = emulator_launcher.EmulatorLauncher(
-        **emulator_launcher_args)
+    if not self._existing_emulator_provided:
+      self._launcher = emulator_launcher.EmulatorLauncher(
+          **emulator_launcher_args)
 
     # Prepare EmulatorConsole.
     emulator_console_args.update({
