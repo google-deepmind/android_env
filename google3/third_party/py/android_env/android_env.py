@@ -1,7 +1,6 @@
 """Android environment implementation."""
 
 import copy
-import datetime
 
 from typing import Any, Dict
 from absl import logging
@@ -9,6 +8,7 @@ from android_env.components import action_type
 from android_env.components import base_simulator
 from android_env.components import coordinator
 from android_env.components import specs
+from android_env.components import task_manager
 from android_env.proto import task_pb2
 import dm_env
 import numpy as np
@@ -40,15 +40,17 @@ class AndroidEnv(dm_env.Environment):
     self._latest_extras = {}
     self._latest_step_type = StepType.LAST
     self._reset_next_step = True
-    self._task_start_time = None
 
-    # Initialize coordinator
-    self._coordinator = coordinator.Coordinator(
-        simulator=simulator,
+    self._task_manager = task_manager.TaskManager(
         task=task,
         max_bad_states=max_bad_states,
         dumpsys_check_frequency=dumpsys_check_frequency,
         max_failed_current_activity=max_failed_current_activity,
+    )
+
+    self._coordinator = coordinator.Coordinator(
+        simulator=simulator,
+        task_manager=self._task_manager,
         step_timeout_sec=step_timeout_sec,
         max_steps_per_sec=max_steps_per_sec,
         periodic_restart_time_min=periodic_restart_time_min,
@@ -56,12 +58,8 @@ class AndroidEnv(dm_env.Environment):
 
     # Logging settings
     self._log_dict = {
-        'wrong_step_type_count': 0,
         'restart_count': 0,  # Counts unexpected simulator restarts.
         'reset_count_step_timeout': 0,
-        'reset_count_player_exited': 0,
-        'reset_count_episode_end': 0,
-        'reset_count_max_duration_reached': 0,
     }
     self._log_prefixes = ['androidenv_total', 'androidenv_episode']
     for prefix in self._log_prefixes:
@@ -82,6 +80,7 @@ class AndroidEnv(dm_env.Environment):
     return specs.base_observation_spec(self._simulator.screen_dimensions)
 
   def task_extras_spec(self) -> Dict[str, dm_env.specs.Array]:
+    # TODO(agergely) Consider moving this to TaskManager.
     return specs.task_extras_spec(task=self._task)
 
   @property
@@ -101,11 +100,10 @@ class AndroidEnv(dm_env.Environment):
     # Reset relevant values
     self._latest_action = {}
     self._reset_log_dict()
-    self._task_start_time = datetime.datetime.now()
 
     # Fetch observation and task_extras
-    observation, reward, task_extras = self._coordinator.execute_action(
-        action=None)
+    observation = self._coordinator.execute_action(action=None)
+    task_extras = self._task_manager.get_current_extras()
     if observation is not None:
       self._latest_observation = observation.copy()
     self._latest_extras = task_extras.copy()
@@ -119,7 +117,7 @@ class AndroidEnv(dm_env.Environment):
     return dm_env.TimeStep(
         step_type=self._latest_step_type,
         observation=self._latest_observation,
-        reward=reward,
+        reward=0.0,
         discount=0.0)
 
   def step(self, action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
@@ -150,14 +148,15 @@ class AndroidEnv(dm_env.Environment):
     self._update_log_dict(act_type=action['action_type'].item())
 
     # Fetch observation, reward and task_extras.
-    observation, reward, task_extras = self._coordinator.execute_action(
-        action=action)
+    observation = self._coordinator.execute_action(action)
+    reward = self._task_manager.get_current_reward()
+    task_extras = self._task_manager.get_current_extras()
     if observation is not None:
       self._latest_observation = observation.copy()
     self._latest_extras = task_extras.copy()
 
     # Determine step type
-    self._reset_next_step = self._check_if_should_terminate()
+    self._reset_next_step = self._task_manager.check_if_episode_ended()
     step_type = StepType.LAST if self._reset_next_step else StepType.MID
     self._latest_step_type = step_type
 
@@ -168,46 +167,10 @@ class AndroidEnv(dm_env.Environment):
         reward=reward,
         discount=0.0 if self._reset_next_step else 1.0)
 
-  def _check_if_should_terminate(self) -> bool:
-    """Determines whether the episode should be terminated and reset."""
-
-    # Check if the player has exited the task
-    if self._coordinator.check_player_exited():
-      self._log_dict['reset_count_player_exited'] += 1
-      logging.warning('Player exited the game. Ending episode.')
-      logging.info('************* END OF EPISODE *************')
-      return True
-
-    # Check if episode has ended
-    if self._coordinator.check_episode_end():
-      self._log_dict['reset_count_episode_end'] += 1
-      logging.info('End of episode from logcat! Ending episode.')
-      logging.info('************* END OF EPISODE *************')
-      return True
-
-    # Check if step limit or time limit has been reached
-    if self._task.max_num_steps > 0:
-      episode_steps = self._log_dict['androidenv_episode_steps']
-      if episode_steps > self._task.max_num_steps:
-        self._log_dict['reset_count_max_duration_reached'] += 1
-        logging.info('Maximum task duration (steps) reached. Ending episode.')
-        logging.info('************* END OF EPISODE *************')
-        return True
-
-    if self._task.max_duration_sec > 0.0:
-      task_duration = datetime.datetime.now() - self._task_start_time
-      max_duration_sec = self._task.max_duration_sec
-      if task_duration > datetime.timedelta(seconds=int(max_duration_sec)):
-        self._log_dict['reset_count_max_duration_reached'] += 1
-        logging.info('Maximum task duration (sec) reached. Ending episode.')
-        logging.info('************* END OF EPISODE *************')
-        return True
-
-    return False
-
   def task_extras(self, latest_only: bool = True) -> Dict[str, np.ndarray]:
     """Return latest task extras."""
 
+    # TODO(agergely) Move this into TaskManager
     task_extras = {}
     for key, spec in self.task_extras_spec().items():
       if key in self._latest_extras:

@@ -1,20 +1,15 @@
 """Coordinator handles the communication with AndroidOS."""
 
 import copy
-import queue
 import socket
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 from absl import logging
 from android_env.components import action_type
-from android_env.components import app_screen_checker
 from android_env.components import base_simulator
-from android_env.components import dumpsys_thread
 from android_env.components import errors
-from android_env.components import logcat_thread
-from android_env.components import setup_step_interpreter
-from android_env.proto import task_pb2
+from android_env.components import task_manager as task_manager_lib
 import numpy as np
 
 
@@ -27,10 +22,7 @@ class Coordinator():
   def __init__(
       self,
       simulator: base_simulator.BaseSimulator,
-      task: task_pb2.Task,
-      max_bad_states: int = 3,
-      dumpsys_check_frequency: int = 150,
-      max_failed_current_activity: int = 10,
+      task_manager: task_manager_lib.TaskManager,
       step_timeout_sec: int = 10,
       max_steps_per_sec: float = 5.0,
       periodic_restart_time_min: float = 0.0,
@@ -40,13 +32,7 @@ class Coordinator():
 
     Args:
       simulator: A BaseSimulator Instance.
-      task: A task proto defining the RL task.
-      max_bad_states: How many bad states in a row are allowed before a restart
-        of the simulator is triggered.
-      dumpsys_check_frequency: Frequency, in steps, at which to check
-        current_activity and view hierarchy
-      max_failed_current_activity: The maximum number of tries for extracting
-        the current activity before forcing the episode to restart.
+      task_manager: TaskManager.
       step_timeout_sec: Timeout in seconds between steps. If step is not called
         within that time, the episode will reset at the next step. Set to 0 to
         disable.
@@ -59,10 +45,7 @@ class Coordinator():
         already launched.
     """
     self._simulator = simulator
-    self._task = task
-    self._max_bad_states = max_bad_states
-    self._dumpsys_check_frequency = dumpsys_check_frequency
-    self._max_failed_current_activity = max_failed_current_activity
+    self._task_manager = task_manager
     self._step_timeout_sec = step_timeout_sec
     self._max_steps_per_sec = max_steps_per_sec
     self._periodic_restart_time_min = periodic_restart_time_min
@@ -70,21 +53,18 @@ class Coordinator():
 
     # Logging settings.
     self._log_dict = {
-        'restart_count_adb_crash': 0,
         'restart_count_fetch_observation': 0,
         'restart_count_simulator_setup': 0,
         'restart_count_simulator_reset': 0,
         'restart_count_simulator_restart': 0,
         'restart_count_restart_setup_steps': 0,
         'restart_count_execute_action': 0,
-        'restart_count_max_bad_states': 0,
         'restart_count_periodic': 0,
     }
 
     # Initialize counters.
     self._should_restart = False
     self._bad_state_counter = 0
-    self._is_bad_episode = False
     self._latest_observation_local_time = None
     self._simulator_start_time = None
 
@@ -96,7 +76,7 @@ class Coordinator():
 
   def log_dict(self) -> Dict[str, Any]:
     log_dict = copy.deepcopy(self._log_dict)
-    log_dict.update(self._setup_step_interpreter.log_dict())
+    log_dict.update(self._task_manager.log_dict())
     return log_dict
 
   def restart_simulator(self):
@@ -104,11 +84,10 @@ class Coordinator():
 
     # Reset counters
     self._should_restart = False
-    self._bad_state_counter = 0
+    self._bad_state_counter = 0  # TODO(agergely) Do we need this?
 
-    # Pause both threads for the duration of the restart
-    self._stop_dumpsys_thread()
-    self._stop_logcat_thread()
+    # Pause task for the duration of the restart
+    self._task_manager.pause_task()
 
     num_tries = 1
     while True:
@@ -122,18 +101,16 @@ class Coordinator():
         if self._force_simulator_launch or not self._simulator.is_launched():
           self._simulator.launch()
           self._simulator_start_time = time.time()
-        self._adb_controller = self._simulator.create_adb_controller()
+        adb_controller = self._simulator.create_adb_controller()
       except errors.AdbControllerError:
         logging.error('Error launching the simulator.')
         self._log_dict['restart_count_simulator_restart'] += 1
         num_tries += 1
         continue
 
-      # Execute setup steps
+      # Start task
       try:
-        self._start_logcat_thread()
-        self._start_setup_step_interpreter()
-        self._setup_step_interpreter.interpret(self._task.setup_steps)
+        self._task_manager.setup_task(adb_controller=adb_controller)
       except errors.StepCommandError:
         logging.error('Failed to execute setup steps. Restarting simulator.')
         self._log_dict['restart_count_restart_setup_steps'] += 1
@@ -146,18 +123,7 @@ class Coordinator():
   def reset(self):
     """Resets the episode."""
 
-    if self._simulator_start_time is not None:
-      simulator_alive_time = (time.time() - self._simulator_start_time) / 60.0
-      logging.info('Simulator has been running for %f minutes',
-                   simulator_alive_time)
-      if (self._periodic_restart_time_min > 0.0 and
-          simulator_alive_time > self._periodic_restart_time_min):
-        logging.info('Max alive time for simulator has been reached. '
-                     'Triggering a restart.')
-        # These restarts will not be counted in the 'restart_count' logging, as
-        # this is part of the expected behavior.
-        self._log_dict['restart_count_periodic'] += 1
-        self.restart_simulator()
+    self._maybe_periodic_restart()
 
     # Execute a lift action before resetting
     self._execute_action({
@@ -167,16 +133,13 @@ class Coordinator():
 
     # Reset counters
     self._latest_observation_local_time = None
-    if not self._is_bad_episode:
-      self._bad_state_counter = 0
-    self._is_bad_episode = False
 
-    # Pause dumpsys thread for the duration of the reset
-    self._stop_dumpsys_thread()
+    # Pause task for the duration of the reset
+    self._task_manager.pause_task()
 
     # Execute reset steps
     try:
-      self._setup_step_interpreter.interpret(self._task.reset_steps)
+      self._task_manager.reset_task()
     except errors.StepCommandError:
       logging.exception('Failed to execute reset steps. Restarting simulator.')
       self._log_dict['restart_count_simulator_reset'] += 1
@@ -184,70 +147,51 @@ class Coordinator():
       return
 
     self._simulator.update_device_orientation()
-    self._logcat_thread.reset_counters()
+    self._task_manager.reset_counters()
 
-    # Restart dumpsys thread
-    self._start_dumpsys_thread()
+    # Resume task
+    self._task_manager.resume_task()
 
-  def check_player_exited(self) -> bool:
-    """Returns whether the player has exited the game."""
-    try:
-      self._check_player_exited_impl()
-      return False
-    except errors.NotAllowedError:
-      return True
+  def _maybe_periodic_restart(self):
+    """Checks if it is time to restart the simulator."""
 
-  def _check_player_exited_impl(self):
-    """Raises an error if the OS is not in an allowed state."""
+    if self._simulator_start_time is None:
+      return
 
-    self._dumpsys_thread.write(
-        dumpsys_thread.DumpsysThread.Signal.FETCH_DUMPSYS)
-
-    try:
-      v = self._dumpsys_thread.read(block=False)
-      if v == dumpsys_thread.DumpsysThread.Signal.USER_EXITED_ACTIVITY:
-        self._increment_bad_state()
-        raise errors.PlayerExitedActivityError()
-      elif v == dumpsys_thread.DumpsysThread.Signal.USER_EXITED_VIEW_HIERARCHY:
-        self._increment_bad_state()
-        raise errors.PlayerExitedViewHierarchyError()
-    except queue.Empty:
-      pass  # Don't block here, just ignore if we have nothing.
-
-  def check_episode_end(self) -> bool:
-    """Returns whether the episode ended from the output of `adb logcat`."""
-    return self._logcat_thread.get_and_reset_episode_end()
+    simulator_alive_time = (time.time() - self._simulator_start_time) / 60.0
+    logging.info('Simulator has been running for %f mins', simulator_alive_time)
+    if (self._periodic_restart_time_min > 0.0 and
+        simulator_alive_time > self._periodic_restart_time_min):
+      logging.info('Max alive time for simulator has been reached.'
+                   'Triggering a restart.')
+      # These restarts will not be counted in the 'restart_count' logging, as
+      # this is part of the expected behavior.
+      self._log_dict['restart_count_periodic'] += 1
+      self.restart_simulator()
 
   def execute_action(
       self,
       action: Optional[Dict[str, np.ndarray]],
-  ) -> Tuple[Optional[Dict[str, np.ndarray]], float, Dict[str, Any]]:
+  ) -> Optional[Dict[str, np.ndarray]]:
     """Returns the observation (pixels) from the screen, rewards and extras."""
 
-    self._execute_action(action)
+    if (action is not None and
+        action['action_type'].item() != action_type.ActionType.REPEAT):
+      self._execute_action(action)
+
     self._wait_for_next_frame()
 
-    obs = None
     try:
       self._latest_observation_local_time = time.time()
-      obs = self._simulator.get_observation()
+      observation = self._simulator.get_observation()
+      return observation
     except (errors.ReadObservationError, socket.error):
       logging.exception('Unable to fetch observation. Restarting simulator.')
       self._log_dict['restart_count_fetch_observation'] += 1
       self._should_restart = True
 
-    reward = self._get_current_reward()
-    extras = self._logcat_thread.get_and_reset_extras()
-    return (obs, reward, extras)
-
-  def _execute_action(self, action: Optional[Dict[str, np.ndarray]]) -> None:
-    """Applies the action from the agent."""
-
-    if action is None:
-      return
-
-    if action['action_type'].item() == action_type.ActionType.REPEAT:
-      return
+  def _execute_action(self, action: Dict[str, np.ndarray]) -> None:
+    """Sends the selected action to the simulator."""
 
     try:
       self._simulator.send_action(action)
@@ -272,10 +216,6 @@ class Coordinator():
     else:
       return np.inf
 
-  def _get_current_reward(self) -> float:
-    reward = self._logcat_thread.get_and_reset_reward()
-    return 0.0 if reward is None else reward
-
   def check_timeout(self) -> bool:
     """Checks if timeout between steps have exceeded."""
     if self._step_timeout_sec:
@@ -287,60 +227,8 @@ class Coordinator():
   def close(self):
     """Cleans up the state of this Coordinator."""
     logging.info('Cleaning up coordinator...')
-    self._stop_logcat_thread()
-    self._stop_dumpsys_thread()
+    if hasattr(self, '_task_manager'):
+      self._task_manager.close()
     if hasattr(self, '_simulator'):
       self._simulator.close()
     logging.info('Done cleaning up coordinator.')
-
-  def _start_setup_step_interpreter(self):
-    self._setup_step_interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_controller=self._adb_controller,
-        logcat=self._logcat_thread)
-
-  def _start_logcat_thread(self):
-    """Starts a logcat thread."""
-    self._logcat_thread = logcat_thread.LogcatThread(
-        adb_command_prefix=self._adb_controller.command_prefix(),
-        log_parsing_config=self._task.log_parsing_config,
-        print_all_lines=False,
-        block_input=True,
-        block_output=False)
-
-  def _start_dumpsys_thread(self):
-    """Starts a dumpsys thread."""
-    self._dumpsys_thread = dumpsys_thread.DumpsysThread(
-        app_screen_checker=app_screen_checker.AppScreenChecker(
-            self._adb_controller, self._task.expected_app_screen),
-        check_frequency=self._dumpsys_check_frequency,
-        max_failed_current_activity=self._max_failed_current_activity,
-        block_input=True,
-        block_output=True)
-
-  def _stop_logcat_thread(self):
-    if hasattr(self, '_logcat_thread'):
-      self._logcat_thread.kill()
-
-  def _stop_dumpsys_thread(self):
-    if hasattr(self, '_dumpsys_thread'):
-      self._dumpsys_thread.kill()
-
-  def _increment_bad_state(self) -> None:
-    """Increments the bad state counter.
-
-    Bad states are errors that shouldn't happen and that trigger an
-    episode reset. If enough bad states have been seen consecutively,
-    we restart the simulation in the hope of returning the simulation
-    to a good state.
-    """
-    logging.warning('Bad state detected.')
-    if self._max_bad_states:
-      self._is_bad_episode = True
-      self._bad_state_counter += 1
-      logging.warning('Bad state counter: %d.', self._bad_state_counter)
-      if self._bad_state_counter >= self._max_bad_states:
-        logging.error('Too many consecutive bad states. Restarting simulator.')
-        self._log_dict['restart_count_max_bad_states'] += 1
-        self._should_restart = True
-    else:
-      logging.warning('Max bad states not set, bad states will be ignored.')

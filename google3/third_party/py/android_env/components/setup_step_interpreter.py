@@ -24,7 +24,7 @@ class SetupStepInterpreter():
     Args:
       adb_controller: An object to communicate with Android via ADB.
       logcat: A LogcatThread instance connected to the same Android simulator
-        as adb_control.
+        as AdbController.
     """
     self._adb_controller = adb_controller
     self._logcat_thread = logcat
@@ -101,7 +101,8 @@ class SetupStepInterpreter():
 
     raise errors.StepCommandError('Step failed: [%r]' % step_cmd)
 
-  def _execute_step_cmd(self, step_cmd: task_pb2.SetupStep,
+  def _execute_step_cmd(self,
+                        step_cmd: task_pb2.SetupStep,
                         step_type: Optional[str]) -> None:
     """Executes a step command of given type."""
 
