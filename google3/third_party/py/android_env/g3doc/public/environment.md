@@ -9,13 +9,6 @@ freshness: { owner: 'agergely' reviewed: '2021-02-19' }
 
 <!-- copybara:strip_end -->
 
-<style>
-.logo {
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-  float: right;
-}
-</style>
-
 AndroidEnv is a complex environment that, while offering an almost endless range
 of possibilites for RL research and investigation, poses multiple kinds of
 challenges simultaneously. In this document we outline AndroidEnv's main
@@ -35,7 +28,7 @@ currently no straightforward way to slow down the simulation either.
 
 ## Action space
 
-![Screenshot of 'classic_2048'](images/classic_2048.gif){width="20%", height="20%" .logo}
+<img align="right" src="images/classic_2048.gif" width="320" height="480">
 
 Perhaps one of the most interesting features of AndroidEnv is its large and
 complex action interface. The raw action space of the environment consists of a
@@ -146,5 +139,6 @@ of useful wrappers that demonstrate their usage:
     `[0,255]` to the float range `[0,1]`
 *   `image_rescale_wrapper`: Resizes the pixel observations by the selected
     ratio.
-*   `gym_wrapper`: Changes the environment interface from [dm_env] to [OpenAI]
-    gym interface.
+*   `gym_wrapper`: Changes the environment interface from
+    [dm_env](https://github.com/deepmind/dm_env) to
+    [OpenAI](https://gym.openai.com/) gym interface.

@@ -36,7 +36,7 @@ or relaunch an app, clear cache etc.). These information are packaged into a
 `Task()` proto message which gets passed passed to AndroidEnv. Please see
 [tasks.md](tasks.md) for details on features and capabilities of tasks, as well
 as how to create custom ones; or use one of our example tasks provided at
-[this link](https://pantheon.corp.google.com/storage/browser/android_env-tasks).
+[this link](https://storage.googleapis.com/android_env-tasks).
 
 ### Create the env
 

@@ -217,7 +217,7 @@ adventure games, card games...) and corresponding interfaces (e.g. button
 pressing, swiping, drag-and-drop...) available in AndroidEnv. Along with the
 textprotos we provide also the corresponding APKs. You can find and download
 these example tasks from
-[this link](https://pantheon.corp.google.com/storage/browser/android_env-tasks).
+[this link](https://storage.googleapis.com/android_env-tasks).
 
 TODO(agergely) Update this link.
 
