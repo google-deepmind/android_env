@@ -4,7 +4,7 @@
 
 <!--*
 # Document freshness: For more information, see go/fresh-source.
-freshness: { owner: 'agergely' reviewed: '2021-02-19' }
+freshness: { owner: 'agergely' reviewed: '2021-04-07' }
 *-->
 
 <!-- copybara:strip_end -->
@@ -21,10 +21,9 @@ First, you will need to provide an Android device that environment (and through
 it, the agent) can communicate with. While this could be a real device as well,
 in most cases you will want to use a virtual, emulated device. There are many
 ways to simulate such a device; in our example we will use
-[Android Studio](https://developer.android.com/studio) to create one and walk
-you through the necessary steps for attaching this to your environment.
-
-TODO(agergely) Add instructions for creating an AVD with Android Studio
+[Android Studio](https://developer.android.com/studio) to create one. Follow
+this step-by-step [guide](emulator.md) to create a virtual device, then follow
+the steps below to attach this to your environment.
 
 ### The task
 
@@ -48,8 +47,11 @@ once you provide all relevant arguments:
     Android Studio.
 *   `android_avd_home`: Path where the AVD was installed.
 *   `android_sdk_root`: Root directory of the Android SDK.
-*   `emulator_path`: Path to the emulator binary.
-*   `adb_path`: Path to the ADB.
+*   `emulator_path`: Path to the emulator binary. Usually found under
+    `{android_sdk_root}/emulator/emulator`.
+*   `adb_path`: Path to the ADB
+    ([Android Debug Bridge](https://developer.android.com/studio/command-line/adb)).
+    Usually found under `{android_sdk_root}/platform-tools/adb`.
 *   `task_path`: path poiting to the `.textproto` file describing the desired
     task.
 

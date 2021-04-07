@@ -4,7 +4,7 @@
 
 <!--*
 # Document freshness: For more information, see go/fresh-source.
-freshness: { owner: 'agergely' reviewed: '2021-02-19' }
+freshness: { owner: 'agergely' reviewed: '2021-04-07' }
 *-->
 
 <!-- copybara:strip_end -->
@@ -217,7 +217,10 @@ adventure games, card games...) and corresponding interfaces (e.g. button
 pressing, swiping, drag-and-drop...) available in AndroidEnv. Along with the
 textprotos we provide also the corresponding APKs. You can find and download
 these example tasks from
-[this link](https://storage.googleapis.com/android_env-tasks).
+[this link](https://storage.googleapis.com/android_env-tasks). After
+downloading, move the `.apk` and `.textproto` files to a suitable directory and
+take note of their path. This information is needed for
+[loading](instructions.md#create-the-env) an AndroidEnv instance.
 
 TODO(agergely) Update this link.
 

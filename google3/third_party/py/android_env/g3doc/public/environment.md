@@ -4,7 +4,7 @@
 
 <!--*
 # Document freshness: For more information, see go/fresh-source.
-freshness: { owner: 'agergely' reviewed: '2021-02-19' }
+freshness: { owner: 'agergely' reviewed: '2021-04-07' }
 *-->
 
 <!-- copybara:strip_end -->
@@ -28,7 +28,7 @@ currently no straightforward way to slow down the simulation either.
 
 ## Action space
 
-<img align="right" src="images/classic_2048.gif" width="320" height="480">
+<img align="right" src="images/classic_2048.gif" width="160" height="240">
 
 Perhaps one of the most interesting features of AndroidEnv is its large and
 complex action interface. The raw action space of the environment consists of a
