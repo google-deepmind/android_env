@@ -14,9 +14,6 @@ from android_env.components import logcat_thread
 from android_env.components import setup_step_interpreter
 from android_env.proto import task_pb2
 
-_MAX_SIMULATOR_INIT_TRIES = 3
-_MAX_RESTART_TRIES = 3
-
 
 class TaskManager():
   """Handles all events and information related to the task."""
