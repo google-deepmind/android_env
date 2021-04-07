@@ -1,4 +1,4 @@
-# AndroidEnv - Instructions
+# AndroidEnv - Loading the environment
 
 <!-- copybara:strip_begin -->
 
@@ -8,8 +8,6 @@ freshness: { owner: 'agergely' reviewed: '2021-04-07' }
 *-->
 
 <!-- copybara:strip_end -->
-
-## Loading the environment
 
 In order to create an AndroidEnv instance you will need to provide two main
 components: a [simulator](#the-simulator) and a [task](#the-task). In the
