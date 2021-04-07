@@ -7,19 +7,19 @@ freshness: { owner: 'agergely' reviewed: '2021-04-06' }
 
 # AndroidEnv - The Android Learning Environment
 
-<img align="right" src="g3doc/public/images/device_control.gif" width="160" height="240">
+<img align="right" src="images/device_control.gif" width="160" height="240">
 
 [AndroidEnv](https://github.com/deepmind/android_env) is a Python library that
 exposes an [Android](https://www.android.com/) device as a Reinforcement
 Learning (RL) environment. The library provides a flexible platform for defining
-custom tasks on top of the Android OS, including any Android application.
-Agents interact with the device through a universal action interface - the
+custom tasks on top of the Android OS, including any Android application. Agents
+interact with the device through a universal action interface - the
 touchscreen - by sending localized touch and lift events to the system. The
 library processes these events and returns pixel observations and rewards as
-provided by specific [task definitions](g3doc/public/tasks.md). For example,
-rewards might be given for events such as successfully scrolling down a page,
-sending an email, or achieving some score in a game, depending on the research
-purpose and how the user configures the task.
+provided by specific [task definitions](tasks.md). For example, rewards might be
+given for events such as successfully scrolling down a page, sending an email,
+or achieving some score in a game, depending on the research purpose and how the
+user configures the task.
 
 ## Environment features
 
@@ -90,11 +90,11 @@ Disclaimer: This is not an official Google product.
 
 # Environment Details
 
-For a full description of the specifics of how the environment is configured,
-or details on how the observations and action spaces work, please read the
-[environment documentation](g3doc/public/environment.md). To find out how to define a
-custom task, or to explore some example tasks we provided, see the
-[task documentation](g3doc/public/tasks.md).
+For a full description of the specifics of how the environment is configured, or
+details on how the observations and action spaces work, please read the
+[environment documentation](environment.md). To find out how to define a custom
+task, or to explore some example tasks we provided, see the
+[task documentation](tasks.md).
 
 # Quick Start Guide
 
@@ -148,16 +148,16 @@ TODO(kenjitoyama): Add instructions. (Do we support windows?)
 
 The library provides a straightforward mechanism for setting up restricted task
 contexts and specifying objectives for the agent. To learn how to define a task
-on Android, see the [task documentation](g3doc/public/tasks.md).
-Here you can also find some example task definitions we provided to demonstrate
-the usage of the simple mechanism AndroidEnv offers for flexibly creating custom
-challenges.
+on Android, see the [task documentation](tasks.md). Here you can also find some
+example task definitions we provided to demonstrate the usage of the simple
+mechanism AndroidEnv offers for flexibly creating custom challenges.
 
 ## Run the environment
 
-To find out how to run and train agents on AndroidEnv, see these [detailed instructions](g3doc/public/instructions.md).
-Here you can also find example scripts demonstrating how to run a random agent,
-an [acme](https://github.com/deepmind/acme) agent, or a human agent on AndroidEnv.
+To find out how to run and train agents on AndroidEnv, see these
+[detailed instructions](instructions.md). Here you can also find example scripts
+demonstrating how to run a random agent, an
+[acme](https://github.com/deepmind/acme) agent, or a human agent on AndroidEnv.
 
 ## Run the tests
 
