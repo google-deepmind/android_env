@@ -3,6 +3,8 @@
 import copy
 import datetime
 import queue
+import re
+import threading
 from typing import Any, Dict
 
 from absl import logging
@@ -40,6 +42,7 @@ class TaskManager():
     self._max_bad_states = max_bad_states
     self._dumpsys_check_frequency = dumpsys_check_frequency
     self._max_failed_current_activity = max_failed_current_activity
+    self._lock = threading.Lock()
 
     self._adb_controller = None
     self._setup_step_interpreter = None
@@ -53,8 +56,9 @@ class TaskManager():
         'restart_count_max_bad_states': 0,
     }
 
-    # Initialize counters
+    # Initialize internal state
     self._task_start_time = None
+    self._episode_ended = False
     self._episode_steps = 0
     self._bad_state_counter = 0
     self._is_bad_episode = False
@@ -72,6 +76,8 @@ class TaskManager():
     self._is_bad_episode = False
 
     self._task_start_time = datetime.datetime.now()
+    with self._lock:
+      self._episode_ended = False
     self._episode_steps = 0
     self._logcat_thread.reset_counters()
 
@@ -109,11 +115,12 @@ class TaskManager():
       return True
 
     # Check if episode has ended
-    if self._logcat_thread.get_and_reset_episode_end():
-      self._log_dict['reset_count_episode_end'] += 1
-      logging.info('End of episode from logcat! Ending episode.')
-      logging.info('************* END OF EPISODE *************')
-      return True
+    with self._lock:
+      if self._episode_ended:
+        self._log_dict['reset_count_episode_end'] += 1
+        logging.info('End of episode from logcat! Ending episode.')
+        logging.info('************* END OF EPISODE *************')
+        return True
 
     # Check if step limit or time limit has been reached
     if self._task.max_num_steps > 0:
@@ -177,6 +184,10 @@ class TaskManager():
         adb_controller=self._adb_controller,
         logcat=self._logcat_thread)
 
+  def _episode_end_handler(self, event, match):
+    with self._lock:
+      self._episode_ended = True
+
   def _start_logcat_thread(self):
     """Starts a logcat thread."""
     self._logcat_thread = logcat_thread.LogcatThread(
@@ -185,6 +196,14 @@ class TaskManager():
         print_all_lines=False,
         block_input=True,
         block_output=False)
+
+    regexps = self._task.log_parsing_config.log_regexps
+
+    # Defaults to 'a^' since that regex matches no string by definition.
+    episode_end_event = re.compile(regexps.episode_end or 'a^')
+
+    self._logcat_thread.add_event_listener(episode_end_event,
+                                           self._episode_end_handler)
 
   def _start_dumpsys_thread(self):
     """Starts a dumpsys thread."""

@@ -54,7 +54,6 @@ class LogcatThread(thread_function.ThreadFunction):
     self._latest_score = 0.0
     self._latest_reward = 0.0
     self._latest_extras = {}
-    self._episode_ended = False
     self._max_buffer_size = 100
 
     self._log_prefix = log_parsing_config.log_prefix
@@ -112,7 +111,6 @@ class LogcatThread(thread_function.ThreadFunction):
       self._latest_score = 0.0
       self._latest_reward = 0.0
       self._latest_extras = {}
-      self._episode_ended = False
 
   def kill(self):
     self._proc.kill()
@@ -123,12 +121,6 @@ class LogcatThread(thread_function.ThreadFunction):
       r = self._latest_reward
       self._latest_reward = 0.0
       return r
-
-  def get_and_reset_episode_end(self) -> bool:
-    with self._lock:
-      end = self._episode_ended
-      self._episode_ended = False
-      return end
 
   def get_and_reset_extras(self):
     with self._lock:
@@ -177,7 +169,6 @@ class LogcatThread(thread_function.ThreadFunction):
     # Defaults to 'a^' since that regex matches no string by definition.
     score_regexp = re.compile(self._regexps.score or 'a^')
     reward_regexp = re.compile(self._regexps.reward or 'a^')
-    episode_end_regexp = re.compile(self._regexps.episode_end or 'a^')
     extra_regexp = re.compile(self._regexps.extra or 'a^')
     json_extra_regexp = re.compile(self._regexps.json_extra or 'a^')
 
@@ -239,13 +230,6 @@ class LogcatThread(thread_function.ThreadFunction):
           current_reward = current_score - self._latest_score
           self._latest_score = current_score
           self._latest_reward += current_reward
-        continue
-
-      # Match episode ends.
-      episode_end_matches = episode_end_regexp.match(content)
-      if episode_end_matches:
-        with self._lock:
-          self._episode_ended = True
         continue
 
       # Match extras.

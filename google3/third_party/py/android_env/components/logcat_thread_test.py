@@ -49,7 +49,6 @@ def log_parsing_config(log_prefix: str = ''):
   log_regexps = task_pb2.LogParsingConfig.LogRegexps(
       score='^[Ss]core: ([-+]?[0-9]*\\.?[0-9]*)$',
       reward='^[Rr]eward: ([-+]?[0-9]*\\.?[0-9]*)$',
-      episode_end='^episode[ _]end$',
       extra='^extra: (?P<name>[^ ]*)[ ]?(?P<extra>.*)$',
       json_extra='^json_extra: (?P<json_extra>.*)$',
   )
@@ -97,7 +96,6 @@ class LogcatThreadTest(absltest.TestCase):
     self.mock_popen.assert_called_once()
     self.assertEqual(0, logcat.get_and_reset_reward())
     self.assertEqual({}, logcat.get_and_reset_extras())
-    self.assertFalse(logcat.get_and_reset_episode_end())
     self.assertIsNone(logcat.reset_counters())
 
   def test_cmd(self):
@@ -222,32 +220,6 @@ class LogcatThreadTest(absltest.TestCase):
     self.assertAlmostEqual(15.0, logcat.get_and_reset_reward())
     self.assertAlmostEqual(0.0, logcat.get_and_reset_reward())
 
-  def test_episode_end(self):
-    logcat = logcat_thread.LogcatThread(
-        adb_command_prefix=['adb', '-P', '5037'],
-        log_parsing_config=log_parsing_config())
-    self.mock_popen.assert_called_once()
-    self.assertEqual(False, logcat.get_and_reset_episode_end())
-    self.fake_proc.stdout.send_value(make_stdout('episode end'))
-    # Wait until the log has been processed by the thread.
-    while self.fake_proc.stdout.has_next_value():
-      pass
-    self.assertEqual(True, logcat.get_and_reset_episode_end())
-    self.assertEqual(False, logcat.get_and_reset_episode_end())
-
-  def test_episode_end_with_underscore(self):
-    logcat = logcat_thread.LogcatThread(
-        adb_command_prefix=['adb', '-P', '5037'],
-        log_parsing_config=log_parsing_config())
-    self.mock_popen.assert_called_once()
-    self.assertEqual(False, logcat.get_and_reset_episode_end())
-    self.fake_proc.stdout.send_value(make_stdout('episode_end'))
-    # Wait until the log has been processed by the thread.
-    while self.fake_proc.stdout.has_next_value():
-      pass
-    self.assertEqual(True, logcat.get_and_reset_episode_end())
-    self.assertEqual(False, logcat.get_and_reset_episode_end())
-
   def test_extras(self):
     logcat = logcat_thread.LogcatThread(
         adb_command_prefix=['adb', '-P', '5037'],
@@ -280,7 +252,6 @@ class LogcatThreadTest(absltest.TestCase):
     self.mock_popen.assert_called_once()
     self.fake_proc.stdout.send_value(make_stdout('extra: an_extra [1,2,3]'))
     self.fake_proc.stdout.send_value(make_stdout('Reward: 4.0'))
-    self.fake_proc.stdout.send_value(make_stdout('episode end'))
     # Wait until the logs have been processed by the thread.
     while self.fake_proc.stdout.has_next_value():
       pass
@@ -288,7 +259,6 @@ class LogcatThreadTest(absltest.TestCase):
     # The reset should have cleared all the values.
     self.assertEqual(0, logcat.get_and_reset_reward())
     self.assertEqual({}, logcat.get_and_reset_extras())
-    self.assertFalse(logcat.get_and_reset_episode_end())
 
   def test_json_extras(self):
     extra = {
@@ -338,14 +308,11 @@ class LogcatThreadTest(absltest.TestCase):
         adb_command_prefix=['adb', '-P', '5037'],
         log_parsing_config=log_parsing_config(log_prefix='prefix:'))
     self.fake_proc.stdout.send_value(make_stdout('prefix: Reward: 4.0'))
-    self.fake_proc.stdout.send_value(make_stdout('episode end'))
     # Wait until the logs have been processed by the thread.
     while self.fake_proc.stdout.has_next_value():
       pass
     # The reward should have been processed.
     self.assertEqual(4.0, logcat.get_and_reset_reward())
-    # The episode_end should have been ignored because it lacks the prefix.
-    self.assertFalse(logcat.get_and_reset_episode_end())
 
 
 if __name__ == '__main__':
