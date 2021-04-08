@@ -1,8 +1,10 @@
 """Tests for android_env.components.logcat_thread."""
 
 import json
+import re
 import subprocess
 import threading
+from typing import Match, Pattern
 
 from absl.testing import absltest
 from android_env.components import logcat_thread
@@ -135,6 +137,44 @@ class LogcatThreadTest(absltest.TestCase):
     logcat.kill()
     self.assertFalse(self.fake_proc.is_alive)
 
+  def test_listeners(self):
+    """Ensures that we can wait for a specific message without polling."""
+    logcat = logcat_thread.LogcatThread(
+        adb_command_prefix=['adb', '-P', '5037'],
+        log_parsing_config=log_parsing_config(),
+        print_all_lines=True)
+    self.mock_popen.assert_called_once()
+
+    # Set up a listener that modifies an arbitrary state.
+    some_state = False
+
+    def my_listener(event: Pattern[str], match: Match[str]):
+      del event, match
+      nonlocal some_state
+      some_state = True
+
+    # Create a desired event and hook up the listener.
+    my_event = re.compile('Hello world')
+    logcat.add_event_listener(event=my_event, fn=my_listener)
+    self.fake_proc.stdout.send_value('Hi there!')  # This should not match.
+    self.assertFalse(some_state)
+    self.fake_proc.stdout.send_value(make_stdout('Hello world'))
+    logcat.wait(event=my_event, timeout_sec=1.0)
+    self.assertTrue(some_state)
+
+    # Waiting for any events should also trigger the listener.
+    some_state = False
+    self.fake_proc.stdout.send_value(make_stdout('Hello world'))
+    logcat.wait(event=None, timeout_sec=1.0)
+    self.assertTrue(some_state)
+
+    # After removing the listener, it should not be called anymore.
+    some_state = False
+    logcat.remove_event_listener(event=my_event, fn=my_listener)
+    self.fake_proc.stdout.send_value(make_stdout('Hello world'))
+    logcat.wait(event=my_event, timeout_sec=1.0)
+    self.assertFalse(some_state)
+
   def test_score_parsing(self):
     logcat = logcat_thread.LogcatThread(
         adb_command_prefix=['adb', '-P', '5037'],
@@ -232,32 +272,6 @@ class LogcatThreadTest(absltest.TestCase):
                                    extras.get('multi_dimension_extra'))
     np.testing.assert_equal([1], extras.get('boolean_extra'))
     self.assertEqual({}, logcat.get_and_reset_extras())
-
-  def test_messsage(self):
-    logcat = logcat_thread.LogcatThread(
-        adb_command_prefix=['adb', '-P', '5037'],
-        log_parsing_config=log_parsing_config())
-    self.mock_popen.assert_called_once()
-
-    self.assertFalse(logcat.has_received_message())
-
-    logcat.listen_for_message('my_message')
-    self.assertFalse(logcat.has_received_message())
-    self.fake_proc.stdout.send_value(make_stdout('my_message'))
-    self.fake_proc.stdout.send_value(make_stdout('another_message'))
-    while self.fake_proc.stdout.has_next_value():
-      pass
-    self.assertTrue(logcat.has_received_message())
-
-    logcat.listen_for_message('another_message')
-    self.assertFalse(logcat.has_received_message())
-    self.fake_proc.stdout.send_value(make_stdout('another_message'))
-    while self.fake_proc.stdout.has_next_value():
-      pass
-    self.assertTrue(logcat.has_received_message())
-
-    logcat.reset_counters()
-    self.assertFalse(logcat.has_received_message())
 
   def test_reset(self):
     logcat = logcat_thread.LogcatThread(

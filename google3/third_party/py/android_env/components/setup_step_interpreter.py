@@ -2,6 +2,7 @@
 
 import copy
 import random
+import re
 import time
 from typing import Any, Dict, Optional, Sequence
 
@@ -254,17 +255,23 @@ class SetupStepInterpreter():
 
     message = wait_for_message.message
     logging.info('Waiting for message: %s...', message)
-    self._logcat_thread.listen_for_message(message)
+    event = re.compile(r'^{message}$')
+    got_message = False
 
-    start_time = time.time()
-    while time.time() - start_time < wait_for_message.timeout_sec:
-      if self._logcat_thread.has_received_message():
-        logging.info('Message received: [%r]', message)
-        return
-      time.sleep(0.1)
+    def f(ev, match):
+      del ev, match
+      nonlocal got_message
+      got_message = True
 
-    logging.error('Failed to wait for message: [%r].', message)
-    raise errors.WaitForMessageError()
+    self._logcat_thread.add_event_listener(event=event, fn=f)
+    self._logcat_thread.wait(
+        event=event, timeout_sec=wait_for_message.timeout_sec)
+    self._logcat_thread.remove_event_listener(event=event, fn=f)
+    if got_message:
+      logging.info('Message received: [%r]', message)
+    else:
+      logging.error('Failed to wait for message: [%r].', message)
+      raise errors.WaitForMessageError()
 
   def _check_install(self, check_install: task_pb2.CheckInstall) -> None:
     """Checks that the given package is installed."""

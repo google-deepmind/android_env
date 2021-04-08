@@ -252,15 +252,12 @@ adb_call: {
                     """success_condition: {wait_for_app_screen: { }}""")
       ])
 
-  @mock.patch('time.sleep')
-  def test_wait_for_message_fail(self, unused_mock_sleep):
+  def test_wait_for_message_fail(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
         adb_controller=self.adb_controller, logcat=self.logcat)
-    self.logcat.has_received_message.return_value = False
-    with self.assertRaises(errors.StepCommandError):
-      interpreter.interpret([
-          _to_proto(
-              task_pb2.SetupStep, """
+    self.assertRaises(errors.StepCommandError, interpreter.interpret, [
+        _to_proto(
+            task_pb2.SetupStep, """
 success_condition: {
   wait_for_message: {
     message:'foo'
@@ -268,13 +265,19 @@ success_condition: {
   }
 }
 """)
-      ])
+    ])
 
-  @mock.patch('time.sleep')
-  def test_wait_for_message_success(self, unused_mock_sleep):
+  def test_wait_for_message_success(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
         adb_controller=self.adb_controller, logcat=self.logcat)
-    self.logcat.has_received_message.return_value = True
+
+    # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
+    # right away, ignoring `event`.
+    def mock_add_ev_listener(event, fn):
+      del event
+      fn('some_event', 'some_match')
+
+    self.logcat.add_event_listener.side_effect = mock_add_ev_listener
     # The test checks that this command raises no AssertionError.
     interpreter.interpret([
         _to_proto(
@@ -282,7 +285,7 @@ success_condition: {
 success_condition: {
   wait_for_message: {
     message:'foo'
-    timeout_sec: 0.0001
+    timeout_sec: 1.0
   }
 }
 """)

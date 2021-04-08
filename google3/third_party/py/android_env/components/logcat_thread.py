@@ -5,7 +5,10 @@ import json
 import re
 import subprocess
 import threading
-from typing import List
+# `typing.Pattern` has been deprecated in Python 3.9 in favor of `re.Pattern`,
+# but it is not available even in slightly older Python versions.
+# Please see https://www.python.org/dev/peps/pep-0585/
+from typing import Callable, List, Match, Optional, Pattern
 
 from absl import logging
 from android_env.components import thread_function
@@ -45,11 +48,12 @@ class LogcatThread(thread_function.ThreadFunction):
 
     self._print_all_lines = print_all_lines
     self._lock = threading.Lock()
+    self._listeners = {}
+    self._desired_event = None
+    self._thread_event = threading.Event()
     self._latest_score = 0.0
     self._latest_reward = 0.0
     self._latest_extras = {}
-    self._message_regexp = None
-    self._message_received = False
     self._episode_ended = False
     self._max_buffer_size = 100
 
@@ -71,25 +75,48 @@ class LogcatThread(thread_function.ThreadFunction):
     super().__init__(
         block_input=block_input, block_output=block_output, name=name)
 
+  def add_event_listener(
+      self, event: Pattern[str], fn: Callable[[Pattern[str], Match[str]],
+                                              None]) -> None:
+    """Adds `fn` to the list of handlers to call when `event` occurs."""
+    if event not in self._listeners:
+      self._listeners[event] = []
+    self._listeners[event].append(fn)
+
+  def remove_event_listener(
+      self, event: Pattern[str], fn: Callable[[Pattern[str], Match[str]],
+                                              None]) -> None:
+    """Removes `fn` from the list of handlers to call when `event` occurs."""
+    if event not in self._listeners:
+      logging.error('Event: %r is not registered.', event)
+      return
+
+    self._listeners[event].remove(fn)
+
+  def wait(self,
+           event: Optional[Pattern[str]] = None,
+           timeout_sec: float = None) -> None:
+    """Blocks (caller) execution for up to `timeout_sec` until `event` is fired.
+
+    Args:
+      event: Event to wait for. If None, any new event will cause this function
+        to return.
+      timeout_sec: Maximum time to block waiting for an event.
+    """
+    self._desired_event = event
+    self._thread_event.wait(timeout=timeout_sec)
+    self._thread_event.clear()
+
   def reset_counters(self) -> None:
     with self._lock:
       self._latest_score = 0.0
       self._latest_reward = 0.0
       self._latest_extras = {}
       self._episode_ended = False
-      self._message_received = False
 
   def kill(self):
     self._proc.kill()
     super().kill()
-
-  def listen_for_message(self, message: str):
-    with self._lock:
-      self._message_regexp = re.compile(r'^%s$' % message)
-      self._message_received = False
-
-  def has_received_message(self) -> bool:
-    return self._message_received
 
   def get_and_reset_reward(self) -> float:
     with self._lock:
@@ -172,11 +199,21 @@ class LogcatThread(thread_function.ThreadFunction):
       if not matches or len(matches.groups()) != 6:
         continue
 
-      if self._message_regexp is not None and not self._message_received:
-        message_matches = self._message_regexp.match(matches.group('message'))
-        if message_matches:
-          with self._lock:
-            self._message_received = True
+      content = matches.group('message')
+      for ev, listeners in self._listeners.items():
+        ev_matches = ev.match(content)
+        if ev_matches:
+          # Unblock consumers that may be waiting for events.
+          if not self._thread_event.is_set():
+            if self._desired_event:
+              if self._desired_event == ev:
+                self._thread_event.set()
+            else:
+              self._thread_event.set()
+
+          # Notify listeners.
+          for listener in listeners:
+            listener(ev, ev_matches)
 
       # Search for rewards and scores in the log message.
       # The way this works is that each application would typically only use one
@@ -187,7 +224,7 @@ class LogcatThread(thread_function.ThreadFunction):
       # ignored.
 
       # Match rewards.
-      reward_matches = reward_regexp.match(matches.group('message'))
+      reward_matches = reward_regexp.match(content)
       if reward_matches:
         reward = float(reward_matches.group(1))
         with self._lock:
@@ -195,7 +232,7 @@ class LogcatThread(thread_function.ThreadFunction):
         continue
 
       # Match scores.
-      score_matches = score_regexp.match(matches.group('message'))
+      score_matches = score_regexp.match(content)
       if score_matches:
         current_score = float(score_matches.group(1))
         with self._lock:
@@ -205,14 +242,14 @@ class LogcatThread(thread_function.ThreadFunction):
         continue
 
       # Match episode ends.
-      episode_end_matches = episode_end_regexp.match(matches.group('message'))
+      episode_end_matches = episode_end_regexp.match(content)
       if episode_end_matches:
         with self._lock:
           self._episode_ended = True
         continue
 
       # Match extras.
-      extra_matches = extra_regexp.match(matches.group('message'))
+      extra_matches = extra_regexp.match(content)
       if extra_matches:
         extra_name = extra_matches.group('name')
         extra = extra_matches.group('extra')
@@ -230,7 +267,7 @@ class LogcatThread(thread_function.ThreadFunction):
         continue
 
       # Match JSON extras.
-      json_extra_matches = json_extra_regexp.match(matches.group('message'))
+      json_extra_matches = json_extra_regexp.match(content)
       if json_extra_matches:
         extra_data = json_extra_matches.group('json_extra')
         try:
