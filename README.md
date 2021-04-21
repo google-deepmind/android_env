@@ -1,7 +1,7 @@
 
 # AndroidEnv - The Android Learning Environment
 
-<img align="right" src="images/device_control.gif" width="160" height="240">
+<img align="right" src="docs/images/device_control.gif" width="160" height="240">
 
 [AndroidEnv](https://github.com/deepmind/android_env) is a Python library that
 exposes an [Android](https://www.android.com/) device as a Reinforcement
@@ -10,18 +10,18 @@ custom tasks on top of the Android Operating System, including any Android
 application. Agents interact with the device through a universal action
 interface - the touchscreen - by sending localized touch and lift events to the
 system. The library processes these events and returns pixel observations and
-rewards as provided by specific [task definitions](tasks.md). For example,
+rewards as provided by specific [task definitions](docs/tasks.md). For example,
 rewards might be given for events such as successfully scrolling down a page,
 sending an email, or achieving some score in a game, depending on the research
 purpose and how the user configures the task.
 
 ## Index
 
-*   [Environment details](environment.md)
-*   [Running AndroidEnv](instructions.md)
-*   [Setting up a virtual Android device](emulator_guide.md)
-*   [Defining a task in AndroidEnv](tasks_guide.md)
-*   [Example tasks available for download](example_tasks.md)
+*   [Environment details](docs/environment.md)
+*   [Running AndroidEnv](docs/instructions.md)
+*   [Setting up a virtual Android device](docs/emulator_guide.md)
+*   [Defining a task in AndroidEnv](docs/tasks_guide.md)
+*   [Example tasks available for download](docs/example_tasks.md)
 
 ## Environment features
 
@@ -110,21 +110,21 @@ $ python3 setup.py install
 
 Before running the environment, you will need access to an emulated Android
 device. For instructions on creating a virtual Android device, see the
-[Emulator guide](emulator_guide.md).
+[Emulator guide](docs/emulator_guide.md).
 
 ### Define a task
 
 Then, you will want to define what the agent's *task* is. At this point, the
 agent will be able to communicate with the emulated device, but it will not yet
 have an objective, or access to signals such as rewards or RL episode ends.
-Learn [how to define an RL task](tasks_guide.md) of your own, or use one of the
-[existing task definitions](example_tasks.md) for training.
+Learn [how to define an RL task](docs/tasks_guide.md) of your own, or use one of
+the [existing task definitions](docs/example_tasks.md) for training.
 
 ### Load and run
 
 To find out how to run and train agents on AndroidEnv, see these
-[detailed instructions](instructions.md). Here you can also find example scripts
-demonstrating how to run a random agent, an
+[detailed instructions](docs/instructions.md). Here you can also find example
+scripts demonstrating how to run a random agent, an
 [acme](https://github.com/deepmind/acme) agent, or a human agent on AndroidEnv.
 
 ## About
