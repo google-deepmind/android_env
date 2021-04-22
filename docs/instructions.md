@@ -49,13 +49,17 @@ you provide the relevant arguments:
 Thus an example configuration might look like (depending on how you set up your
 emulator):
 
-```
---avd_name=my_avd
---android_avd_home=/Users/username/.android/avd
---android_sdk_root=/Users/username/Library/Android/sdk
---emulator_path=/Users/username/Library/Android/sdk/emulator/emulator
---adb_path=/Users/username/Library/Android/sdk/platform-tools/adb
---task_path=/Users/username/android_env/my_tasks/my_task.textproto
+```python
+import android_env
+
+env = android_env.load(
+    avd_name='my_avd',
+    android_avd_home='/Users/username/.android/avd',
+    android_sdk_root='/Users/username/Library/Android/sdk',
+    emulator_path='/Users/username/Library/Android/sdk/emulator/emulator',
+    adb_path='/Users/username/Library/Android/sdk/platform-tools/adb',
+    task_path='/Users/username/android_env/my_tasks/my_task.textproto',
+)
 ```
 
 ## Example scripts

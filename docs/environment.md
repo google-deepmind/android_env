@@ -115,7 +115,7 @@ the state of the board has changed).
 
 When integrating your own APK as a new task for the environment, you can define
 your own extras by following the instructions
-[here](tasks.md#log-messages-and-custom-apks).
+[here](tasks_guide.md#log-messages-and-custom-apks).
 
 ## Wrappers
 

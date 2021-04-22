@@ -10,10 +10,10 @@ custom tasks on top of the Android Operating System, including any Android
 application. Agents interact with the device through a universal action
 interface - the touchscreen - by sending localized touch and lift events to the
 system. The library processes these events and returns pixel observations and
-rewards as provided by specific [task definitions](docs/tasks.md). For example,
-rewards might be given for events such as successfully scrolling down a page,
-sending an email, or achieving some score in a game, depending on the research
-purpose and how the user configures the task.
+rewards as provided by specific [task definitions](docs/tasks_guide.md). For
+example, rewards might be given for events such as successfully scrolling down a
+page, sending an email, or achieving some score in a game, depending on the
+research purpose and how the user configures the task.
 
 ## Index
 
