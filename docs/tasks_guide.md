@@ -185,17 +185,38 @@ extras_spec: [
 
 ## Log messages and custom APKs
 
-You might have noticed that tasks often rely on custom log messages exposed by
-the Android system, which AndroidEnv can intercept and translate into items such
-as rewards, episode end signals or task extras. Of course, applications do not
-send such messages by default, so in order to have access to such messages, we
-often add minor modificatios the apps' original source code to match our
-expectations. For example, in the case of the 2048 app, we find in the game's
-source code the exact lines where the score is computed, and add a few lines to
-make sure the desired messages are sent to logcat at the right time.
+You might have noticed that tasks often rely on log messages exposed by the
+Android system, which AndroidEnv can intercept and translate into items such as
+rewards, episode end signals or task extras.
 
-You can take a look at example APKs in the example tasks mentioned in the next
-section.
+One way to define rewards is by using
+`log_parsing_config.LogRegexps.RewardEvent` messages in the task proto. These
+consist of a regular expression and a numeric value indicating the intended
+reward. If the regexp is matched in any of the lines of the logcat stream, the
+agent will receive the given reward. It is also possible to have multiple of
+these RewardEvents, allowing us to give rewards for different log messages. The
+same applies for episode end signals: logcat messages that match the regexps
+defined in `log_parsing_config.LogRegexps.episode_end` will trigger an episode
+reset.
+
+Of course, applications might not send suitable messages by default, so in order
+to have access to such messages, we often add them to the apps' source code to
+match our expectations. For example, in the case of the 2048 app, we find in the
+game's source code the exact lines where the score is computed, and add a line
+to log this value in the format that is expected by the textproto (or
+conversely, make sure the textproto matches the format you specified here). For
+example:
+
+```java
+// Make sure thet LOG_FILTER matches 'filters' in the textproto
+public static final String LOG_FILTER = "AndroidRLTask";
+
+// Make sure that the corresponding part of 'log_regexps' will match this string
+Log.i(LOG_FILTER, String.format(Locale.ENGLISH, "reward: %r", reward_value))
+```
+
+You can take a look at example APKs extended with log messages in the example
+tasks (see the section below).
 
 ## Example tasks
 

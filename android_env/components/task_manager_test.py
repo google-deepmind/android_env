@@ -72,12 +72,42 @@ class TaskManagerTest(absltest.TestCase):
       event_listener.handler_fn(event_listener.regexp, match)
 
     task = task_pb2.Task()
-    task.log_parsing_config.log_regexps.reward = (
-        '^[Rr]eward: ([-+]?[0-9]*\\.?[0-9]*)$')
+    task.log_parsing_config.log_regexps.reward.extend([
+        '^[Rr]eward: ([-+]?[0-9]*\\.?[0-9]*)$'
+    ])
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     task_mgr.setup_task(adb_controller=self._adb_controller)
     self.assertEqual(task_mgr.get_current_reward(), 123.0)
+
+  def test_reward_event(self):
+    # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
+    # right away.
+    def my_add_ev_listener(event_listener: logcat_thread.EventListener):
+      # Check that the event matches what's expected.
+      match_1 = event_listener.regexp.match('foo_1')
+      match_2 = event_listener.regexp.match('foo_2')
+      match_3 = event_listener.regexp.match('Reward: 2.0')
+      if match_1:
+        event_listener.handler_fn(event_listener.regexp, match_1)
+      if match_2:
+        event_listener.handler_fn(event_listener.regexp, match_2)
+      if match_3:
+        event_listener.handler_fn(event_listener.regexp, match_3)
+
+    task = task_pb2.Task()
+    reward_event_1 = task_pb2.LogParsingConfig.LogRegexps.RewardEvent(
+        event='foo_1', reward=5.0)
+    reward_event_2 = task_pb2.LogParsingConfig.LogRegexps.RewardEvent(
+        event='foo_2', reward=-1.0)
+    task.log_parsing_config.log_regexps.reward_event.extend(
+        [reward_event_1, reward_event_2])
+    task.log_parsing_config.log_regexps.reward.extend(
+        ['^[Rr]eward: ([-+]?[0-9]*\\.?[0-9]*)$'])
+    task_mgr = task_manager.TaskManager(task=task)
+    self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
+    task_mgr.setup_task(adb_controller=self._adb_controller)
+    self.assertEqual(task_mgr.get_current_reward(), 6.0)
 
   def test_get_current_reward_via_score(self):
     # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
@@ -124,8 +154,9 @@ class TaskManagerTest(absltest.TestCase):
 
     # Setup the task and trigger the listener.
     task = task_pb2.Task()
-    task.log_parsing_config.log_regexps.extra = (
-        '^extra: (?P<name>[^ ]*)[ ]?(?P<extra>.*)$')
+    task.log_parsing_config.log_regexps.extra.extend([
+        '^extra: (?P<name>[^ ]*)[ ]?(?P<extra>.*)$'
+    ])
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     task_mgr.setup_task(adb_controller=self._adb_controller)
@@ -165,8 +196,9 @@ class TaskManagerTest(absltest.TestCase):
 
     # Setup the task and trigger the listener.
     task = task_pb2.Task()
-    task.log_parsing_config.log_regexps.json_extra = (
-        '^json_extra: (?P<json_extra>.*)$')
+    task.log_parsing_config.log_regexps.json_extra.extend([
+        '^json_extra: (?P<json_extra>.*)$'
+    ])
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     task_mgr.setup_task(adb_controller=self._adb_controller)
@@ -193,6 +225,52 @@ class TaskManagerTest(absltest.TestCase):
     np.testing.assert_equal(
         expected_extra.get('extra_dict'), extras.get('extra_dict'))
 
+  def test_multi_log_regexp(self):
+    # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
+    # right away.
+    def my_add_ev_listener(event_listener: logcat_thread.EventListener):
+      # Check that the event matches what's expected.
+      match = event_listener.regexp.match('Reward_2: 123.0')
+      if match is None:  # Ignore events that are not rewards.
+        return
+
+      event_listener.handler_fn(event_listener.regexp, match)
+
+    task = task_pb2.Task()
+    task.log_parsing_config.log_regexps.reward.extend([
+        '^[Rr]eward_1: ([-+]?[0-9]*\\.?[0-9]*)$',
+        '^[Rr]eward_2: ([-+]?[0-9]*\\.?[0-9]*)$'
+    ])
+    task_mgr = task_manager.TaskManager(task=task)
+    self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
+    task_mgr.setup_task(adb_controller=self._adb_controller)
+    self.assertEqual(task_mgr.get_current_reward(), 123.0)
+
+  def test_multi_reward_regexp(self):
+    # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
+    # right away.'
+
+    def my_add_ev_listener(event_listener: logcat_thread.EventListener):
+      # Check that the event matches what's expected.
+      match_1 = event_listener.regexp.match('Reward_1: 5.0')
+      match_2 = event_listener.regexp.match('Reward_2: 10.0')
+
+      if match_1:
+        event_listener.handler_fn(event_listener.regexp, match_1)
+
+      if match_2:
+        event_listener.handler_fn(event_listener.regexp, match_2)
+
+    task = task_pb2.Task()
+    task.log_parsing_config.log_regexps.reward.extend([
+        '^[Rr]eward_1: ([-+]?[0-9]*\\.?[0-9]*)$',
+        '^[Rr]eward_2: ([-+]?[0-9]*\\.?[0-9]*)$',
+    ])
+    task_mgr = task_manager.TaskManager(task=task)
+    self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
+    task_mgr.setup_task(adb_controller=self._adb_controller)
+    self.assertEqual(task_mgr.get_current_reward(), 15.0)
+
   def test_check_episode_end(self):
     # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
     # right away.
@@ -206,7 +284,7 @@ class TaskManagerTest(absltest.TestCase):
       event_listener.handler_fn(event, match)
 
     task = task_pb2.Task()
-    task.log_parsing_config.log_regexps.episode_end = 'I am done!'
+    task.log_parsing_config.log_regexps.episode_end.extend(['I am done!'])
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     task_mgr.setup_task(adb_controller=self._adb_controller)

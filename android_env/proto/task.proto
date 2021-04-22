@@ -249,23 +249,38 @@ message LogParsingConfig {
 
     // Regexp expected to match:
     // ...a floating point value which gets accumulated over time.
+    // A delta in 'score' corresponds to the reward.
     string score = 1;
 
     // Regexp expected to match:
     // ...a floating point value directly forwarded by the environment.
-    string reward = 2;
+    repeated string reward = 2;
 
     // Regexp expected to match:
     // ...a signal marking the end of an episode.
-    string episode_end = 3;
+    repeated string episode_end = 3;
 
     // Regexp expected to match:
     // ...a string representing pairs of extra names and values.
-    string extra = 4;
+    repeated string extra = 4;
 
     // Regexp expected to match:
     // ...a dict of extra names and values in json format.
-    string json_extra = 5;
+    repeated string json_extra = 5;
+
+    // Attaches rewards to arbitrary log messages, for example:
+    // {event: "coin_collected" reward: 2.3}
+    // {event: "car_crashed" reward: -1.4}
+    message RewardEvent{
+
+      // If `event` is matched, the environment will give `reward`.
+      string event = 1;
+
+      // Numerical value to give as reward if `event` is matched.
+      float reward = 2;
+    }
+
+    repeated RewardEvent reward_event = 6;
 
   }
 
