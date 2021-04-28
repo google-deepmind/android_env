@@ -299,35 +299,27 @@ message Task {
   // A description of the task.
   string description = 3;
 
-  // The package name of the app that contains this task.
-  // Example: "com.example.my_app"
-  string package_name = 4;
+  repeated SetupStep setup_steps = 4;
+  repeated SetupStep reset_steps = 5;
 
-  // The fully specified activity containing the package name and activity name.
-  // Example: "com.example.my_app/com.example.my_app.SomeActivity"
-  string full_activity_name = 5;
-
-  repeated SetupStep setup_steps = 6;
-  repeated SetupStep reset_steps = 7;
-
-  AppScreen expected_app_screen = 8;
+  AppScreen expected_app_screen = 6;
 
   // AndroidEnv resets the episode after `max_duration_sec` is passed since the
   // last reset().
   // Note that this is real time as measured by AndroidEnv and is independent of
   // the speed of simulation of Android.
   // If <= 0.0, this logic is disabled.
-  float max_duration_sec = 9;
+  float max_duration_sec = 7;
 
   // The maximum number of interactions in a single episode between the
   // environment and an agent.
   // This setting is appropriate for tasks that are not time-dependent or when
   // the performance of the simulation varies dramatically between runs.
   // If <= 0, this logic is disabled.
-  int32 max_num_steps = 10;
+  int32 max_num_steps = 8;
 
   // Defines parameters for parsing messages from logcat.
-  LogParsingConfig log_parsing_config = 11;
+  LogParsingConfig log_parsing_config = 9;
 
   // (Optional): The task may also define extras to help the RL agent.
   // An Extra in AndroidEnv is any information that apps may send to aid the
@@ -343,6 +335,6 @@ message Task {
   // This specification ensures that only extras specified in the Task
   // definition will be passed to the agent, everything else is excluded.
   // The name of an extra must be unique across all extras.
-  repeated ArraySpec extras_spec = 12;
+  repeated ArraySpec extras_spec = 10;
 
 }

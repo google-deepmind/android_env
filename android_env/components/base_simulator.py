@@ -13,66 +13,74 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A base class for talking to all sorts of Android simulators."""
+"""A base class for talking to different types of Android simulators."""
 
 import abc
 import tempfile
 from typing import Optional, List, Dict, Tuple
 
 from absl import logging
-from android_env.components import action_type
+from android_env.components import action_type as action_type_lib
 from android_env.components import adb_controller
 from android_env.components import utils
 
 import numpy as np
 
 
-def _orientation_onehot(orientation: int) -> Optional[np.ndarray]:
-  """Returns a one-hot representation of `orientation`."""
-  orientation_onehot = np.zeros([4], dtype=np.uint8)
-  orientation_onehot[orientation] = 1
-  return orientation_onehot
-
-
 class BaseSimulator(metaclass=abc.ABCMeta):
-  """An interface for any Android simulator.
-
-  The actual simulator may actually be an emulator, a virtual machines or even
-  a physical phone.
-  """
+  """An interface for communicating with an Android simulator."""
 
   def __init__(self,
                adb_path: str,
                adb_server_port: int,
                prompt_regex: str,
                tmp_dir: str = '/tmp',
+               kvm_device: str = '/dev/kvm',
                show_touches: bool = True,
-               pointer_location: bool = True,
+               show_pointer_location: bool = True,
                show_status_bar: bool = False,
-               show_navigation_bar: bool = False,
-               kvm_device: str = '/dev/kvm'):
+               show_navigation_bar: bool = False):
+    """Instantiates a BaseSimulator object.
+
+    The simulator may be an emulator, virtual machine or even a physical device.
+
+    Args:
+      adb_path: Path to the adb binary.
+      adb_server_port: Port for adb server.
+      prompt_regex: Shell prompt for pexpect in ADB controller.
+      tmp_dir: Directory where the AVD is installed.
+      kvm_device: Path to the KVM device.
+      show_touches: Whether to show circles on the screen indicating the
+        position of the current touch.
+      show_pointer_location: Whether to show blue lines on the screen
+        indicating the position of the current touch.
+      show_status_bar: Whether or not to show the status bar (at the top of the
+        screen, displays battery life, time, notifications etc.).
+      show_navigation_bar: Whether or not to show the navigation bar (at the
+        bottom of the screen, displayes BACK and HOME buttons, etc.)
+    """
 
     self._adb_path = adb_path
     self._adb_server_port = adb_server_port
     self._prompt_regex = prompt_regex
+    self._kvm_device = kvm_device
     self._show_touches = show_touches
-    self._pointer_location = pointer_location
+    self._show_pointer_location = show_pointer_location
     self._show_status_bar = show_status_bar
     self._show_navigation_bar = show_navigation_bar
-    self._kvm_device = kvm_device
 
     self._local_tmp_dir_handle = tempfile.TemporaryDirectory(dir=tmp_dir)
     self._local_tmp_dir = self._local_tmp_dir_handle.name
     logging.info('Simulator local_tmp_dir: %s', self._local_tmp_dir)
 
-    self._adb_controller = None
     self._orientation = np.zeros(4, dtype=np.uint8)
     self._screen_dimensions = None
     self._last_obs_timestamp = 0
     self._launched = False
 
-    self._init_own_adb_controller()
-
+    # Initialize own ADB controller
+    self._adb_controller = self.create_adb_controller()
+    self._adb_controller.init_server()
     logging.info('Initialized simulator with ADB server port %r.',
                  self._adb_server_port)
 
@@ -82,10 +90,6 @@ class BaseSimulator(metaclass=abc.ABCMeta):
   @abc.abstractmethod
   def adb_device_name(self) -> str:
     """Returns the device name that the adb client will connect to."""
-    raise NotImplementedError
-
-  @abc.abstractmethod
-  def send_action(self, action: Dict[str, np.ndarray]) -> None:
     pass
 
   @abc.abstractmethod
@@ -96,6 +100,11 @@ class BaseSimulator(metaclass=abc.ABCMeta):
   @abc.abstractmethod
   def _launch_impl(self) -> None:
     """Platform specific launch implementation."""
+    pass
+
+  @abc.abstractmethod
+  def send_action(self, action: Dict[str, np.ndarray]) -> None:
+    """Sends the action to be executed to the simulator."""
     pass
 
   @abc.abstractmethod
@@ -112,23 +121,15 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     pass
 
   def create_adb_controller(self):
+    """Returns an ADB controller which can communicate with this simulator."""
     return adb_controller.AdbController(
         adb_path=self._adb_path,
         adb_server_port=self._adb_server_port,
         device_name=self.adb_device_name(),
         shell_prompt=self._prompt_regex)
 
-  def _post_launch_setup(self):
-    self._set_device_screen_dimensions()
-    self._last_action = (0, 0, False)
-    self._adb_controller.set_touch_indicators(
-        show_touches=self._show_touches,
-        pointer_location=self._pointer_location)
-    self._adb_controller.set_bar_visibility(
-        navigation=self._show_navigation_bar, status=self._show_status_bar)
-
   def launch(self) -> None:
-    """Public interface for actually launching this BaseSimulator."""
+    """Launches the simulator."""
     if not self._launched:
       self._launched = True
       self._launch_impl()
@@ -137,21 +138,77 @@ class BaseSimulator(metaclass=abc.ABCMeta):
       self.restart()
 
   def restart(self) -> None:
-    """Restart the simulator."""
+    """Restarts the simulator."""
     logging.info('Restarting the simulator...')
-    self.close()
+    self._adb_controller.close()
     self._restart_impl()
     self._post_launch_setup()
     logging.info('Done restarting the simulator.')
+
+  def _post_launch_setup(self) -> None:
+    """Performs necessary steps after the simulator has been launched."""
+    self._screen_dimensions = np.array(
+        self._adb_controller.get_screen_dimensions())
+    self._adb_controller.set_touch_indicators(
+        show_touches=self._show_touches,
+        pointer_location=self._show_pointer_location)
+    self._adb_controller.set_bar_visibility(
+        navigation=self._show_navigation_bar,
+        status=self._show_status_bar)
 
   def screen_dimensions(self) -> np.ndarray:
     """Returns the screen dimensions in pixels.
 
     IMPORTANT: This value is only valid after a successful launch() call.
     """
-    assert self._screen_dimensions is not None, (
-        'Screen dimension not available yet.')
+    if self._screen_dimensions is None:
+      raise AssertionError('Screen dimension not available yet.')
     return self._screen_dimensions
+
+  def update_device_orientation(self) -> None:
+    """Updates the current device orientation."""
+
+    # Skip fetching the orientation if we already have it.
+    if not np.all(self._orientation == np.zeros(4)):
+      logging.info('self._orientation already set, not setting it again')
+      return
+
+    orientation = self._adb_controller.get_orientation()
+    if orientation not in {'0', '1', '2', '3'}:
+      logging.error('Got bad orientation: %r', orientation)
+      return
+
+    # Transform into one-hot format.
+    orientation_onehot = np.zeros([4], dtype=np.uint8)
+    orientation_onehot[int(orientation)] = 1
+    self._orientation = orientation_onehot
+
+  def _prepare_action(
+      self, action: Dict[str, np.ndarray]
+  ) -> Tuple[int, int, bool]:
+    """Turns an AndroidEnv action into values that the simulator can interpret.
+
+    Converts float-valued 'touch_position' to integer coordinates corresponding
+    to specific pixels, and 'action_type' to booleans indicating whether the
+    screen is touched at said location or not. The result of this function can
+    be sent directly to the underlying simulator (e.g. the Android Emulator,
+    virtual machine, or a phone).
+
+    Args:
+      action: An action containing 'action_type' and 'touch_position'.
+    Returns:
+      A tuple with the format (x: int, y: int, down/up: bool).
+    """
+    action_type = action['action_type'].item()
+    if action_type == action_type_lib.ActionType.LIFT:
+      return (0, 0, False)
+    elif action_type == action_type_lib.ActionType.TOUCH:
+      touch_position = action['touch_position']
+      touch_pixels = utils.touch_position_to_pixel_position(
+          touch_position, width_height=self._screen_dimensions[::-1])
+      return (touch_pixels[0], touch_pixels[1], True)
+    else:
+      raise ValueError('Unexpected action_type: %r' % action_type)
 
   def get_observation(self) -> Dict[str, np.ndarray]:
     """Returns the environment observation.
@@ -162,71 +219,15 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     absolute timestamp) and appending the one-hot representation of the device
     orientation.
     """
-    obs = self._get_observation()
-    timestamp = obs[1]
+    pixels, timestamp = self._get_observation()
     timestamp_delta = timestamp - self._last_obs_timestamp
     self._last_obs_timestamp = timestamp
     return {
-        'pixels': obs[0],
+        'pixels': pixels,
         'timedelta': timestamp_delta,
         'orientation': self._orientation
     }
 
-  def update_device_orientation(self) -> None:
-    """Updates the current device orientation."""
-    logging.info('Updating device orientation...')
-
-    # Skip fetching the orientation if we already have it.
-    if not np.all(self._orientation == np.zeros(4)):
-      logging.info('self._orientation already set, not setting it again')
-      return
-
-    orientation = self._adb_controller.get_orientation()
-    int_orientation = {'0': 0, '1': 1, '2': 2, '3': 3}.get(orientation, None)
-    if int_orientation is None:
-      logging.error('Got bad orientation: %r', orientation)
-      return
-
-    self._orientation = _orientation_onehot(int_orientation)
-
   def close(self):
-    if self._adb_controller is not None:
-      self._adb_controller.close()
+    self._adb_controller.close()
 
-  def _init_own_adb_controller(self):
-    if self._adb_controller is not None:
-      self._adb_controller.close()
-    self._adb_controller = self.create_adb_controller()
-    # The adb server daemon must be up before launching the simulator.
-    self._adb_controller.init_server()
-
-  def _set_device_screen_dimensions(self):
-    """Gets the (height, width)-tuple representing a screen size in pixels."""
-    self._screen_dimensions = np.array(
-        self._adb_controller.get_screen_dimensions())
-
-  def _prepare_action(
-      self, action: Dict[str, np.ndarray]
-  ) -> Tuple[int, int, bool]:
-    """Convert a float action to int coordinates.
-
-    The result of this function can be sent directly to the underlying simulator
-    (e.g. the Android Emulator, Vanadium or a phone).
-
-    Args:
-      action: The action provided by an agent. The expected format is:
-          [[ActionType], [x: float, y: float]].
-
-    Returns:
-      A tuple with the format (x: int, y: int , down/up: bool).
-    """
-    act_type = action['action_type'].item()
-    if act_type == action_type.ActionType.LIFT:
-      return (0, 0, False)
-    elif act_type == action_type.ActionType.TOUCH:
-      touch_position = action['touch_position']
-      touch_pixels = utils.touch_position_to_pixel_position(
-          touch_position, width_height=self._screen_dimensions[::-1])
-      return (touch_pixels[0], touch_pixels[1], True)
-    else:
-      assert False, 'Unexpected act_type: %r' % act_type

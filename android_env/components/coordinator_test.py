@@ -44,23 +44,35 @@ class CoordinatorTest(absltest.TestCase):
         periodic_restart_time_min=0)
 
   def test_restart_simulator(self):
-    self._coordinator.restart_simulator()
+    self._coordinator._restart_simulator()
 
   def test_reset(self):
-    self._coordinator.reset()
+    self._coordinator.reset_environment_state()
 
   def test_process_action(self):
     self._simulator.get_observation.return_value = {'observation': 0}
-    observation = self._coordinator.execute_action(
+    self._task_manager.get_current_reward.return_value = 10.0
+    self._task_manager.get_current_extras.return_value = {'extra': [0.0]}
+    self._task_manager.check_if_episode_ended.return_value = False
+    obs, reward, task_extras, episode_end = self._coordinator.execute_action(
         action={'action_type': np.array(action_type.ActionType.LIFT)})
-    self.assertDictEqual(observation, {'observation': 0})
+    self.assertDictEqual(obs, {'observation': 0})
+    self.assertEqual(reward, 10.0)
+    self.assertEqual(task_extras, {'extra': [0.0]})
+    self.assertFalse(episode_end)
 
   def test_process_action_error(self):
     self._simulator.get_observation.side_effect = errors.ReadObservationError()
-    observation = self._coordinator.execute_action(
+    self._task_manager.get_current_reward.return_value = 0.0
+    self._task_manager.get_current_extras.return_value = {}
+    self._task_manager.check_if_episode_ended.return_value = True
+    obs, reward, task_extras, episode_end = self._coordinator.execute_action(
         action={'action_type': np.array(action_type.ActionType.LIFT)})
-    self.assertTrue(self._coordinator.should_restart())
-    self.assertIsNone(observation)
+    self.assertTrue(self._coordinator._should_restart)
+    self.assertIsNone(obs)
+    self.assertEqual(reward, 0.0)
+    self.assertEqual(task_extras, {})
+    self.assertTrue(episode_end)
 
   def test_execute_action_touch(self):
     self._simulator.get_observation.return_value = {'observation': 0}
@@ -81,17 +93,17 @@ class CoordinatorTest(absltest.TestCase):
     self._simulator.send_action.side_effect = errors.SendActionError
     _ = self._coordinator.execute_action(
         {'action_type': np.array(action_type.ActionType.TOUCH)})
-    self.assertTrue(self._coordinator.should_restart())
+    self.assertTrue(self._coordinator._should_restart)
 
   def test_check_timeout_false(self):
-    self._coordinator._latest_observation_local_time = time.time()
-    timeout = self._coordinator.check_timeout()
+    self._coordinator._latest_observation_time = time.time()
+    timeout = self._coordinator._check_timeout()
     self.assertFalse(timeout)
 
   def test_check_timeout_true(self):
-    self._coordinator._latest_observation_local_time = time.time()
+    self._coordinator._latest_observation_time = time.time()
     time.sleep(3)
-    timeout = self._coordinator.check_timeout()
+    timeout = self._coordinator._check_timeout()
     self.assertTrue(timeout)
 
   def test_max_restarts_adb_error(self):
@@ -100,7 +112,7 @@ class CoordinatorTest(absltest.TestCase):
     self._simulator.create_adb_controller.side_effect = (
         errors.AdbControllerError)
     self.assertRaises(errors.TooManyRestartsError,
-                      self._coordinator.restart_simulator)
+                      self._coordinator._restart_simulator)
     # The method was called three more times when attempting to restart.
     self.assertEqual(init_fn_call + 3,
                      self._simulator.create_adb_controller.call_count)
@@ -109,7 +121,7 @@ class CoordinatorTest(absltest.TestCase):
     init_fn_call = self._task_manager.setup_task.call_count
     self._task_manager.setup_task.side_effect = errors.StepCommandError
     self.assertRaises(errors.TooManyRestartsError,
-                      self._coordinator.restart_simulator)
+                      self._coordinator._restart_simulator)
     # The method was called three more times when attempting to restart.
     self.assertEqual(init_fn_call + 3,
                      self._task_manager.setup_task.call_count)

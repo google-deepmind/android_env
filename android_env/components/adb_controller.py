@@ -211,36 +211,6 @@ class AdbController():
     """Returns the correct timeout to be used for external calls."""
     return self._default_timeout if timeout is None else timeout
 
-  def _sendline(self,
-                args: List[str],
-                expect: str = '',
-                decode_output=True,
-                timeout: Optional[float] = None) -> Optional[bytes]:
-    """Sends line to the shell and returns output up to the expect regex."""
-
-    timeout = self._resolve_timeout(timeout)
-    line = ' '.join(args)
-
-    self._adb_shell.sendline(line)
-    if expect:
-      try:
-        self._adb_shell.expect(expect, timeout=timeout)
-      except pexpect.ExceptionPexpect:
-        logging.error('Expectation (%s) not met on sendline (%s)', expect, line)
-        logging.error(self._adb_shell.before)
-      output = self._adb_shell.before
-      if decode_output:
-        output = output.decode('utf-8')
-      return output
-    else:
-      # Flushing the echo buffer.
-      self._adb_shell.expect('\r\n'.join(line.splitlines()), timeout=timeout)
-      output = self._adb_shell.before
-      output = output.decode('utf-8', 'backslashreplace')
-      if output.strip():
-        logging.info(output)
-        self._adb_shell.expect(r'.+', timeout=timeout)
-
   def _wait_for_device(self,
                        max_tries: int = 20,
                        sleep_time: float = 1.0,
@@ -627,60 +597,3 @@ class AdbController():
 
     return self._execute_command(['shell', 'input', 'keyevent', key_code],
                                  timeout=timeout)
-
-  def tcp_connect(self,
-                  tcp_address: str,
-                  connect_max_tries: int = 20,
-                  timeout: Optional[float] = None) -> Optional[bytes]:
-    """Connects ADB to a device via TCP/IP."""
-    # All AdbController instances in the process are connected to the same
-    # address. Only the first AdbController instance needs to connect.
-    n_tries = 0
-    sleep_time = 1.0
-    while n_tries < connect_max_tries:
-      n_tries += 1
-      output = self._execute_command(['connect', tcp_address], timeout=timeout)
-      logging.info('TCP connect output: %r', output)
-      # Checking for 'connected to XXX:YYY' or 'already connected to XXX:YYY'
-      if (output is not None and
-          ('connected to %s' % tcp_address).encode('utf8') in output):
-        return output
-      else:
-        logging.error(
-            'ADB unable to connect. Retrying in %f seconds. Try %d of %d',
-            sleep_time, n_tries, connect_max_tries)
-        time.sleep(sleep_time)
-    raise errors.AdbControllerConnectionError
-
-  def tcp_disconnect(self, timeout: Optional[float] = None) -> Optional[bytes]:
-    """Disconnect from all TCP connections."""
-    try:
-      output = self._execute_command(['disconnect'], timeout=timeout)
-      logging.info(output)
-      return output
-    except subprocess.CalledProcessError:
-      logging.info('Disconnect unsuccessful, tcp connection is probably '
-                   'already closed.')
-
-  def sendevents(self,
-                 bin_dir: str,
-                 target: str,
-                 timeout: Optional[float] = None):
-    self._sendline([os.path.join(bin_dir, 'sendevents'), target],
-                   expect='',
-                   timeout=timeout)
-
-  def screencaps(self, bin_dir: str, timeout: Optional[float] = None):
-    self._sendline([os.path.join(bin_dir, 'screencaps'), '-p'],
-                   expect='Ready.',
-                   timeout=timeout)
-
-  def send_mouse_event(self, event_str: str, timeout: Optional[float] = None):
-    self._sendline([event_str], expect='', timeout=timeout)
-
-  def fetch_screenshot(self, timeout: Optional[float] = None):
-    output = self._sendline([],
-                            expect='Done.',
-                            decode_output=False,
-                            timeout=timeout)
-    return output

@@ -74,8 +74,5 @@ def load(task_path: str,
 
   # Load environment.
   return android_env.AndroidEnv(
-      simulator=simulator,
-      task=task,
-      task_manager=task_manager,
       coordinator=coordinator,
   )

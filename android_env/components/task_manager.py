@@ -88,23 +88,28 @@ class TaskManager():
         'episode_end': False,
     }
 
+    logging.info('Task config: %s', self._task)
+
+  def task(self) -> task_pb2.Task:
+    return self._task
+
+  def increment_steps(self):
+    self._episode_steps += 1
+
   def log_dict(self) -> Dict[str, Any]:
     log_dict = copy.deepcopy(self._log_dict)
     log_dict.update(self._setup_step_interpreter.log_dict())
     return log_dict
 
-  def increment_steps(self):
-    self._episode_steps += 1
-
-  def reset_counters(self):
+  def _reset_counters(self):
     """Reset counters at the end of an RL episode."""
 
     if not self._is_bad_episode:
       self._bad_state_counter = 0
     self._is_bad_episode = False
 
-    self._task_start_time = datetime.datetime.now()
     self._episode_steps = 0
+    self._task_start_time = datetime.datetime.now()
     with self._lock:
       self._latest_values = {
           'reward': 0.0,
@@ -114,27 +119,38 @@ class TaskManager():
       }
 
   def setup_task(self, adb_controller: adb_control.AdbController) -> None:
+    """Starts the given task along with all relevant processes."""
+
     self._adb_controller = adb_controller
     self._start_logcat_thread()
     self._start_setup_step_interpreter()
     self._setup_step_interpreter.interpret(self._task.setup_steps)
 
   def reset_task(self) -> None:
+    """Resets a task at the end of an RL episode."""
+
+    self.pause_task()
     self._setup_step_interpreter.interpret(self._task.reset_steps)
+    self._resume_task()
+    self._reset_counters()
 
   def pause_task(self) -> None:
     self._stop_dumpsys_thread()
 
-  def resume_task(self) -> None:
+  def _resume_task(self) -> None:
     self._start_dumpsys_thread()
 
   def get_current_reward(self) -> float:
+    """Returns total reward accumulated since the last step."""
+
     with self._lock:
       reward = self._latest_values['reward']
       self._latest_values['reward'] = 0.0
     return reward
 
   def get_current_extras(self) -> Dict[str, Any]:
+    """Returns task extras accumulated since the last step."""
+
     with self._lock:
       extras = {}
       for name, values in self._latest_values['extra'].items():
@@ -162,7 +178,6 @@ class TaskManager():
 
     # Check if step limit or time limit has been reached
     if self._task.max_num_steps > 0:
-      # Should we put all the step counting here instead of AndroidEnv?
       if self._episode_steps > self._task.max_num_steps:
         self._log_dict['reset_count_max_duration_reached'] += 1
         logging.info('Maximum task duration (steps) reached. Ending episode.')
@@ -374,4 +389,3 @@ class TaskManager():
       self._logcat_thread.kill()
     if hasattr(self, '_dumpsys_thread'):
       self._dumpsys_thread.kill()
-    logging.info('Done cleaning up task_manager.')

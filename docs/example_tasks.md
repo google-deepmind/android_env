@@ -635,7 +635,7 @@ original github repo for more info: https://github.com/chrisboyle/sgtpuzzles.
 
 **dominosa_1**                                                             | **dominosa_3**                                                             | **dominosa_3a**                                                              | **dominosa_6**                                                             | **dominosa_9**
 -------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------------
-![Screenshot of 'sgtpuzzles_dominosa_1'](images/sgtpuzzles_dominosa_1.gif) | ![Screenshot of 'sgtpuzzles_dominosa_3'](images/sgtpuzzles_dominosa_3.gif) | ![Screenshot of 'sgtpuzzles_dominosa_3a'](images/sgtpuzzles_dominosa_3a.gif) | ![Screenshot of 'sgtpuzzles_dominosa_6'](images/sgtpuzzles_dominosa_6.gif) | ![Screenshot of 'sgtpuzzles_dominosa_9'](images/sgtpuzzles_dominosa_9.gif)f
+![Screenshot of 'sgtpuzzles_dominosa_1'](images/sgtpuzzles_dominosa_1.gif) | ![Screenshot of 'sgtpuzzles_dominosa_3'](images/sgtpuzzles_dominosa_3.gif) | ![Screenshot of 'sgtpuzzles_dominosa_3a'](images/sgtpuzzles_dominosa_3a.gif) | ![Screenshot of 'sgtpuzzles_dominosa_6'](images/sgtpuzzles_dominosa_6.gif) | ![Screenshot of 'sgtpuzzles_dominosa_9'](images/sgtpuzzles_dominosa_9.gif)
 
 ## SGT Puzzles - Fifteen
 

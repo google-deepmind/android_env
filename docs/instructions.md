@@ -11,8 +11,8 @@ it, the agent) can communicate with. While this could be a real device as well,
 in most cases you will want to use a virtual, emulated device. There are many
 ways to simulate such a device; in our example we will use
 [Android Studio](https://developer.android.com/studio) to create one. Follow
-this step-by-step [guide](emulator.md) to create a virtual device, then follow
-the steps below to attach this to your environment.
+this step-by-step [guide](emulator_guide.md) to create a virtual device, then
+follow the steps below to attach this to your environment.
 
 ### The task
 
@@ -24,7 +24,7 @@ or relaunch an app, clear cache etc.). These information are packaged into a
 `Task()` proto message which gets passed passed to AndroidEnv. Please see
 [tasks_guide.md](tasks_guide.md) for details on features and capabilities of
 tasks, as well as how to create custom ones; or use one of our example tasks
-provided at [this link](https://storage.googleapis.com/android_env-tasks).
+provided in [example_tasks.md.](example_tasks.md).
 
 ### Create the env
 

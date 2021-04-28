@@ -119,7 +119,7 @@ class EmulatorLauncher():
         '-verbose',
         '-avd', self._avd_name,
     ] + grpc_port + run_headless + ports
-    logging.info('Emulator launch command: %s:', ' '.join(command))
+    logging.info('Emulator launch command: %s', ' '.join(command))
 
     # Prepare logfile.
     emulator_logfile = os.path.join(self._local_tmp_dir, 'emulator_output')
@@ -152,12 +152,12 @@ class EmulatorLauncher():
 
   def _kill_emulator_process(self) -> None:
     if self._emulator:
-      logging.info('Shutting down the emulator...')
+      logging.info('Killing the emulator process...')
       self._emulator.kill(signal.SIGKILL)
       self._emulator.wait()
       self._emulator = None
       self._emulator_output.close()
-      logging.info('Done shutting down the emulator.')
+      logging.info('Done killing the emulator process.')
 
   def close(self):
     if not self._is_closed:

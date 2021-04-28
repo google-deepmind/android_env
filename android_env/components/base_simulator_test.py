@@ -130,7 +130,7 @@ class BaseSimulatorTest(absltest.TestCase):
 
     self._simulator.set_timestamp(123456)
     self.assertRaises(
-        AssertionError, self._simulator._prepare_action, {
+        ValueError, self._simulator._prepare_action, {
             'action_type': np.array(action_type.ActionType.REPEAT),
             'touch_position': [0.0, 0.0]
         })
