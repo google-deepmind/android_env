@@ -15,7 +15,8 @@ task.
 
 | App / Game                                          | Interface            | Time reactive  | Multi-level                   |  Rewards   | Extras  | Download |
 | --------------------------------------------------- | -------------------- | -------------- | ----------------------------- | ---------- | ------------ | -------- |
-| [Vokram (MDP)](#vokram)                             | Tapping (buttons)    | No             | Yes (4 variants)              | Dense      | Yes          | [![Download](images/download.png)](https://storage.googleapis.com/android_env-tasks/apple_flinger.tar.gz) |
+| [Vokram (MDP)](#vokram)                             | Tapping (buttons)    | No             | Yes (4 variants)              | Dense      | Yes          | [![Download](images/download.png)](https://storage.googleapis.com/android_env-tasks/mdp.tar.gz) |
+| [Accessibility Forwarder](#accessibility-forwarder)  | Tapping (buttons)    | No             | No                            | Sparse     | Yes          | [![Download](images/download.png)](https://storage.googleapis.com/android_env-tasks/accessibility_forwarder.tar.gz) |
 | [Apple Flinger](#apple-flinger)                     | Drag & drop          | No             | Yes (6 variants)              | Dense      | No           | [![Download](images/download.png)](https://storage.googleapis.com/android_env-tasks/apple_flinger.tar.gz) |
 | [Blockinger](#blockinger)                           | Tapping (buttons)    | Yes            | No                            | Sparse     | Yes          | [![Download](images/download.png)](https://storage.googleapis.com/android_env-tasks/blockinger.tar.gz) |
 | [Catch](#catch)                                     | Touch                | Yes            | No                            | Dense      | Yes          | [![Download](images/download.png)](https://storage.googleapis.com/android_env-tasks/catch_the_ball.tar.gz) |
@@ -103,6 +104,36 @@ different colors.
 **mdp_0000**                                     | **mdp_0001**                                     | **mdp_0002**                                     | **mdp_0003**
 ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------ | ------------
 ![Screenshot of 'mdp_0000'](images/mdp_0000.gif) | ![Screenshot of 'mdp_0001'](images/mdp_0001.gif) | ![Screenshot of 'mdp_0002'](images/mdp_0002.gif) | ![Screenshot of 'mdp_0003'](images/mdp_0003.gif)
+
+## Accessibility Forwarder
+
+This application returns all
+[accessibility service events](https://developer.android.com/reference/android/accessibilityservice/AccessibilityService)
+in the form of task extras, and, if specified, rewards the agent for specific
+events. Most often this means receiving the description of an accessibility
+event in string format, such as `A button was pressed.` or `A menu was opened.`
+etc. The two specific tasks provided here associate rewards with opening the
+"History" menu in the Calendar app, and setting and resetting a timer in the
+Clock app, but any goal can be provided in a similar manner if it can be
+associated with an accessibility event.
+
+<details>
+  <summary>Extras returned</summary>
+
+*   `clicks`:
+    -   Content description of UI element (e.g. "Settings").
+    -   Returned the given UI element is clicked.
+    -   Has `shape=[1], dtype=STRING_U250`.
+*   `event`:
+    -   Text of the accessibility event (e.g. button text "Accept & Continue").
+    -   Returned upon accessibility event.
+    -   Has `shape=[1], dtype=STRING_U250`.
+
+</details>
+
+**calendar_history**                                                 | **clock_set_timer**
+-------------------------------------------------------------------- | -------------------
+![Screenshot of 'calculator_history'](images/calculator_history.gif) | ![Screenshot of 'clock_set_timer'](images/clock.gif)
 
 ## Apple Flinger
 
