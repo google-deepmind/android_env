@@ -22,7 +22,7 @@ import time
 from absl import logging
 from android_env.components import errors
 import pexpect
-from pexpect.popen_spawn import PopenSpawn
+from pexpect import popen_spawn
 
 
 class EmulatorLauncher():
@@ -104,7 +104,7 @@ class EmulatorLauncher():
         'QT_XKB_CONFIG_ROOT': str(self._emulator_path[:-8] + 'qt_config/'),
     }
     logging.info('extra_env_vars: %s', str(extra_env_vars))
-    env_vars = os.environ.copy()
+    env_vars = dict(os.environ).copy()
     env_vars.update(extra_env_vars)
 
     # Compile command.
@@ -129,7 +129,7 @@ class EmulatorLauncher():
     start_time = time.time()
 
     try:
-      self._emulator = PopenSpawn(
+      self._emulator = popen_spawn.PopenSpawn(
           cmd=command, logfile=self._emulator_output, env=env_vars)
       wait_time = self._startup_wait_time_sec
       logging.info('Waiting for boot for %0.1f seconds...', wait_time)

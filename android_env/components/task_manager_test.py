@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for task_manager.py."""
+"""Tests for android_env.components.task_manager.py."""
 
 import json
 

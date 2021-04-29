@@ -106,14 +106,14 @@ class SetupStepInterpreter():
 
       except errors.WaitForMessageError:
         self._log_dict['error_count_wait_for_message'] += 1
-        logging.warning('Failed to wait for message. Try %d of %d.', num_tries,
-                        max_retries)
+        logging.warning('Failed to wait for message. Try %d of %d.',
+                        num_tries, max_retries)
 
       except errors.CheckInstallError:
         self._log_dict['error_count_check_install'] += 1
         logging.warning('Package [%r] not installed. Try %d of %d.',
-                        success_condition.check_install.package_name, num_tries,
-                        max_retries)
+                        success_condition.check_install.package_name,
+                        num_tries, max_retries)
 
     raise errors.StepCommandError('Step failed: [%r]' % step_cmd)
 
@@ -132,7 +132,8 @@ class SetupStepInterpreter():
     else:
       raise NotImplementedError('No step command of type [%s].' % step_type)
 
-  def _check_success(self, success_check: Optional[str],
+  def _check_success(self,
+                     success_check: Optional[str],
                      success_condition: task_pb2.SuccessCondition) -> None:
     """Checks whether the given success condition was met."""
 
@@ -264,8 +265,8 @@ class SetupStepInterpreter():
 
     raise errors.WaitForAppScreenError()
 
-  def _wait_for_message(self,
-                        wait_for_message: task_pb2.WaitForMessage) -> None:
+  def _wait_for_message(
+      self, wait_for_message: task_pb2.WaitForMessage) -> None:
     """Waits for a given message in logcat."""
 
     message = wait_for_message.message

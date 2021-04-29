@@ -32,10 +32,6 @@ class CoordinatorError(Exception):
   """Error raised by the Coordinator."""
 
 
-class CoordinatorInitError(CoordinatorError):
-  """Raised when Coordinator was not initialized correctly."""
-
-
 class TooManyRestartsError(CoordinatorError):
   """The number of restarts has exceeded _MAX_RESTART_TRIES."""
 
@@ -50,10 +46,6 @@ class PlayerExitedActivityError(NotAllowedError):
 
 class PlayerExitedViewHierarchyError(NotAllowedError):
   """When the player quits the current Android app screen."""
-
-
-class SDCardWriteError(Exception):
-  """Raised when an error occurred when writing to the SD card."""
 
 
 class AdbControllerError(Exception):
@@ -90,10 +82,6 @@ class SendActionError(Exception):
 
 class StepCommandError(Exception):
   """Raised when setup step interpreter cannot process a command."""
-
-
-class AdbCallError(StepCommandError):
-  """Raised when the execution of an ADB call has failed."""
 
 
 class WaitForAppScreenError(StepCommandError):
