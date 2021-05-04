@@ -24,17 +24,15 @@ import numpy as np
 from PIL import Image
 
 
-# pylint: disable=g-line-too-long
 # Taken from https://pillow.readthedocs.io/en/3.2.x/reference/Image.html#PIL.Image.Image.convert
 #
 # This array maps an RGB image to a grayscale image using the ITU-R 709
 # specification which is good for computer displays and HDTV.
-# pylint: enable=g-line-too-long
 RGB_TO_GRAYSCALE_COEFFICIENTS = [0.2126, 0.7152, 0.0722]
 
 
 class ImageRescaleWrapper(base_wrapper.BaseWrapper):
-  """AndroidEnv with processed observation."""
+  """AndroidEnv with rescaled observations."""
 
   def __init__(
       self,
@@ -57,9 +55,6 @@ class ImageRescaleWrapper(base_wrapper.BaseWrapper):
 
   @property
   def raw_pixels(self):
-    # Note: For this function to be exposed to the agent, the wrapper
-    # should be loaded with `load_from_settings` rather than being defined
-    # in the env config.
     return self._raw_pixels
 
   def _process_timestep(self, timestep: dm_env.TimeStep) -> dm_env.TimeStep:

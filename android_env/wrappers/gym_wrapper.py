@@ -26,7 +26,7 @@ import numpy as np
 
 
 class GymInterfaceWrapper(base_wrapper.BaseWrapper, gym.Env):
-  """AndroidEnv with discrete actions."""
+  """AndroidEnv with OpenAI Gym interface."""
 
   def __init__(self, env: dm_env.Environment):
 

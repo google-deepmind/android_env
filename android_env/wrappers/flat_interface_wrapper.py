@@ -13,12 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Makes the AndroidEnv interface flat.
-
-Removes the structure from observation and action. Keeps only the pixel
-observation. Exposes action as an int32 scalar. This makes it easier to plug in
-to conventional agents. This wrapper expects a discretized action space.
-"""
+"""Wraps the AndroidEnv environment to make its interface flat."""
 
 from typing import Union, Dict, Any
 
@@ -53,7 +48,13 @@ def _get_no_action_observation_spec(obs_spec: specs.BoundedArray):
 
 
 class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
-  """Simple interface for AndroidEnv."""
+  """Simple interface for AndroidEnv.
+
+  Removes the structure from observations and actions, keeping only the pixel
+  observations. Also exposes action as an int32 scalar, making it easier to use
+  with conventional discrete agents. This wrapper expects a discretized action
+  space.
+  """
 
   def __init__(self,
                env: dm_env.Environment,

@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Converts pixel observation to from int to float32 between 0.0 and 1.0."""
 
 from typing import Dict

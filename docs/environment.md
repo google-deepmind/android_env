@@ -51,11 +51,11 @@ Tap                                                      | Double Tap           
 ![Screenshot of 'tap'](images/gestures/1-Finger-Tap.gif) | ![Screenshot of 'double_tap'](images/gestures/1-Finger-Double-Tap.gif) | ![Screenshot of 'touch_hold'](images/gestures/1-Finger-Touch-&-Hold.gif) | ![Screenshot of 'flick_left'](images/gestures/1-Finger-Flick-Left.gif) | ![Screenshot of 'flick_right'](images/gestures/1-Finger-Flick-Right.gif) | ![Screenshot of 'horizontal_scroll'](images/gestures/1-Finger-Horizontal-Scroll.gif) | ![Screenshot of 'vertical_scroll'](images/gestures/1-Finger-Vertical-Scroll.gif) | ![Screenshot of 'move'](images/gestures/1-Finger-Move.gif)
 
 **Wrappers.** It is possible to alter the raw action space of the environment by
-applying wrappers. For example one might discretize the action space by
-splitting the screen up into a grid of a desired size; restrict the ActionType
-to *touch* only; or fix certain gesture skills. We note here that these
-wrappers, again, will not alter how the particular sequence of performed raw
-actions gets interpreted by the Android simulator.
+applying [wrappers](#wrappers). For example one might discretize the action
+space by splitting the screen up into a grid of a desired size; restrict the
+ActionType to *touch* only; or fix certain gesture skills. We note here that
+these wrappers, again, will not alter how the particular sequence of performed
+raw actions gets interpreted by the Android simulator.
 
 ## Observation space
 
@@ -133,3 +133,14 @@ of useful wrappers that demonstrate their usage:
 *   `gym_wrapper`: Changes the environment interface from
     [dm_env](https://github.com/deepmind/dm_env) to
     [OpenAI](https://gym.openai.com/) gym interface.
+*   `last_action_wrapper`: Extends the observation with a one-hot encoded
+    location of the previously taken action, in order to aid agents without
+    built-in memory.
+
+## Internal structure of AndroidEnv
+
+The chart below gives an overview of the internal workings of the system,
+illustrating how different classes interact with each other and what their
+individual roles are. See the source code for more details.
+
+![Components Chart](images/misc/components_chart.svg)
