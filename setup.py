@@ -37,6 +37,11 @@ _ANDROID_ENV_PROTOS = (
     'android_env/proto/task.proto',
 )
 
+testing_requirements = [
+    'attrs==20.3.0',  # temporary pin to fix pytype issue.
+    'pytype',
+    'pytest-xdist',
+]
 
 class _GenerateProtoFiles(cmd.Command):
   """Command to generate protobuf bindings for AndroidEnv protos."""
@@ -113,6 +118,7 @@ setup(
     extras_require={
         'acme': ['dm-acme'],
         'gym': ['gym'],
+        'testing': testing_requirements,
     },
     cmdclass={
         'build_ext': _BuildExt,
