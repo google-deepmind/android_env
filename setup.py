@@ -104,7 +104,7 @@ setup(
         'dm_env',
         'grpcio',
         'mock',
-        'numpy>=1.10',
+        'numpy<1.20',
         'pexpect',
         'portpicker>=1.2.0',
         'protobuf>=2.6',
