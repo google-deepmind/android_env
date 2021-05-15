@@ -329,65 +329,6 @@ package:baz
     self.assertTrue(
         self._adb_controller.is_package_installed('baz', timeout=_TIMEOUT))
 
-  def test_tcp_connect(self):
-    connect_msg = b'connected to myhost:12345'
-    self._mock_execute_command.return_value = connect_msg
-    cmd_out = self._adb_controller.tcp_connect('myhost:12345', timeout=_TIMEOUT)
-    self._mock_execute_command.assert_has_calls([
-        mock.call(self._adb_controller, ['connect', 'myhost:12345'], _TIMEOUT)
-    ])
-    self.assertEqual(connect_msg, cmd_out)
-
-  def test_connect_already_connected(self):
-    connect_msg = b'already connected to myhost:12345'
-    self._mock_execute_command.return_value = connect_msg
-    cmd_out = self._adb_controller.tcp_connect('myhost:12345', timeout=_TIMEOUT)
-    self._mock_execute_command.assert_called_once_with(
-        self._adb_controller, ['connect', 'myhost:12345'], _TIMEOUT)
-    self.assertEqual(connect_msg, cmd_out)
-
-  def test_connect_retry(self):
-    connect_msg = b'connected to myhost:12345'
-    self._mock_execute_command.side_effect = [
-        b'connection refused', connect_msg
-    ]
-    cmd_out = self._adb_controller.tcp_connect('myhost:12345', timeout=_TIMEOUT)
-    self._mock_execute_command.assert_has_calls([
-        mock.call(self._adb_controller, ['connect', 'myhost:12345'], _TIMEOUT),
-        mock.call(self._adb_controller, ['connect', 'myhost:12345'], _TIMEOUT),
-    ])
-    self.assertEqual(2, self._mock_execute_command.call_count)
-    self.assertEqual(connect_msg, cmd_out)
-
-  def test_connect_fail(self):
-    self._mock_execute_command.side_effect = [
-        b'connection refused',
-        b'Nope!',
-        b'connected to myhost:12345'  # A third try would have connected.
-    ]
-    self.assertRaises(
-        errors.AdbControllerConnectionError,
-        self._adb_controller.tcp_connect,
-        'myhost:12345',
-        connect_max_tries=2)
-
-  def test_disconnect(self):
-    disconnect_msg = b'disconnecting...'
-    self._mock_execute_command.return_value = disconnect_msg
-    cmd_out = self._adb_controller.tcp_disconnect(timeout=_TIMEOUT)
-    self._mock_execute_command.assert_called_once_with(self._adb_controller,
-                                                       ['disconnect'], _TIMEOUT)
-    self.assertEqual(disconnect_msg, cmd_out)
-
-  def test_disconnect_fail(self):
-    # If the disconnect command fails, we just ignore it.
-    self._mock_execute_command.side_effect = subprocess.CalledProcessError(
-        1, '', None)
-    cmd_out = self._adb_controller.tcp_disconnect(timeout=_TIMEOUT)
-    self._mock_execute_command.assert_called_once_with(self._adb_controller,
-                                                       ['disconnect'], _TIMEOUT)
-    self.assertIsNone(cmd_out)
-
   @parameterized.parameters(
       (True, True, 'null*'),
       (True, False, 'immersive.status=*'),
