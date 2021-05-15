@@ -1,6 +1,5 @@
 name: tests
 
-
 on:
   push:
     branches: [ main ]
@@ -24,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip setuptools
-          pip install .
+          python setup.py install
           pip install .[testing]
 
       - name: Check types with pytype
