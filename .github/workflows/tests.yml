@@ -28,7 +28,7 @@ jobs:
 
       - name: Check types with pytype
         run: |
-          pytype -j "$(grep -c ^processor /proc/cpuinfo)" android_env
+          pytype -j "$(grep -c ^processor /proc/cpuinfo)" android_env/components
 
       - name: Test with pytest
         run: |
