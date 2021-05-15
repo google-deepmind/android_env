@@ -41,6 +41,7 @@ testing_requirements = [
     'attrs==20.3.0',  # temporary pin to fix pytype issue.
     'pytype',
     'pytest-xdist',
+    'pillow',
 ]
 
 class _GenerateProtoFiles(cmd.Command):
