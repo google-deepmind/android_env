@@ -15,6 +15,7 @@
 
 """Tests for android_env.components.base_simulator."""
 
+import tempfile
 from typing import Optional, List
 
 from absl.testing import absltest
@@ -61,6 +62,7 @@ class BaseSimulatorTest(absltest.TestCase):
     self._adb_controller = self.enter_context(
         mock.patch.object(adb_controller, 'AdbController', autospec=True))
     tmp_dir = absltest.get_default_test_tmpdir()
+    tempfile.mkdtemp(dir=tmp_dir)
     self._simulator = FakeSimulator(
         adb_path='/my/adb',
         adb_server_port=5037,
