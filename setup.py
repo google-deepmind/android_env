@@ -39,6 +39,7 @@ _ANDROID_ENV_PROTOS = (
 
 testing_requirements = [
     'attrs==20.3.0',  # temporary pin to fix pytype issue.
+    'tempfile',
     'pytype',
     'pytest-xdist',
     'pillow',
