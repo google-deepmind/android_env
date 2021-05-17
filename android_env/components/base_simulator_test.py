@@ -61,7 +61,7 @@ class BaseSimulatorTest(absltest.TestCase):
     super().setUp()
     self._adb_controller = self.enter_context(
         mock.patch.object(adb_controller, 'AdbController', autospec=True))
-    tmp_dir = tempfile.mkdtemp(dir=absltest.get_default_test_tmpdir())
+    tmp_dir = tempfile.mkdtemp(dir=absltest.TEST_TMPDIR.value)
     self._simulator = FakeSimulator(
         adb_path='/my/adb',
         adb_server_port=5037,
