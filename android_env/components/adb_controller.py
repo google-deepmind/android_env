@@ -446,7 +446,7 @@ class AdbController():
         current_task_id = int(current_task_id_str)
         return current_task_id
       except ValueError:
-        logging.info('Failed to parse task ID [%r].', current_task_id)
+        logging.info('Failed to parse task ID [%r].', current_task_id_str)
     logging.error('Could not find current activity in stack list: %r',
                   stack_utf8)
     # At this point if we could not find a task ID, there's nothing we can do.

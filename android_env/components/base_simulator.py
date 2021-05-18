@@ -48,7 +48,7 @@ class BaseSimulator(metaclass=abc.ABCMeta):
       adb_path: Path to the adb binary.
       adb_server_port: Port for adb server.
       prompt_regex: Shell prompt for pexpect in ADB controller.
-      tmp_dir: Directory where the AVD is installed.
+      tmp_dir: Directory for temporary files.
       kvm_device: Path to the KVM device.
       show_touches: Whether to show circles on the screen indicating the
         position of the current touch.

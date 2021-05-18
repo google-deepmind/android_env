@@ -18,6 +18,7 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 from android_env.components import utils
+from android_env.proto import task_pb2
 import numpy as np
 
 
