@@ -74,6 +74,7 @@ class Coordinator():
         'restart_count_setup_steps': 0,
         'restart_count_reset_steps': 0,
         'restart_count_simulator_launch': 0,
+        'restart_count_simulator_reset': 0,
         'restart_count_execute_action': 0,
         'restart_count_fetch_observation': 0,
         'reset_count_step_timeout': 0,
