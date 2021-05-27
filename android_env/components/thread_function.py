@@ -19,6 +19,7 @@ import abc
 import enum
 import queue
 import threading
+from typing import Optional
 
 from absl import logging
 
@@ -51,7 +52,7 @@ class ThreadFunction(metaclass=abc.ABCMeta):
     self._internal_thread.daemon = True
     self._internal_thread.start()
 
-  def read(self, block: bool = True, timeout: float = None):
+  def read(self, block: bool = True, timeout: Optional[float] = None):
     """'Public' method for clients to read values _from_ this thread.
 
     Args:
@@ -65,7 +66,7 @@ class ThreadFunction(metaclass=abc.ABCMeta):
     except queue.Empty:
       return None
 
-  def write(self, value, block: bool = True, timeout: float = None):
+  def write(self, value, block: bool = True, timeout: Optional[float] = None):
     """'Public' method for clients to write values _to_ this thread.
 
     Args:

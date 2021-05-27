@@ -28,7 +28,7 @@ from android_env.proto import task_pb2
 class DumpsysNode():
   """A node in a dumpsys tree."""
 
-  def __init__(self, data: str = None):
+  def __init__(self, data: Optional[str] = None):
     self._children = []
     self._data = data
 
