@@ -88,17 +88,8 @@ environment for Reinforcement Learning research:
 
 ### Installation
 
-The easiest way to get AndroidEnv is to use pip:
-
-```shell
-$ pip install android_env
-```
-
-That will install the `android_env` package along with all the required
-dependencies.
-
-Alternatively you can install the latest AndroidEnv codebase from git main
-branch:
+The easiest way to get AndroidEnv is from the latest AndroidEnv codebase from
+git's `main` branch:
 
 ```shell
 $ git clone https://github.com/deepmind/android_env/
