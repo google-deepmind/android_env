@@ -121,10 +121,7 @@ scripts demonstrating how to run a random agent, an
 ## About
 
 This library is developed and maintained by [DeepMind](http://deepmind.com). \
-You can find the [technical report](https://arxiv.org/abs/0000.00000) on Arxiv,
-as well as an introductory
-[blog post](https://deepmind.com/research/publications/android_env) on
-DeepMind's website.
+You can find the [technical report](https://arxiv.org/abs/2105.13231) on Arxiv.
 
 If you use AndroidEnv in your research, you can cite the paper using the
 following BibTeX:
@@ -133,14 +130,14 @@ following BibTeX:
 @article{ToyamaEtAl2021AndroidEnv,
   title     = {{AndroidEnv}: A Reinforcement Learning Platform for Android},
   author    = {Daniel Kenji Toyama and Philippe Hamel and Anita Gergely and
-               Gheorghe Comanici and Mia Glaese and Zafarali Ahmed and Tyler
+               Gheorghe Comanici and Amelia Glaese and Zafarali Ahmed and Tyler
                Jackson and Shibl Mourad and Doina Precup},
   year      = {2021},
-  eprint    = {1908.09453},
+  eprint    = {2105.13231},
   archivePrefix = {arXiv},
   primaryClass = {cs.LG},
-  volume    = {abs/1908.09453},
-  url       = {http://arxiv.org/abs/1908.09453},
+  volume    = {abs/2105.13231},
+  url       = {http://arxiv.org/abs/2105.13231},
 }
 ```
 
