@@ -6,7 +6,7 @@ device with Android Studio. After creating an AVD
 you will be able to connect it to an AndroidEnv instance and you're ready to go.
 
 To get started, you will need to download
-[Android Studio](https://developer.android.com/android-studio/download), a
+[Android Studio](https://developer.android.com/studio), a
 software widely used by Android developers.
 
 ## Install an SDK Platform Package
