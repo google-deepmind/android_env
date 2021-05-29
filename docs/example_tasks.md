@@ -4,8 +4,8 @@ This page gives a detailed overview of the example tasks provided with
 AndroidEnv. The purpose is to give researchers an idea of the different kinds of
 challenges that AndroidEnv poses.
 
-To use any of these tasks in your own experiments, click on the Download icon to
-download a zip file containing textprotos and the corresponding APKs. After
+To use any of these tasks in your own experiments, click on **Download** to
+download a ZIP file containing textprotos and the corresponding APKs. After
 downloading, move the `.apk` and `.textproto` files to a directory of your
 choice and take note of their path. This information is needed for
 [running](instructions.md#create-the-env) an AndroidEnv instance with the given
