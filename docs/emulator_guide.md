@@ -19,9 +19,13 @@ use.
 ![Screenshot of 'android_studio_2'](images/android_studio/android_studio_2.png)
 
 We recommend that you set the `Android SDK Location` to be in your home
-directory (`~/Android/Sdk`). If not, take note of the custom `Android SDK
-Location` - this information will be required for connecting AndroidEnv to your
-virtual Android device.
+directory (for example, on Linux the default one is `~/Android/Sdk`, while on
+macOS - `~/Library/Android/sdk`). You can always find the SDK location in
+Android Studio under **Preferences** > **Appearance & Behavior** >
+**System Settings** > **Android SDKs** > _Android SDK Location_.
+
+If you set the the custom `Android SDK Location`, make note of it - you will 
+need it for connecting AndroidEnv to your AVD.
 
 ![Screenshot of 'android_studio_0'](images/android_studio/android_studio_0.png)
 
@@ -55,14 +59,15 @@ Click on **View details** to inspect some of its properties.
 
 Take note of the `AVD Path`. This value will be neccessary for connecting
 AndroidEnv to this device. We recommend that you set this to be your home
-directory (`~/.android/avd`).
+directory (for instance, on Linux or macOS it may be  `~/.android/avd`).
 
 ![Screenshot of 'android_studio_9'](images/android_studio/android_studio_9.png)
 
 ## Ready to use
 
 With SDK and AVD both set up, you are now ready to use this emulated device with
-AndroidEnv. Don't forget to take note of the following three values:
+AndroidEnv. Don't forget to take note of the following three values: your AVD
+name, the AVD path, and the SDK path. For example, on Linux they may be:
 
 ```
 --avd_name=my_avd
@@ -70,11 +75,14 @@ AndroidEnv. Don't forget to take note of the following three values:
 --android_sdk_root=~/Android/Sdk
 ```
 
-Follow the next steps in [instructions.md](instructions.md#the-task) to finish
-setting up AndroidEnv.
+Next, once you have set up the AVD, follow the
+[Task steps](instructions.md#the-task) in the
+[Running the environment guide](instructions.md) to finish setting up
+AndroidEnv.
 
-In the meantime, if you want to try and run the newly created device, click on
-the run button next to your AVD in the **AVD Manager** (this step is optional).
+However, if you want to just interact with the newly created device, click on
+the run button next to your AVD in the **AVD Manager** in Android Studio (this
+step is optional).
 
 ![Screenshot of 'android_studio_7'](images/android_studio/android_studio_7.png)
 
