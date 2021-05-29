@@ -45,15 +45,24 @@ providing relevant arguments, such as:
     Studio.
 *   `android_avd_home` (Optional): the path to where the AVD is installed. 
     (default value: `~/.android/avd`).
-*   `android_sdk_root` (Optional): thr root directory of the Android SDK. 
+*   `android_sdk_root` (Optional): the root directory of the Android SDK. 
     (default value: `~/Android/Sdk`).
 *   `emulator_path` (Optional): the path to the emulator binary. (default:
     `~/Android/Sdk/emulator/emulator`).
 *   `adb_path` (Optional): the path to the ADB
     ([Android Debug Bridge](https://developer.android.com/studio/command-line/adb)).
     (default value: `~/Android/Sdk/platform-tools/adb`).
+ 
+For the AVD name and path, in Android Studio, go to **Tools** >
+**AVD Manager**, right click on your virtual device, and select
+**View Details**, where you will find the `avd_name` and its path.
 
-Your example configuration may look like, depending on how you set up your
+For the Android SDK location, in Android Studio, go to **Preferences** >
+**Appearance & Behavior** > **System Settings** > **Android SDKs** and note the
+_Android SDK Location_.  In the SDK folder, you will find `/emulator/emulator`
+as well as the ADB path (`/platform-tools/adb`).
+
+Your example configuration may look like this, depending on how you set up your
 emulator:
 
 ```python
