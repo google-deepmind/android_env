@@ -2,52 +2,59 @@
 
 In order to create an AndroidEnv instance you will need to provide two main
 components: a [simulator](#the-simulator) and a [task](#the-task). In the
-following sections we will provide information about how you can create these.
+following sections you will learn how you can create them.
 
 ### The simulator
 
-First, you will need to provide an Android device that environment (and through
-it, the agent) can communicate with. While this could be a real device as well,
-in most cases you will want to use a virtual, emulated device. There are many
-ways to simulate such a device; in our example we will use
-[Android Studio](https://developer.android.com/studio) to create one. Follow
-this step-by-step [guide](emulator_guide.md) to create a virtual device, then
-follow the steps below to attach this to your environment.
+First, you will need to provide your Android virtual device (AVD) that
+environment (and through it, the agent) to communicate with. While this can also
+be a physical device, in most cases you will need a virtual emulated device.
+There are many ways to emulate an AVD. In our examples, we will use
+[Android Studio](https://developer.android.com/studio) to create one.
 
-### The task
+1. In Android Studio, create a virtual device by following this step-by-step
+[guide](emulator_guide.md).
+2. Follow the steps below to attach the ADV to your environment.
+
+### The task and examples with games and other apps
 
 A `task` is a particular definition of an RL problem that the agent will be
-interacting with. A `task` might include critical RL information such as what
-are the rewards, when are episodes supposed to terminate, and what reset
-procedures the environment should perform upon episode termination (e.g. start
-or relaunch an app, clear cache etc.). These information are packaged into a
-`Task()` proto message which gets passed passed to AndroidEnv. Please see
-[tasks_guide.md](tasks_guide.md) for details on features and capabilities of
-tasks, as well as how to create custom ones; or use one of our example tasks
-provided in [example_tasks.md](example_tasks.md).
+interacting with. A `task` may include critical RL information, such as what the
+rewards are, when the episodes are supposed to terminate, and what the reset
+procedures are that the environment should perform upon episode termination
+(e.g. start or relaunch an app, clear cache, etc.). This information is packaged
+into a `Task()` proto message, which gets passed passed to AndroidEnv.
 
-### Create the env
+* For ready-made example tasks provided with AndroidEnv, check out
+  the [Available tasks](example_tasks.md), featuring Vokram (with Markov Decision
+  Process (MDP)), Pong, DroidFish (a chess clone), Blockinger (a tetris clone),
+  and more.
 
-After setting up the simulator and creating a task, you might find that
-`android_env.load()` function is a handy tool for creating an env instance, once
-you provide the relevant arguments:
+* See the [Tasks guide](tasks_guide.md) for details on features and
+  capabilities of tasks, as well as how to create custom ones.
 
-*   `task_path`: path pointing to the `.textproto` file describing the desired
-    task.
-*   `avd_name`: the name of the AVD specified when the AVD was created in
-    Android Studio.
-*   `android_avd_home` (Optional): Path where the AVD was installed. Defaults to
-    `~/.android/avd`.
-*   `android_sdk_root` (Optional): Root directory of the Android SDK. Defaults
-    to `~/Android/Sdk`.
-*   `emulator_path` (Optional): Path to the emulator binary. Defaults to
-    `~/Android/Sdk/emulator/emulator`.
-*   `adb_path` (Optional): Path to the ADB
+### Create the environment
+
+After setting up the simulator and creating a task, you may find the 
+`android_env.load()` function handy for creating an environment instance by
+providing relevant arguments, such as:
+
+*   `task_path`: the path pointing to the `.textproto` file describing the
+    desired task.
+*   `avd_name`: the name of the AVD specified when your created it in Android
+    Studio.
+*   `android_avd_home` (Optional): the path to where the AVD is installed. 
+    (default value: `~/.android/avd`).
+*   `android_sdk_root` (Optional): thr root directory of the Android SDK. 
+    (default value: `~/Android/Sdk`).
+*   `emulator_path` (Optional): the path to the emulator binary. (default:
+    `~/Android/Sdk/emulator/emulator`).
+*   `adb_path` (Optional): the path to the ADB
     ([Android Debug Bridge](https://developer.android.com/studio/command-line/adb)).
-    Defaults to `~/Android/Sdk/platform-tools/adb`.
+    (default valye: `~/Android/Sdk/platform-tools/adb`).
 
-Thus an example configuration might look like (depending on how you set up your
-emulator):
+Your example configuration may look like, depending on how you set up your
+emulator:
 
 ```python
 import android_env
@@ -62,16 +69,18 @@ env = android_env.load(
 )
 ```
 
-## Example scripts
+## Example RL agent scripts
 
-See our `examples` directory a few simple example agent setups.
+The `examples` directory contains a few simple example agent setups, such as:
 
-*   `run_random_agent.py`: Runs a simple loop performing randomly selected
-    actions in the environment.
-*   `run_acme_agent.py`: Runs a training loop with an acme DQN agent,
-    implemented in the popular DeepMind RL framework. This will require that the
-    optional depenecy [acme](https://github.com/deepmind/acme) is installed.
-*   `run_human_agent.py`: Creates a `pygame` instance that lets a human user
-    interact with the environment and observe environment mechanics such as
-    rewards or task extras. This will require that the optional depenecy
-    [pygame](https://www.pygame.org/wiki/GettingStarted) is installed.
+*   [`run_random_agent.py`](https://github.com/deepmind/android_env/blob/main/examples/run_random_agent.py):
+    Runs a simple loop performing randomly selected actions in the environment.
+*   [`run_acme_agent.py`](https://github.com/deepmind/android_env/blob/main/examples/run_acme_agent.py):
+    Runs a training loop with an [Acme](https://deepmind.com/research/publications/Acme)
+    DQN agent, implemented in the popular DeepMind RL framework. This will
+    require to install the [`acme`](https://github.com/deepmind/acme)
+    dependency.
+*   [`run_human_agent.py`](https://github.com/deepmind/android_env/blob/main/examples/run_human_agent.py):
+    Creates a [`pygame`](https://www.pygame.org) instance that lets a human user
+    interact with the environment and observe environment mechanics, such as
+    rewards or task extras. You will need to install the [PyGame] dependency.
