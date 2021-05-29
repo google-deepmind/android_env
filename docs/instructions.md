@@ -6,15 +6,15 @@ following sections you will learn how you can create them.
 
 ### The simulator
 
-First, you will need to provide your Android virtual device (AVD) that
-environment (and through it, the agent) to communicate with. While this can also
+First, you will need to provide your Android virtual device (AVD) that the
+environment (and through it, the agent) can communicate with. While this can also
 be a physical device, in most cases you will need a virtual emulated device.
-There are many ways to emulate an AVD. In our examples, we will use
+There are many ways to emulate an AVD - in our examples, we will use
 [Android Studio](https://developer.android.com/studio) to create one.
 
 1. In Android Studio, create a virtual device by following this step-by-step
 [guide](emulator_guide.md).
-2. Follow the steps below to attach the ADV to your environment.
+2. Follow the steps below to attach the AVD to your environment.
 
 ### The task and examples with games and other apps
 
