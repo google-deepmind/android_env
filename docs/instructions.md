@@ -36,8 +36,9 @@ into a `Task()` proto message, which gets passed passed to AndroidEnv.
 ### Create the environment
 
 After setting up the simulator and creating a task, you may find the 
-`android_env.load()` function handy for creating an environment instance by
-providing relevant arguments, such as:
+[`android_env.load()`](https://github.com/deepmind/android_env/blob/main/android_env/loader.py)
+function handy for creating an environment instance by providing relevant
+arguments, such as:
 
 *   `task_path`: the path pointing to the `.textproto` file describing the
     desired task.
