@@ -51,7 +51,7 @@ providing relevant arguments, such as:
     `~/Android/Sdk/emulator/emulator`).
 *   `adb_path` (Optional): the path to the ADB
     ([Android Debug Bridge](https://developer.android.com/studio/command-line/adb)).
-    (default valye: `~/Android/Sdk/platform-tools/adb`).
+    (default value: `~/Android/Sdk/platform-tools/adb`).
 
 Your example configuration may look like, depending on how you set up your
 emulator:
