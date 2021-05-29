@@ -60,7 +60,7 @@ For the AVD name and path, in Android Studio, go to **Tools** >
 
 For the Android SDK location, in Android Studio, go to **Preferences** >
 **Appearance & Behavior** > **System Settings** > **Android SDKs** and note the
-_Android SDK Location_.  In the SDK folder, you will find `/emulator/emulator`
+_Android SDK Location_. In the SDK folder, you will find `/emulator/emulator`
 as well as the ADB path (`/platform-tools/adb`).
 
 Your example configuration may look like this, depending on how you set up your
@@ -94,3 +94,24 @@ The `examples` directory contains a few simple example agent setups, such as:
     Creates a [`pygame`](https://www.pygame.org) instance that lets a human user
     interact with the environment and observe environment mechanics, such as
     rewards or task extras. You will need to install the [PyGame] dependency.
+
+For instance, here is how you can run `run_random_agent.py` in a folder where
+you have your APK file, such as
+the [Apple Flinger](https://github.com/deepmind/android_env/blob/main/docs/example_tasks.md#apple-flinger)
+game.
+(You can find the TAR file with the APK and `.textproto` files
+[here](https://storage.googleapis.com/android_env-tasks/apple_flinger.tar.gz)
+and on the
+[example tasks](https://github.com/deepmind/android_env/blob/main/docs/example_tasks.md)
+page.)
+
+```shell
+python3 run_random_agent.py \
+--avd_name='my_avd',
+--android_avd_home=/Users/username/.android/avd \
+--android_sdk_root=/Users/username/Library/Android/sdk \
+--emulator_path=/Users/username/Library/Android/sdk/emulator/emulator \
+--adb_path=/Users/username/Library/Android/sdk/platform-tools/adb \
+--num_steps=1000 \
+--task_path=/Users/username/<PATH-TO-APPLE-FLINGER-FILES>/apple_flinger_M_1_1.textproto
+```
