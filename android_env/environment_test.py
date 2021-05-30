@@ -16,7 +16,7 @@
 """Unit tests for AndroidEnv."""
 
 from absl.testing import absltest
-from android_env import android_env
+from android_env import environment
 from android_env.components import coordinator as coordinator_lib
 import dm_env
 import mock
@@ -42,7 +42,7 @@ class AndroidEnvTest(absltest.TestCase):
     coordinator.task_extras_spec.return_value = {
         'click': dm_env.specs.Array(shape=(), dtype=np.int64),
     }
-    env = android_env.AndroidEnv(coordinator)
+    env = environment.AndroidEnv(coordinator)
 
     # Check action spec.
     self.assertNotEmpty(env.action_spec())
@@ -94,7 +94,7 @@ class AndroidEnvTest(absltest.TestCase):
     coordinator.task_extras_spec.return_value = {
         'click': dm_env.specs.Array(shape=(1,), dtype=np.int64),
     }
-    env = android_env.AndroidEnv(coordinator)
+    env = environment.AndroidEnv(coordinator)
     coordinator.execute_action.return_value = (
         {
             'pixels': np.random.rand(987, 654, 3),

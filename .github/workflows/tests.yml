@@ -1,5 +1,9 @@
 name: tests
 
+  <<<<<<< kenjitoyama-max-np1.19
+
+  =======
+  >>>>>>> master
 on:
   push:
     branches: [ main ]
@@ -23,12 +27,21 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip setuptools
+  <<<<<<< kenjitoyama-max-np1.19
+          pip install .
+          pip install .[testing]
+
+      - name: Check types with pytype
+        run: |
+          pytype -j "$(grep -c ^processor /proc/cpuinfo)" android_env
+  =======
           python setup.py install
           pip install .[testing]
 
       # - name: Check types with pytype
       #   run: |
       #     pytype -j "$(grep -c ^processor /proc/cpuinfo)" android_env/components
+  >>>>>>> master
 
       - name: Test with pytest
         run: |

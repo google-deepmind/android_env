@@ -17,7 +17,7 @@
 
 import os
 
-from android_env import android_env
+from android_env import environment
 from android_env.components import coordinator as coordinator_lib
 from android_env.components import emulator_simulator
 from android_env.components import task_manager as task_manager_lib
@@ -32,7 +32,7 @@ def load(task_path: str,
          android_sdk_root: str = '~/Android/Sdk',
          emulator_path: str = '~/Android/Sdk/emulator/emulator',
          adb_path: str = '~/Android/Sdk/platform-tools/adb',
-         run_headless: bool = False) -> android_env.AndroidEnv:
+         run_headless: bool = False) -> environment.AndroidEnv:
   """Loads an AndroidEnv instance.
 
   Args:
@@ -73,6 +73,4 @@ def load(task_path: str,
   coordinator = coordinator_lib.Coordinator(simulator, task_manager)
 
   # Load environment.
-  return android_env.AndroidEnv(
-      coordinator=coordinator,
-  )
+  return environment.AndroidEnv(coordinator=coordinator)

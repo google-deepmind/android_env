@@ -113,7 +113,7 @@ in the form of task extras, and, if specified, rewards the agent for specific
 events. Most often this means receiving the description of an accessibility
 event in string format, such as `A button was pressed.` or `A menu was opened.`
 etc. The two specific tasks provided here associate rewards with opening the
-"History" menu in the Calendar app, and setting and resetting a timer in the
+"History" menu in the Calculator app, and setting and resetting a timer in the
 Clock app, but any goal can be provided in a similar manner if it can be
 associated with an accessibility event.
 
@@ -131,7 +131,7 @@ associated with an accessibility event.
 
 </details>
 
-**calendar_history**                                                 | **clock_set_timer**
+**calculator_history**                                               | **clock_set_timer**
 -------------------------------------------------------------------- | -------------------
 ![Screenshot of 'calculator_history'](images/calculator_history.gif) | ![Screenshot of 'clock_set_timer'](images/clock.gif)
 

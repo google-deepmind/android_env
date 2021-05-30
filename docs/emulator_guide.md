@@ -6,14 +6,15 @@ device with Android Studio. After creating an AVD
 you will be able to connect it to an AndroidEnv instance and you're ready to go.
 
 To get started, you will need to download
-[Android Studio](https://developer.android.com/android-studio/download), a
-software widely used by Android developers.
+[Android Studio](https://developer.android.com/studio) - an IDE widely used by
+Android developers.
 
 ## Install an SDK Platform Package
 
 Android Studio comes with the Android Software Development Toolkit (SDK) which,
-among others, allows you to install different versions of Android. Open the
-**SDK Manager** to select a version that you would like to use.
+among others, allows you to install different versions of Android. Click
+on **Tools** > **SDK Manager** and select the SDK version that you would like to
+use.
 
 ![Screenshot of 'android_studio_2'](images/android_studio/android_studio_2.png)
 
@@ -26,7 +27,8 @@ virtual Android device.
 
 ## Create an AVD
 
-Now it is time to create a virtual device (AVD). Select the **AVD Manager**.
+Now it is time to create a virtual device (AVD). Go to **Tools** >
+**AVD Manager**.
 
 ![Screenshot of 'android_studio_1'](images/android_studio/android_studio_1.png)
 
@@ -35,16 +37,18 @@ In the pop-up window you will find an option to **Create Virtual Device**.
 ![Screenshot of 'android_studio_3'](images/android_studio/android_studio_3.png)
 
 Configure the virtual device. You can select the model or choose from more
-advanced settings.
+advanced settings (refer to the
+[Android docs](https://developer.android.com/studio/run/managing-avds)
+for step-by-step instructions).
 
 ![Screenshot of 'android_studio_4'](images/android_studio/android_studio_4.png)
 
 Name your AVD and take note of this value. It will be neccessary for connecting
-AndroidEnv to this device.
+AndroidEnv to this virtual device.
 
 ![Screenshot of 'android_studio_6'](images/android_studio/android_studio_6.png)
 
-Once this step is done, you will see the new AVD show up in the **AVD Manager**.
+Once you are done, you will see the new AVD show up in the **AVD Manager**.
 Click on **View details** to inspect some of its properties.
 
 ![Screenshot of 'android_studio_8'](images/android_studio/android_studio_8.png)

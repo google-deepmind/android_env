@@ -18,6 +18,7 @@
 import os
 import signal
 import time
+from typing import Optional
 
 from absl import logging
 from android_env.components import errors
@@ -31,9 +32,9 @@ class EmulatorLauncher():
   def __init__(
       self,
       local_tmp_dir: str = '/tmp',
-      adb_port: int = None,
-      adb_server_port: int = None,
-      emulator_console_port: int = None,
+      adb_port: Optional[int] = None,
+      adb_server_port: Optional[int] = None,
+      emulator_console_port: Optional[int] = None,
       grpc_port: int = -1,
       emulator_path: str = '',
       android_sdk_root: str = '',

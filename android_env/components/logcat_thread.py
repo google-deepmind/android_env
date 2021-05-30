@@ -95,7 +95,7 @@ class LogcatThread(thread_function.ThreadFunction):
 
   def wait(self,
            event: Optional[Pattern[str]] = None,
-           timeout_sec: float = None) -> None:
+           timeout_sec: Optional[float] = None) -> None:
     """Blocks (caller) execution for up to `timeout_sec` until `event` is fired.
 
     Args:
