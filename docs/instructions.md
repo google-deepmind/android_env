@@ -95,15 +95,13 @@ The `examples` directory contains a few simple example agent setups, such as:
     interact with the environment and observe environment mechanics, such as
     rewards or task extras. You will need to install the [PyGame] dependency.
 
-For instance, here is how you can run `run_random_agent.py` in a folder where
-you have your APK file, such as
-the [Apple Flinger](https://github.com/deepmind/android_env/blob/main/docs/example_tasks.md#apple-flinger)
-game.
-(You can find the TAR file with the APK and `.textproto` files
-[here](https://storage.googleapis.com/android_env-tasks/apple_flinger.tar.gz)
-and on the
-[example tasks](https://github.com/deepmind/android_env/blob/main/docs/example_tasks.md)
-page.)
+For instance, here is how you can run
+[`run_random_agent.py`](https://github.com/8bitmp3/android_env/blob/main/examples/run_random_agent.py)
+in a folder where you have your APK file, such as the
+[Apple Flinger](https://github.com/deepmind/android_env/blob/main/docs/example_tasks.md#apple-flinger)
+game from
+[Example tasks](https://github.com/deepmind/android_env/blob/main/docs/example_tasks.md).
+(The downloaded TAR file contains the APK file and `.textproto` definitions.)
 
 ```shell
 python3 run_random_agent.py \
@@ -113,60 +111,5 @@ python3 run_random_agent.py \
 --emulator_path=/Users/username/Library/Android/sdk/emulator/emulator \
 --adb_path=/Users/username/Library/Android/sdk/platform-tools/adb \
 --num_steps=1000 \
---task_path=/Users/username/<PATH-TO-APPLE-FLINGER-FILES>/apple_flinger_M_1_1.textproto
-```
-
-## Example with code: a random agent playing Droidfish (chess)
-
-Below is an example of a random agent playing chess in Droidfish using
-`droidfish_black_1.textproto` over 1000 steps (where `1` indicates the
-[level of difficulty](https://github.com/deepmind/android_env/blob/main/docs/example_tasks.md#droidfish)).
-You need to execute the Python code in a folder where you have the Droidfish APK
-file. (Download the Droidfish TAR file with the APK and `.textproto` files
-[here](https://storage.googleapis.com/android_env-tasks/droidfish.tar.gz)
-and on the
-[example tasks](https://github.com/deepmind/android_env/blob/main/docs/example_tasks.md)
-page.) Notice the use of `dm_env` - it's the
-[DeepMind RL Environment API](https://github.com/deepmind/dm_env).
-
-```python
-import android_env
-from dm_env import specs
-import numpy as np
-from typing import Dict
-
-env = android_env.load(
-    avd_name='my_avd',
-    android_avd_home='/Users/username/.android/avd',
-    android_sdk_root='/Users/username/Library/Android/sdk',
-    emulator_path='/Users/username/Library/Android/sdk/emulator/emulator',
-    adb_path='/Users/username/Library/Android/sdk/platform-tools/adb',
-    emulator_path='/Users/username/Library/Android/sdk/emulator/emulator',
-    adb_path='/Users/username/Library/Android/sdk/platform-tools/adb',
-    task_path='~/<path-to-droidfish-textproto>/droidfish_black_1.textproto'
-)
-
-action_spec = env.action_spec()
-
-def get_random_action() -> Dict[str, np.ndarray]:
-  """Returns a random AndroidEnv action."""
-  action = {}
-  for k, v in action_spec.items():
-    if isinstance(v, specs.DiscreteArray):
-      action[k] = np.random.randint(low=0, high=v.num_values, dtype=v.dtype)
-    else:
-      action[k] = np.random.random(size=v.shape).astype(v.dtype)
-  return action
-
-_ = env.reset()
-
-STEPS = 1000
-
-for step in range(STEPS):
-  action = get_random_action()
-  timestep = env.step(action=action)
-  reward = timestep.reward
-  print('Step {}, action: {}, reward: {}'.format(step, action, reward))
-
-env.close()
+--task_path=/Users/username/<PATH-TO-APP-TASK-FILES>/apple_flinger_M_1_1.textproto
 ```
