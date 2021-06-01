@@ -97,9 +97,9 @@ The `examples` directory contains a few simple example agent setups, such as:
 
 For instance, here is how you can run
 [`run_random_agent.py`](https://github.com/8bitmp3/android_env/blob/main/examples/run_random_agent.py)
-in a folder where you have your APK file, such as the
+in a folder where you have your APK file, such as
 [Apple Flinger](https://github.com/deepmind/android_env/blob/main/docs/example_tasks.md#apple-flinger)
-game from
+from
 [Example tasks](https://github.com/deepmind/android_env/blob/main/docs/example_tasks.md).
 (The downloaded TAR file contains the APK file and `.textproto` definitions.)
 
