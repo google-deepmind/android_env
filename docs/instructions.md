@@ -86,7 +86,8 @@ The `examples` directory contains a few simple example agent setups, such as:
 *   [`run_random_agent.py`](https://github.com/deepmind/android_env/blob/main/examples/run_random_agent.py):
     Runs a simple loop performing randomly selected actions in the environment.
 *   [`run_acme_agent.py`](https://github.com/deepmind/android_env/blob/main/examples/run_acme_agent.py):
-    Runs a training loop with an [Acme](https://deepmind.com/research/publications/Acme)
+    (Linux only) Runs a training loop with an
+    [Acme](https://deepmind.com/research/publications/Acme)
     DQN agent, implemented in the popular DeepMind RL framework. This will
     require to install the [`acme`](https://github.com/deepmind/acme)
     dependency.
