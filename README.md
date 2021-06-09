@@ -130,7 +130,10 @@ scripts demonstrating how to run a random agent, an
 ## About
 
 This library is developed and maintained by [DeepMind](http://deepmind.com). \
-You can find the [technical report](https://arxiv.org/abs/2105.13231) on Arxiv.
+You can find the [technical report](https://arxiv.org/abs/2105.13231) on Arxiv, 
+as well as an introductory
+[blog post](https://deepmind.com/research/publications/androidenv) on
+DeepMind's website.
 
 If you use AndroidEnv in your research, you can cite the paper using the
 following BibTeX:
