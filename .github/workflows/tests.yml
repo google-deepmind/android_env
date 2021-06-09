@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      TEST_TMPDIR='/tmp'
+      TEST_TMPDIR: '/tmp'
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8]
