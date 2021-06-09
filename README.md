@@ -15,6 +15,8 @@ example, rewards might be given for events such as successfully scrolling down a
 page, sending an email, or achieving some score in a game, depending on the
 research purpose and how the user configures the task.
 
+[![tests](https://github.com/deepmind/android_env/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/deepmind/android_env/actions/workflows/tests.yml)
+
 ## Index
 
 *   [Environment details](docs/environment.md)
