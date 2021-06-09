@@ -131,7 +131,7 @@ following BibTeX:
 ```
 @article{ToyamaEtAl2021AndroidEnv,
   title     = {{AndroidEnv}: A Reinforcement Learning Platform for Android},
-  author    = {Daniel Kenji Toyama and Philippe Hamel and Anita Gergely and
+  author    = {Daniel Toyama and Philippe Hamel and Anita Gergely and
                Gheorghe Comanici and Amelia Glaese and Zafarali Ahmed and Tyler
                Jackson and Shibl Mourad and Doina Precup},
   year      = {2021},
