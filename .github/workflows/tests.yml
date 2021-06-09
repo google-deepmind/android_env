@@ -27,10 +27,6 @@ jobs:
           pip install .
           pip install .[testing]
 
-      - name: Check types with pytype
-        run: |
-          pytype -j "$(grep -c ^processor /proc/cpuinfo)" android_env
-
       - name: Test with pytest
         run: |
           pytest -n "$(grep -c ^processor /proc/cpuinfo)" android_env
