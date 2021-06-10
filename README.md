@@ -93,7 +93,7 @@ environment for Reinforcement Learning research:
 The easiest way to get AndroidEnv is with pip:
 
 ```shell
-$ python3 python3 -m pip install android-env
+$ python3 -m pip install android-env
 ```
 
 Please note that `/examples` are not included in this package.
