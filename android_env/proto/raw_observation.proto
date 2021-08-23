@@ -1,0 +1,39 @@
+// Copyright 2021 DeepMind Technologies Limited.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package android_env;
+
+// A reinforcement learning (RL) observation which agents can use to build their
+// internal state. This comes straight from the Android Emulator.
+message RawObservation {
+  // The moment this RawObservation was generated.
+  int64 timestamp_us = 1;
+
+  // A visual image represented as pixels.
+  message Image {
+    // The width in pixels of this image.
+    int32 width = 1;
+    // The height in pixels of this image.
+    int32 height = 2;
+    // The number of channels (e.g. 3 in RGB) per pixel.
+    int32 num_channels = 3;
+    // The binary data associated with this image.
+    bytes data = 4;
+  }
+
+  // The screenshot representing this raw observation.
+  Image screen = 2;
+}
