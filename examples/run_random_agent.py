@@ -34,6 +34,8 @@ flags.DEFINE_string('emulator_path',
                     '~/Android/Sdk/emulator/emulator', 'Path to emulator.')
 flags.DEFINE_string('adb_path',
                     '~/Android/Sdk/platform-tools/adb', 'Path to ADB.')
+flags.DEFINE_bool('run_headless', False,
+                  'Whether to display the emulator window.')
 
 # Environment args.
 flags.DEFINE_string('task_path', None, 'Path to task textproto file.')
@@ -51,7 +53,7 @@ def main(_):
       avd_name=FLAGS.avd_name,
       adb_path=FLAGS.adb_path,
       task_path=FLAGS.task_path,
-      run_headless=False) as env:
+      run_headless=FLAGS.run_headless) as env:
 
     action_spec = env.action_spec()
 

@@ -23,26 +23,30 @@ import mock
 import numpy as np
 
 
+def _create_mock_env():
+  coordinator = mock.create_autospec(coordinator_lib.Coordinator)
+  coordinator.action_spec.return_value = {
+      'action_type':
+          dm_env.specs.DiscreteArray(num_values=3),
+      'touch_position':
+          dm_env.specs.BoundedArray(
+              shape=(2,), dtype=np.float32, minimum=0.0, maximum=1.0),
+  }
+  coordinator.observation_spec.return_value = {
+      'pixels': dm_env.specs.Array(shape=(123, 456, 3), dtype=np.uint8),
+      'timedelta': dm_env.specs.Array(shape=(), dtype=np.int64),
+      'orientation': dm_env.specs.Array(shape=(4,), dtype=np.uint8),
+  }
+  coordinator.task_extras_spec.return_value = {
+      'click': dm_env.specs.Array(shape=(), dtype=np.int64),
+  }
+  return environment.AndroidEnv(coordinator)
+
+
 class AndroidEnvTest(absltest.TestCase):
 
   def test_specs(self):
-    coordinator = mock.create_autospec(coordinator_lib.Coordinator)
-    coordinator.action_spec.return_value = {
-        'action_type':
-            dm_env.specs.DiscreteArray(num_values=3),
-        'touch_position':
-            dm_env.specs.BoundedArray(
-                shape=(2,), dtype=np.float32, minimum=0.0, maximum=1.0),
-    }
-    coordinator.observation_spec.return_value = {
-        'pixels': dm_env.specs.Array(shape=(123, 456, 3), dtype=np.uint8),
-        'timedelta': dm_env.specs.Array(shape=(), dtype=np.int64),
-        'orientation': dm_env.specs.Array(shape=(4,), dtype=np.uint8),
-    }
-    coordinator.task_extras_spec.return_value = {
-        'click': dm_env.specs.Array(shape=(), dtype=np.int64),
-    }
-    env = environment.AndroidEnv(coordinator)
+    env = _create_mock_env()
 
     # Check action spec.
     self.assertNotEmpty(env.action_spec())
@@ -157,6 +161,7 @@ class AndroidEnvTest(absltest.TestCase):
     self.assertNotEmpty(env.android_logs())
     self.assertNotEmpty(env.raw_observation)
     self.assertNotEmpty(env.raw_action)
+
 
 if __name__ == '__main__':
   absltest.main()

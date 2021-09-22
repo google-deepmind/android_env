@@ -20,6 +20,7 @@ from typing import Optional, List, Dict, Tuple
 
 from absl import logging
 from android_env.components import action_type as action_type_lib
+from android_env.components import adb_controller
 from android_env.components import log_stream
 from android_env.components import utils
 
@@ -39,6 +40,8 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     """Instantiates a BaseSimulator object.
 
     The simulator may be an emulator, virtual machine or even a physical device.
+    Each simulator has its own AdbController that is used for internal
+    bookkeeping.
 
     Args:
       num_fingers: Number of virtual fingers of the agent.
@@ -79,7 +82,7 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     pass
 
   @abc.abstractmethod
-  def create_adb_controller(self):
+  def create_adb_controller(self) -> adb_controller.AdbController:
     """Returns an ADB controller which can communicate with this simulator."""
     pass
 

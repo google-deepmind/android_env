@@ -17,11 +17,12 @@
 
 import builtins
 import os
+import subprocess
+
 from absl.testing import absltest
 from android_env.components.simulators.emulator import emulator_launcher
 import grpc
 import mock
-from pexpect import popen_spawn
 
 
 class EmulatorLauncherTest(absltest.TestCase):
@@ -35,8 +36,6 @@ class EmulatorLauncherTest(absltest.TestCase):
     self._emulator_console_port = 5555
     self._avd_name = 'my_avd_name'
 
-    self._emulator = mock.create_autospec(popen_spawn.PopenSpawn)
-    self._emulator.after = 'after'
     self._emulator_output = mock.create_autospec(open)
     self._emulator_output.close = lambda: None
 
@@ -50,6 +49,7 @@ class EmulatorLauncherTest(absltest.TestCase):
     mock.patch.object(
         grpc, 'local_channel_credentials',
         return_value=self._grpc_channel).start()
+    mock.patch.object(grpc, 'channel_ready_future').start()
 
     self._expected_command = [
         self._emulator_path,
@@ -81,8 +81,8 @@ class EmulatorLauncherTest(absltest.TestCase):
     }
 
   @mock.patch.object(os, 'environ', autospec=True, return_value=dict())
-  def test_launch(self, os_environ):
-    del os_environ
+    def test_launch(self, os_environ):
+      del os_environ
 
     launcher = emulator_launcher.EmulatorLauncher(
         adb_port=self._adb_port,
@@ -93,21 +93,21 @@ class EmulatorLauncherTest(absltest.TestCase):
         grpc_port=-1)
 
     with mock.patch.object(
-        popen_spawn, 'PopenSpawn', autospec=True,
-        return_value=self._emulator) as emulator_init, \
+        subprocess, 'Popen', autospec=True) as emulator_init, \
         mock.patch.object(
             builtins, 'open', autospec=True,
             return_value=self._emulator_output):
 
       launcher.launch()
       emulator_init.assert_called_once_with(
-          cmd=self._expected_command + self._ports,
-          logfile=self._emulator_output,
-          env=self._expected_env_vars)
+          args=self._expected_command + self._ports,
+          env=self._expected_env_vars,
+          stdout=self._emulator_output,
+          stderr=self._emulator_output)
 
   @mock.patch.object(os, 'environ', autospec=True, return_value=dict())
-  def test_grpc_port(self, os_environ):
-    del os_environ
+    def test_grpc_port(self, os_environ):
+      del os_environ
 
     launcher = emulator_launcher.EmulatorLauncher(
         adb_port=self._adb_port,
@@ -118,20 +118,20 @@ class EmulatorLauncherTest(absltest.TestCase):
         grpc_port=8554)
 
     with mock.patch.object(
-        popen_spawn, 'PopenSpawn', autospec=True,
-        return_value=self._emulator) as emulator_init, \
+        subprocess, 'Popen', autospec=True) as emulator_init, \
         mock.patch.object(
             builtins, 'open', autospec=True,
             return_value=self._emulator_output):
       launcher.launch()
       emulator_init.assert_called_once_with(
-          cmd=self._expected_command + ['-grpc', '8554'] + self._ports,
-          logfile=self._emulator_output,
-          env=self._expected_env_vars)
+          args=self._expected_command + ['-grpc', '8554'] + self._ports,
+          env=self._expected_env_vars,
+          stdout=self._emulator_output,
+          stderr=self._emulator_output)
 
   @mock.patch.object(os, 'environ', autospec=True, return_value=dict())
-  def test_restart(self, os_environ):
-    del os_environ
+    def test_restart(self, os_environ):
+      del os_environ
 
     launcher = emulator_launcher.EmulatorLauncher(
         adb_port=self._adb_port,
@@ -142,18 +142,28 @@ class EmulatorLauncherTest(absltest.TestCase):
         grpc_port=-1)
 
     with mock.patch.object(
-        popen_spawn, 'PopenSpawn', autospec=True,
-        return_value=self._emulator) as emulator_init, \
+        subprocess, 'Popen', autospec=True) as emulator_init, \
         mock.patch.object(
             builtins, 'open', autospec=True,
             return_value=self._emulator_output):
       launcher.launch()
       launcher.restart()
-      launcher._emulator_stub.setVmState.assert_called_once()
-      emulator_init.assert_has_calls([mock.call(
-          cmd=self._expected_command + self._ports,
-          logfile=self._emulator_output,
-          env=self._expected_env_vars)]*2)
+      emulator_init.assert_has_calls([
+          # 1st call is the first boot process.
+          mock.call(
+              args=self._expected_command + self._ports,
+              env=self._expected_env_vars,
+              stdout=self._emulator_output,
+              stderr=self._emulator_output),
+          # 2nd call is for waiting for the process to finish gracefully.
+          mock.call().wait(timeout=30.0),
+          # 3rd call is for the actual restart.
+          mock.call(
+              args=self._expected_command + self._ports,
+              env=self._expected_env_vars,
+              stdout=self._emulator_output,
+              stderr=self._emulator_output)
+      ])
 
 
 if __name__ == '__main__':

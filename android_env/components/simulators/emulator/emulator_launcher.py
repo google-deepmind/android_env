@@ -16,17 +16,22 @@
 """Prepares and launches the emulator."""
 
 import os
+import subprocess
 import time
 from typing import Optional
 
 from absl import logging
 from android_env.components import errors
 import grpc
-import pexpect
-from pexpect import popen_spawn
 
 from android_env.proto import emulator_controller_pb2
 from android_env.proto import emulator_controller_pb2_grpc
+from google.protobuf import empty_pb2
+
+# Period in milliseconds to ping the Emulator gRPC server to keep the connection
+# alive. If too frequent, we may get errors such as "Too many pings.", which can
+# bring down the process.
+_GRPC_KEEPALIVE_MS = 100000
 
 
 class EmulatorLauncher():
@@ -130,25 +135,34 @@ class EmulatorLauncher():
     emulator_logfile = os.path.join(self._local_tmp_dir, 'emulator_output')
     self._emulator_output = open(emulator_logfile, 'wb')
 
-    # Boot emulator.
-    start_time = time.time()
-
-    try:
-      self._emulator = popen_spawn.PopenSpawn(
-          cmd=command, logfile=self._emulator_output, env=env_vars)
-      wait_time = self._startup_wait_time_sec
-      logging.info('Waiting for boot for %0.1f seconds...', wait_time)
-      self._emulator.expect('emulator: INFO: boot completed', timeout=wait_time)
-      logging.info('Emulator log matched: %s', self._emulator.after)
-    except pexpect.ExceptionPexpect as e:
-      if self._emulator and self._emulator.before:
-        for line in self._emulator.before.decode('utf-8').split('\n'):
-          logging.info(line)
-      raise errors.SimulatorCrashError('The emulator has crashed: %r' % e)
+    # Spawn the emulator process.
+    self._emulator = subprocess.Popen(
+        command,
+        env=env_vars,
+        stdout=self._emulator_output,
+        stderr=self._emulator_output)
 
     self._emulator_stub = EmulatorLauncher.create_emulator_stub(self._grpc_port)
 
+    # Wait for the emulator to boot.
+    start_time = time.time()
+    deadline = start_time + self._startup_wait_time_sec
+    success = False
+    while time.time() < deadline:
+      emu_status = self._emulator_stub.getStatus(empty_pb2.Empty())
+      logging.info('Waiting for emulator to start. Emulator uptime: %rms',
+                   emu_status.uptime)
+      if emu_status.booted:
+        success = True
+        break
+      time.sleep(1.0)
+
     elapsed_time = time.time() - start_time
+    if not success:
+      raise errors.SimulatorCrashError(
+          'The emulator failed to boot after %r seconds' %
+          self._startup_wait_time_sec)
+
     logging.info('Done booting the emulator (in %f seconds).', elapsed_time)
 
   def restart(self) -> None:
@@ -164,14 +178,17 @@ class EmulatorLauncher():
       use_async: bool = False,
   ) -> emulator_controller_pb2_grpc.EmulatorControllerStub:
     """Returns a stub to the EmulatorController service."""
+    logging.info('Creating gRPC channel to the emulator on port %r', grpc_port)
     port = f'localhost:{grpc_port}'
     options = [('grpc.max_send_message_length', -1),
-               ('grpc.max_receive_message_length', -1)]
+               ('grpc.max_receive_message_length', -1),
+               ('grpc.keepalive_time_ms', _GRPC_KEEPALIVE_MS)]
     creds = grpc.local_channel_credentials()
     if use_async:
       channel = grpc.aio.secure_channel(port, creds, options=options)
     else:
       channel = grpc.secure_channel(port, creds, options=options)
+    grpc.channel_ready_future(channel).result()  # Wait for channel to be ready.
     logging.info('Added gRPC channel for the Emulator on port %s', port)
     return emulator_controller_pb2_grpc.EmulatorControllerStub(channel)
 
@@ -186,6 +203,14 @@ class EmulatorLauncher():
       self._emulator_stub.setVmState(
           emulator_controller_pb2.VmRunState(
               state=emulator_controller_pb2.VmRunState.RunState.SHUTDOWN))
+      logging.info('Will wait 30s for it to finish gracefully...')
+      try:
+        self._emulator.wait(timeout=30.0)
+      except subprocess.TimeoutExpired:
+        logging.exception('The emulator process did not finish after 30s. '
+                          f'returncode: {self._emulator.returncode}. '
+                          'Will now try to kill() it.')
+        self._emulator.kill()
       self._emulator = None
       self._emulator_output.close()
       logging.info('Done killing the emulator process.')

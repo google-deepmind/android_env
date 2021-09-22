@@ -34,6 +34,7 @@ _ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 _ANDROID_ENV_PROTOS = (
     'android_env/proto/emulator_controller.proto',
     'android_env/proto/raw_observation.proto',
+    'android_env/proto/adb.proto',
     'android_env/proto/task.proto',
 )
 

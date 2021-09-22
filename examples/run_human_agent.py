@@ -24,6 +24,7 @@ from absl import logging
 import android_env
 from android_env.components import action_type
 from android_env.components import utils
+from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
 import dm_env
 import numpy as np
@@ -52,7 +53,7 @@ FLAGS = flags.FLAGS
 def _get_action_from_event(
     event: pygame.event.Event,
     screen: pygame.Surface,
-    orientation: task_pb2.AdbCall.Rotate.Orientation) -> Dict[str, Any]:
+    orientation: adb_pb2.AdbCall.Rotate.Orientation) -> Dict[str, Any]:
   """Returns the current action by reading data from a pygame Event object."""
 
   act_type = action_type.ActionType.LIFT
@@ -69,7 +70,7 @@ def _get_action_from_event(
 
 def _get_action_from_mouse(
     screen: pygame.Surface,
-    orientation: task_pb2.AdbCall.Rotate.Orientation) -> Dict[str, Any]:
+    orientation: adb_pb2.AdbCall.Rotate.Orientation) -> Dict[str, Any]:
   """Returns the current action by reading data from the mouse."""
 
   act_type = action_type.ActionType.LIFT
@@ -87,11 +88,11 @@ def _get_action_from_mouse(
 def _scale_position(
     position: np.ndarray,
     screen: pygame.Surface,
-    orientation: task_pb2.AdbCall.Rotate.Orientation) -> np.ndarray:
+    orientation: adb_pb2.AdbCall.Rotate.Orientation) -> np.ndarray:
   """AndroidEnv accepts mouse inputs as floats so we need to scale it."""
 
   scaled_pos = np.divide(position, screen.get_size(), dtype=np.float32)
-  if orientation == task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90:
+  if orientation == adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90:
     scaled_pos = scaled_pos[::-1]
     scaled_pos[0] = 1 - scaled_pos[0]
   return scaled_pos
@@ -117,7 +118,7 @@ def _accumulate_reward(
 def _render_pygame_frame(
     surface: pygame.Surface,
     screen: pygame.Surface,
-    orientation: task_pb2.AdbCall.Rotate.Orientation,
+    orientation: adb_pb2.AdbCall.Rotate.Orientation,
     timestep: dm_env.TimeStep) -> None:
   """Displays latest observation on pygame surface."""
 
@@ -153,8 +154,8 @@ def main(_):
     screen_size = list(map(int, FLAGS.screen_size))  # (W x H)
     obs_shape = env.observation_spec()['pixels'].shape[:2]  # (H x W)
 
-    if (orientation == task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90 or
-        orientation == task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270):
+    if (orientation == adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90 or
+        orientation == adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270):
       screen_size = screen_size[::-1]
       obs_shape = obs_shape[::-1]
 

@@ -16,130 +16,10 @@ syntax = "proto3";
 
 package android_env;
 
-message AdbCall {
-  // Installs an APK into the simulator.
-  message InstallApk {
-
-    // A location in the filesystem.
-    message Filesystem {
-      string path = 1;
-    }
-
-    oneof location {
-      Filesystem filesystem = 2;
-    }
-  }
-
-  message StartActivity {
-    string full_activity = 1;
-    repeated string extra_args = 2;
-    string flag = 3;
-  }
-
-  message StartIntent {
-    string data_uri = 1;
-    string action = 2;
-    string package_name = 3;
-  }
-
-  // Starts and wait for a randomly chosen activity in the list.
-  message StartRandomActivity {
-    repeated string activity_list = 1;
-    repeated string extra_args = 2;
-    float timeout_sec = 4;
-  }
-
-  message UninstallPackage {
-    string package_name = 1;
-  }
-
-  message ForceStop {
-    string package_name = 1;
-  }
-
-  // Force stop last selected random activity.
-  message ForceStopRandomActivity {}
-
-  // Disables all Android animations.
-  message DisableAnimations {}
-
-  message ClearCache {
-    string package_name = 1;
-  }
-
-  // Clear cache for last selected random activity.
-  message ClearCacheRandomActivity {}
-
-  message GrantPermissions {
-    string package_name = 1;
-
-    // Possible values listed at
-    // https://developer.android.com/reference/android/Manifest.permission
-    // To query an app's required permissions, use the following adb command:
-    // > adb shell dumpsys package <package>
-    // The output will contain things like
-    //     android.permission.WRITE_SECURE_SETTINGS
-    repeated string permissions = 2;
-  }
-
-  message Tap {
-    // NOTE: These are absolute coordinates in the range of the screen
-    // resolution. They are NOT floats in [0,1].
-    int32 x = 1;
-    int32 y = 2;
-  }
-
-  message PressButton {
-    enum Button {
-      HOME = 0;
-      BACK = 1;
-    }
-    Button button = 1;
-  }
-
-  message Rotate {
-    enum Orientation {
-      PORTRAIT_0 = 0;     //   0 degrees counter-clockwise.
-      LANDSCAPE_90 = 1;   //  90 degrees counter-clockwise.
-      PORTRAIT_180 = 2;   // 180 degrees counter-clockwise.
-      LANDSCAPE_270 = 3;  // 270 degrees counter-clockwise.
-    }
-    Orientation orientation = 1;
-  }
-
-  message StartAccessibilityService {
-    // Fully qualified class name of the Accessibility Service.
-    string full_service = 1;
-  }
-
-  // Pins the given activity to the screen.
-  // This essentially locks the user into a single app mode (aka "Kiosk mode").
-  message StartScreenPinning {
-    string full_activity = 1;
-  }
-
-  oneof command {
-    InstallApk install_apk = 1;
-    StartActivity start_activity = 2;
-    ForceStop force_stop = 3;
-    ClearCache clear_cache = 4;
-    GrantPermissions grant_permissions = 5;
-    Tap tap = 6;
-    PressButton press_button = 7;
-    Rotate rotate = 8;
-    StartAccessibilityService start_accessibility_service = 9;
-    StartScreenPinning start_screen_pinning = 10;
-    StartRandomActivity start_random_activity = 11;
-    ForceStopRandomActivity force_stop_random_activity = 12;
-    ClearCacheRandomActivity clear_cache_random_activity = 13;
-    DisableAnimations disable_animations = 14;
-    StartIntent start_intent = 15;
-    UninstallPackage uninstall_package = 16;
-  }
-}
+import "third_party/py/android_env/proto/adb.proto";
 
 // An AppScreen identifies a unique configuration that we can observe on the
-// screen of device.
+// screen of a device.
 message AppScreen {
   // Fully-qualified name of the activity.
   string activity = 1;
@@ -181,11 +61,6 @@ message Sleep {
   float time_sec = 1;
 }
 
-message Tap {
-  float x = 1;
-  float y = 2;
-}
-
 message SuccessCondition {
   int32 num_retries = 1;
 
@@ -202,7 +77,6 @@ message SetupStep {
   oneof step {
     AdbCall adb_call = 2;
     Sleep sleep = 3;
-    Tap tap = 4;
   }
 }
 

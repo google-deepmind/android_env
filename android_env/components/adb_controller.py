@@ -26,7 +26,7 @@ from typing import List, Optional, Sequence, Tuple
 
 from absl import logging
 from android_env.components import errors
-from android_env.proto import task_pb2
+from android_env.proto import adb_pb2
 import pexpect
 
 _MAX_INIT_RETRIES = 20
@@ -543,7 +543,7 @@ class AdbController():
     return None
 
   def rotate_device(self,
-                    orientation: task_pb2.AdbCall.Rotate.Orientation,
+                    orientation: adb_pb2.AdbCall.Rotate.Orientation,
                     timeout: Optional[float] = None) -> None:
     """Sets the device to the given `orientation`."""
     self._execute_command(

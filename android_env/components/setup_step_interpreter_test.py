@@ -20,6 +20,7 @@ from android_env.components import adb_controller
 from android_env.components import errors
 from android_env.components import logcat_thread
 from android_env.components import setup_step_interpreter
+from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
 import mock
 
@@ -167,7 +168,7 @@ adb_call: {
     ])
     # AdbController should be called exactly once with the following arguments.
     self.adb_controller.rotate_device.assert_called_once_with(
-        task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90)
+        adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90)
 
     self.adb_controller.reset_mock()
     # Check portrait.
@@ -177,7 +178,7 @@ adb_call: {
     ])
     # AdbController should be called exactly once with the following arguments.
     self.adb_controller.rotate_device.assert_called_once_with(
-        task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_0)
+        adb_pb2.AdbCall.Rotate.Orientation.PORTRAIT_0)
 
     self.adb_controller.reset_mock()
     # Check landscape inverted.
@@ -187,7 +188,7 @@ adb_call: {
     ])
     # AdbController should be called exactly once with the following arguments.
     self.adb_controller.rotate_device.assert_called_once_with(
-        task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270)
+        adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270)
 
     self.adb_controller.reset_mock()
     # Check portrait up-side-down.
@@ -197,7 +198,7 @@ adb_call: {
     ])
     # AdbController should be called exactly once with the following arguments.
     self.adb_controller.rotate_device.assert_called_once_with(
-        task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180)
+        adb_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180)
 
   def test_adb_press_button(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(

@@ -23,6 +23,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from android_env.components import adb_controller
 from android_env.components import errors
+from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
 import mock
 
@@ -149,13 +150,13 @@ class AdbControllerTest(parameterized.TestCase):
 
   def test_rotate_device(self):
     self._adb_controller.rotate_device(
-        task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90, timeout=_TIMEOUT)
+        adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90, timeout=_TIMEOUT)
     self._adb_controller.rotate_device(
-        task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_0, timeout=_TIMEOUT)
+        adb_pb2.AdbCall.Rotate.Orientation.PORTRAIT_0, timeout=_TIMEOUT)
     self._adb_controller.rotate_device(
-        task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270, timeout=_TIMEOUT)
+        adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270, timeout=_TIMEOUT)
     self._adb_controller.rotate_device(
-        task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180, timeout=_TIMEOUT)
+        adb_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180, timeout=_TIMEOUT)
     self._mock_execute_command.assert_has_calls([
         mock.call(
             self._adb_controller,

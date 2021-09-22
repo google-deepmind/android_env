@@ -18,7 +18,7 @@
 from typing import Sequence, Tuple
 
 
-from android_env.proto import task_pb2
+from android_env.proto import adb_pb2
 import numpy as np
 
 
@@ -39,12 +39,12 @@ def transpose_pixels(frame: np.ndarray) -> np.ndarray:
 
 def orient_pixels(
     frame: np.ndarray,
-    orientation: task_pb2.AdbCall.Rotate.Orientation) -> np.ndarray:
+    orientation: adb_pb2.AdbCall.Rotate.Orientation) -> np.ndarray:
   """Rotates screen pixels according to the given orientation."""
-  if orientation == task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90:
+  if orientation == adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90:
     frame = np.rot90(frame, k=3, axes=(0, 1))
-  elif orientation == task_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180:
+  elif orientation == adb_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180:
     frame = np.rot90(frame, k=2, axes=(0, 1))
-  elif orientation == task_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270:
+  elif orientation == adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270:
     frame = np.rot90(frame, k=1, axes=(0, 1))
   return frame

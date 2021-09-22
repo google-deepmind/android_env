@@ -26,6 +26,7 @@ from android_env.components import adb_controller as adb_control
 from android_env.components import app_screen_checker
 from android_env.components import errors
 from android_env.components import logcat_thread
+from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
 
 
@@ -149,7 +150,7 @@ class SetupStepInterpreter():
     else:
       raise NotImplementedError('No success check called [%s].' % success_check)
 
-  def _parse_adb_call(self, adb_cmd: task_pb2.AdbCall) -> None:
+  def _parse_adb_call(self, adb_cmd: adb_pb2.AdbCall) -> None:
     """Parses an adb command into set of allowed calls."""
 
     call_type = adb_cmd.WhichOneof('command')
@@ -164,10 +165,10 @@ class SetupStepInterpreter():
 
     elif call_type == 'press_button':
       if (adb_cmd.press_button.button ==
-          task_pb2.AdbCall.PressButton.Button.HOME):
+          adb_pb2.AdbCall.PressButton.Button.HOME):
         self._adb_controller.input_key('KEYCODE_HOME')
       elif (adb_cmd.press_button.button ==
-            task_pb2.AdbCall.PressButton.Button.BACK):
+            adb_pb2.AdbCall.PressButton.Button.BACK):
         self._adb_controller.input_key('KEYCODE_BACK')
 
     elif call_type == 'start_random_activity':
