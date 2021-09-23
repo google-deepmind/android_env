@@ -81,8 +81,8 @@ class EmulatorLauncherTest(absltest.TestCase):
     }
 
   @mock.patch.object(os, 'environ', autospec=True, return_value=dict())
-    def test_launch(self, os_environ):
-      del os_environ
+  def test_launch(self, os_environ):
+    del os_environ
 
     launcher = emulator_launcher.EmulatorLauncher(
         adb_port=self._adb_port,
@@ -106,8 +106,8 @@ class EmulatorLauncherTest(absltest.TestCase):
           stderr=self._emulator_output)
 
   @mock.patch.object(os, 'environ', autospec=True, return_value=dict())
-    def test_grpc_port(self, os_environ):
-      del os_environ
+  def test_grpc_port(self, os_environ):
+    del os_environ
 
     launcher = emulator_launcher.EmulatorLauncher(
         adb_port=self._adb_port,
@@ -130,8 +130,8 @@ class EmulatorLauncherTest(absltest.TestCase):
           stderr=self._emulator_output)
 
   @mock.patch.object(os, 'environ', autospec=True, return_value=dict())
-    def test_restart(self, os_environ):
-      del os_environ
+  def test_restart(self, os_environ):
+    del os_environ
 
     launcher = emulator_launcher.EmulatorLauncher(
         adb_port=self._adb_port,
