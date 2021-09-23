@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package android_env;
 
-import "third_party/py/android_env/proto/adb.proto";
+import "android_env/proto/adb.proto";
 
 // An AppScreen identifies a unique configuration that we can observe on the
 // screen of a device.
