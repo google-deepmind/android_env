@@ -13,10 +13,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Android simulators package."""
-
-from android_env.components.simulators.emulator import emulator_simulator
-from android_env.components.simulators.fake import fake_simulator
-
-EmulatorSimulator = emulator_simulator.EmulatorSimulator
-FakeSimulator = fake_simulator.FakeSimulator
