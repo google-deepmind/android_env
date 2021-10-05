@@ -73,7 +73,12 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     self._local_tmp_dir = self._local_tmp_dir_handle.name
     logging.info('Simulator local_tmp_dir: %s', self._local_tmp_dir)
 
+    # Initialize own ADB controller
     self._adb_controller_args = adb_controller_args
+    self._adb_controller = self.create_adb_controller()
+    self._adb_controller.init_server()
+    logging.info('Initialized simulator with ADB server port %r.',
+                 self._adb_controller_args['adb_server_port'])
 
     # Create EmulatorLauncher.
     emulator_launcher_args.update({
@@ -115,14 +120,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self.restart()
 
   def _post_launch_setup(self):
-    # Initialize own ADB controller
-    self._adb_controller = self.create_adb_controller()
-    self._adb_controller.init_server()
-    logging.info('Initialized simulator with ADB server port %r.',
-                 self._adb_controller_args['adb_server_port'])
-
     super()._post_launch_setup()
-
     self._emulator_stub = self._get_emulator_stub()
     self._image_format = emulator_controller_pb2.ImageFormat(
         format=emulator_controller_pb2.ImageFormat.ImgFormat.RGB888,

@@ -68,6 +68,31 @@ class EmulatorSimulatorTest(absltest.TestCase):
         })
     self.assertNotEmpty(simulator.adb_device_name())
 
+  def test_launch(self):
+
+    # Make sure that adb_controller is started before Emulator is launched.
+    call_order = []
+    self._adb_controller.init_server.side_effect = (
+        lambda *a, **kw: call_order.append('init_server'))
+    self._launcher.launch.side_effect = (
+        lambda *a, **kw: call_order.append('launch'))
+
+    tmp_dir = absltest.get_default_test_tmpdir()
+    simulator = emulator_simulator.EmulatorSimulator(
+        num_fingers=1,
+        tmp_dir=tmp_dir,
+        emulator_launcher_args={'grpc_port': 1234},
+        adb_controller_args={
+            'adb_path': '/my/adb',
+            'adb_server_port': 5037,
+            'prompt_regex': 'awesome>',
+        })
+    self._adb_controller.get_screen_dimensions.return_value = (1234, 5678)
+
+    # The simulator should launch and not crash.
+    simulator.launch()
+    self.assertEqual(call_order, ['init_server', 'launch'])
+
   def test_close(self):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
