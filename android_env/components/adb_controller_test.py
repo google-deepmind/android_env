@@ -16,7 +16,6 @@
 """Tests for android_env.components.adb_controller."""
 
 import os
-import subprocess
 import time
 
 from absl.testing import absltest
@@ -24,7 +23,6 @@ from absl.testing import parameterized
 from android_env.components import adb_controller
 from android_env.components import errors
 from android_env.proto import adb_pb2
-from android_env.proto import task_pb2
 import mock
 
 # Timeout to be used by default in tests below. Set to a small value to avoid

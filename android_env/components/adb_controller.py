@@ -150,6 +150,7 @@ class AdbController():
       return cmd_output
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
       logging.exception('Failed to execute ADB command %s', command)
+      logging.error('Error output: %r', error.output)
       raise error
 
   def _execute_shell_command(

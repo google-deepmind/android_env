@@ -96,7 +96,7 @@ class _BuildPy(build_py):
 
 setup(
     name='android_env',
-    version='1.0.0',
+    version='1.1.0',
     description='AndroidEnv environment and library for training agents.',
     long_description=description,
     author='DeepMind',
@@ -113,7 +113,7 @@ setup(
         'grpcio',
         'mock',
         'numpy<1.20',
-        'pexpect',
+        'pexpect>=4.8.0',
         'portpicker>=1.2.0',
         'protobuf>=2.6',
         'pygame',

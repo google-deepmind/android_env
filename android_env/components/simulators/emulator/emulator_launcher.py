@@ -155,7 +155,7 @@ class EmulatorLauncher():
       if emu_status.booted:
         success = True
         break
-      time.sleep(1.0)
+      time.sleep(5.0)
 
     elapsed_time = time.time() - start_time
     if not success:
@@ -198,6 +198,7 @@ class EmulatorLauncher():
     return self._emulator_stub
 
   def _kill_emulator_process(self) -> None:
+    """Shuts down the emulator process."""
     if self._emulator:
       logging.info('Killing the emulator process...')
       self._emulator_stub.setVmState(
@@ -207,9 +208,10 @@ class EmulatorLauncher():
       try:
         self._emulator.wait(timeout=30.0)
       except subprocess.TimeoutExpired:
-        logging.exception('The emulator process did not finish after 30s. '
-                          f'returncode: {self._emulator.returncode}. '
-                          'Will now try to kill() it.')
+        logging.exception(
+            'The emulator process did not finish after 30s. '
+            'returncode: %s. Will now try to kill() it.',
+            self._emulator.returncode)
         self._emulator.kill()
       self._emulator = None
       self._emulator_output.close()

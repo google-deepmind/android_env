@@ -946,7 +946,92 @@ https://github.com/00-Evan/shattered-pixel-dungeon.git.
 
 <details>
   <summary>Extras returned</summary>
-  Returns no extras.
+
+*   `action`:
+    -   The action just completed by the hero.
+    -   Returned whenever an action is taken.
+    -   Has `shape=[1], dtype=STRING_U25`.
+*   `dst`:
+    -   TThe destination of the action.
+    -   Returned whenever an action is taken.
+    -   Has `shape=[1], dtype=INT32`.
+*   `level`:
+    -   The level reached.
+    -   Returned whenever a new level is reached.
+    -   Has `shape=[1], dtype=INT32`.
+*   `depth`:
+    -   The depth of the level reached.
+    -   Returned whenever a new floor is reached.
+    -   Has `shape=[1], dtype=INT32`.
+*   `deepestFloor`:
+    -   The deepest reached floor statistic.
+    -   Returned whenever a new floor is reached.
+    -   Has `shape=[1], dtype=INT32`.
+*   `gold`:
+    -   The gold level reached.
+    -   Returned whenever gold is acquired.
+    -   Has `shape=[1], dtype=INT32`.
+*   `totalGold`:
+    -   The gold collected statistic.
+    -   Returned whenever gold is acquired.
+    -   Has `shape=[1], dtype=INT32`.
+*   `addedGold`:
+    -   The gold acquired at the most recent step.
+    -   Returned whenever gold is acquired.
+    -   Has `shape=[1], dtype=INT32`.
+*   `newlyVisited`:
+    -   Number of new squares uncovered.
+    -   Returned whenever new squares are uncovered.
+    -   Has `shape=[1], dtype=INT32`.
+*   `damageDealt`:
+    -   Damage dealt by hero.
+    -   Returned whenever the hero deals damage.
+    -   Has `shape=[1], dtype=INT32`.
+*   `damageTaken`:
+    -   Damage taken by hero.
+    -   Returned whenever the hero takes damage.
+    -   Has `shape=[1], dtype=INT32`.
+*   `HP`:
+    -   Hit Points (Health) of hero.
+    -   Returned whenever its value changes.
+    -   Has `shape=[1], dtype=INT32`.
+*   `exp`:
+    -   Experience gained by hero.
+    -   Returned whenever the hero gains experience points.
+    -   Has `shape=[1], dtype=INT32`.
+*   `dew`:
+    -   How many dew (an immediately consumed item) the user picks up.
+    -   Returned whenever a dew is picked up.
+    -   Has `shape=[1], dtype=INT32`.
+*   `heal`:
+    -   Amount the hero is healed.
+    -   Returned whenever the hero is healed.
+    -   Has `shape=[1], dtype=INT32`.
+*   `itemPickup`:
+    -   The name of an item that is picked up.
+    -   Returned whenever an item is picked up.
+    -   Has `shape=[1], dtype=STRING_U25`.
+*   `itemDrop`:
+    -   The name of an item that is dropped.
+    -   Returned whenever an item is dropped.
+    -   Has `shape=[1], dtype=STRING_U25`.
+*   `destroy`:
+    -   The name of the enemy that is killed.
+    -   Returned whenever an enemy is killed.
+    -   Has `shape=[1], dtype=STRING_U25`.
+*   `search`:
+    -   Whether the user clicked the "Search" button.
+    -   Returned whenever the button is clicked.
+    -   Has `shape=[1], dtype=INT32`.
+*   `wait`:
+    -   Whether the user clicked the "Wait" button.
+    -   Returned whenever the button is clicked.
+    -   Has `shape=[1], dtype=INT32`.
+*   `openedInventory`:
+    -   Whether the user clicked the "Inventory" button.
+    -   Returned whenever the button is clicked.
+    -   Has `shape=[1], dtype=INT32`.
+
 </details>
 
 huntress                                                                                         | mage                                                                                     | rogue                                                                                      | warrior
