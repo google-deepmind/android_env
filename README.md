@@ -103,7 +103,7 @@ Please note that `/examples` are not included in this package.
 Alternatively, you can clone the repository from git's `main` branch:
 
 ```shell
-$ git clone https://github.com/deepmind/android_env/
+$ git clone https://github.com/deepmind/android_env.git
 $ cd android_env
 $ python3 setup.py install
 ```
