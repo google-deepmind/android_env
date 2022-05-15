@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 import random
 import threading
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from absl import logging
 from android_env.components import adb_controller
@@ -35,7 +35,7 @@ class FakeStream():
         '',
         self._make_stdout('reward: 0.5'),
         self._make_stdout('reward: 1.0'),
-        self._make_stdout('extra: my_extra: [1.0]'),
+        self._make_stdout('extra: my_extra [1.0]'),
         self._make_stdout('episode end'),
     ]
     self._kill = False
@@ -64,59 +64,40 @@ class FakeLogStream(log_stream.LogStream):
   """FakeLogStream class that wraps a FakeStream."""
 
   def __init__(self):
+    super().__init__(verbose=False)
     self.stream = FakeStream()
-    self.stream_is_alive = True
-    self._verbose = False
 
   def _get_stream_output(self):
     return self.stream
 
   def stop_stream(self):
-    self.stream_is_alive = False
     self.stream.kill()
 
 
 class FakeAdbController(adb_controller.AdbController):
   """Fake adb controller for FakeSimulator."""
 
-  def __init__(self,
-               screen_dimensions: Tuple[int, int],
-               fake_activity: str,
-               *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    self._screen_dimensions = screen_dimensions
-    self._fake_activity = fake_activity
+  def execute_command(self,
+                      args: List[str],
+                      timeout: Optional[float] = None) -> Optional[bytes]:
+    """Returns fake output for adb commands."""
 
-  def _execute_command(
-      self,
-      args: List[str],
-      timeout: Optional[float] = None) -> Optional[bytes]:
-    del args, timeout
-    return bytes('fake output', 'utf-8')
+    del timeout
 
-  def _wait_for_device(
-      self,
-      max_tries: int = 20,
-      sleep_time: float = 1.0,
-      timeout: Optional[float] = None) -> None:
-    """Fake adb controller does not have to wait for a device."""
-    pass
+    # Fake "service is ready" output.
+    if args[:3] == ['shell', 'service', 'check']:
+      return f'Service {args[-1]}: found'.encode('utf-8')
 
-  def get_screen_dimensions(
-      self, timeout: Optional[float] = None) -> Tuple[int, int]:
-    return self._screen_dimensions
+    # Fake dumpsys output for getting orientation.
+    if args == ['shell', 'dumpsys', 'input']:
+      return b' SurfaceOrientation: 0'
 
-  def get_current_activity(
-      self, timeout: Optional[float] = None) -> Optional[str]:
-    return self._fake_activity
+    # app_screen_checker: fake_task expects 'fake_activity'.
+    if args[:4] == ['shell', 'am', 'stack', 'list']:
+      return (b'taskId=0 fake_activity visible=true '
+              b'topActivity=ComponentInfo{fake_activity}')
 
-  def is_package_installed(
-      self, package_name: str, timeout: Optional[float] = None) -> bool:
-    return True
-
-  def start_screen_pinning(
-      self, full_activity: str, timeout: Optional[float] = None):
-    pass
+    return b'fake output'
 
 
 class FakeSimulator(base_simulator.BaseSimulator):
@@ -124,31 +105,29 @@ class FakeSimulator(base_simulator.BaseSimulator):
 
   def __init__(self,
                screen_dimensions: Tuple[int, int] = (480, 320),
-               fake_activity: str = '',
                **kwargs):
     """FakeSimulator class that can replace EmulatorSimulator in AndroidEnv.
 
     Args:
-      screen_dimensions: desired screen dimensions in pixels.
-      fake_activity: if FakeSimulator is used in combination with a
-        task_pb2.Task() that has an expected_activity, we can mock an
-        activity here. If this activity does not match the expected_activity,
-        an error will be raised.
+      screen_dimensions: desired screen dimensions in pixels. This determines
+        the shape of the screenshots returned by get_screenshot().
       **kwargs: other keyword arguments for the base class.
     """
     super().__init__(**kwargs)
-    self._screen_dimensions = screen_dimensions
-    self._fake_activity = fake_activity
-    self._adb_controller = self.create_adb_controller()
+    self._screen_dimensions = np.array(screen_dimensions)
     logging.info('Created FakeSimulator.')
+
+  def get_logs(self) -> str:
+    return 'FakeSimulator: fake logs'
 
   def adb_device_name(self) -> str:
     return 'fake_simulator'
 
   def create_adb_controller(self):
-    return FakeAdbController(
-        screen_dimensions=self._screen_dimensions,
-        fake_activity=self._fake_activity)
+    return FakeAdbController()
+
+  def create_log_stream(self) -> log_stream.LogStream:
+    return FakeLogStream()
 
   def _restart_impl(self) -> None:
     pass
@@ -156,13 +135,9 @@ class FakeSimulator(base_simulator.BaseSimulator):
   def _launch_impl(self) -> None:
     pass
 
-  def send_action(self, action: Dict[str, np.ndarray]) -> None:
-    del action
+  def send_touch(self, touches: List[Tuple[int, int, bool, int]]) -> None:
+    del touches
 
-  def _get_observation(self) -> Optional[List[np.ndarray]]:
-    image = np.zeros(shape=(*self._screen_dimensions, 3), dtype=np.uint8)
-    timestamp = np.random.randint(100, dtype=np.int64)
-    return [image, timestamp]
-
-  def _create_log_stream(self) -> log_stream.LogStream:
-    return FakeLogStream()
+  def get_screenshot(self) -> np.ndarray:
+    return np.random.randint(
+        low=0, high=255, size=(*self._screen_dimensions, 3), dtype=np.uint8)

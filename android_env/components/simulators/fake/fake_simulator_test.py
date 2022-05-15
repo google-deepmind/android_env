@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 
 """Tests for fake_simulator."""
 
+import re
 from absl.testing import absltest
 from android_env.components.simulators.fake import fake_simulator
 import numpy as np
@@ -30,40 +31,50 @@ class FakeSimulatorTest(absltest.TestCase):
     # The simulator should launch and not crash.
     simulator = fake_simulator.FakeSimulator(screen_dimensions=(320, 480))
     simulator.launch()
-    # After a successful launch(), screen_dimensions() should return something.
-    np.testing.assert_equal(simulator.screen_dimensions(), [320, 480])
     # Closing the simulator should also not crash.
     simulator.close()
 
-  def test_get_observation(self):
+  def test_get_screenshot(self):
     simulator = fake_simulator.FakeSimulator(screen_dimensions=(320, 480))
     simulator.launch()
 
-    observation = simulator.get_observation()
-    np.testing.assert_equal(
-        observation['pixels'].shape, [320, 480, 3])
-    np.testing.assert_array_equal(
-        observation['pixels'], np.zeros((320, 480, 3), dtype=np.uint8))
-    np.testing.assert_equal(
-        observation['timedelta'].dtype, np.int64)
-    np.testing.assert_array_equal(
-        observation['orientation'], np.zeros((4,), dtype=np.uint8))
+    screenshot = simulator.get_screenshot()
+    np.testing.assert_equal(screenshot.shape, [320, 480, 3])
+    np.testing.assert_equal(screenshot.dtype, np.uint8)
 
   def test_log_stream(self):
     simulator = fake_simulator.FakeSimulator(screen_dimensions=(320, 480))
     simulator.launch()
-    log_stream = simulator.get_log_stream()
+    log_stream = simulator.create_log_stream()
+    # Start yielding lines from LogStream.
+    log_stream.resume_stream()
     lines = [
         '',
         '         1553110400.424  5583  5658 D Tag: reward: 0.5',
         '         1553110400.424  5583  5658 D Tag: reward: 1.0',
-        '         1553110400.424  5583  5658 D Tag: extra: my_extra: [1.0]',
+        '         1553110400.424  5583  5658 D Tag: extra: my_extra [1.0]',
         '         1553110400.424  5583  5658 D Tag: episode end',
     ]
     for i, line in enumerate(log_stream.get_stream_output()):
       self.assertIn(line, lines)
       if i > 10:
         break
+
+  def test_adb_output(self):
+    simulator = fake_simulator.FakeSimulator(screen_dimensions=(320, 480))
+    simulator.launch()
+    adb_controller = simulator.create_adb_controller()
+    line = adb_controller.execute_command(['shell', 'dumpsys', 'input'])
+    line = line.decode('utf-8')
+    orientation = re.match(r'\s+SurfaceOrientation:\s+(\d)', line).group(1)
+    self.assertEqual(orientation, '0')
+    line = adb_controller.execute_command(['shell', 'service', 'check', 'foo'])
+    line = line.decode('utf-8')
+    self.assertEqual(line, 'Service foo: found')
+    line = adb_controller.execute_command(['shell', 'am', 'stack', 'list'])
+    line = line.decode('utf-8')
+    self.assertEqual(line, 'taskId=0 fake_activity visible=true '
+                     'topActivity=ComponentInfo{fake_activity}')
 
 if __name__ == '__main__':
   absltest.main()

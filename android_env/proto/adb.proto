@@ -1,4 +1,4 @@
-// Copyright 2021 DeepMind Technologies Limited.
+// Copyright 2022 DeepMind Technologies Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package android_env;
 
-message AdbCall {
+message AdbRequest {
   // Installs an APK into the simulator.
   message InstallApk {
 
@@ -33,20 +33,19 @@ message AdbCall {
   message StartActivity {
     string full_activity = 1;
     repeated string extra_args = 2;
-    string flag = 3;
+    // Whether to stop the current app before starting the activity.
+    // Notice that if this option is `true`, the activity probably needs the
+    // `android:launchMode="singleTop"` attribute in its `AndroidManifest.xml`,
+    // otherwise intents may not be received by `onNewIntent()`. Please see more
+    // info on `android:launchMode` at
+    // https://developer.android.com/guide/topics/manifest/activity-element.
+    bool force_stop = 3;
   }
 
   message StartIntent {
     string data_uri = 1;
     string action = 2;
     string package_name = 3;
-  }
-
-  // Starts and wait for a randomly chosen activity in the list.
-  message StartRandomActivity {
-    repeated string activity_list = 1;
-    repeated string extra_args = 2;
-    float timeout_sec = 4;
   }
 
   message UninstallPackage {
@@ -57,34 +56,10 @@ message AdbCall {
     string package_name = 1;
   }
 
-  // Force stop last selected random activity.
-  message ForceStopRandomActivity {}
-
-  // Disables all Android animations.
-  message DisableAnimations {}
-
-  message ClearCache {
-    string package_name = 1;
-  }
-
-  // Clear cache for last selected random activity.
-  message ClearCacheRandomActivity {}
-
-  message GrantPermissions {
-    string package_name = 1;
-
-    // Possible values listed at
-    // https://developer.android.com/reference/android/Manifest.permission
-    // To query an app's required permissions, use the following adb command:
-    // > adb shell dumpsys package <package>
-    // The output will contain things like
-    //     android.permission.WRITE_SECURE_SETTINGS
-    repeated string permissions = 2;
-  }
-
   message Tap {
     // NOTE: These are absolute coordinates in the range of the screen
     // resolution. They are NOT floats in [0,1].
+    // Precondition: `x` and `y` must be non-negative.
     int32 x = 1;
     int32 y = 2;
   }
@@ -93,23 +68,9 @@ message AdbCall {
     enum Button {
       HOME = 0;
       BACK = 1;
+      ENTER = 2;
     }
     Button button = 1;
-  }
-
-  message Rotate {
-    enum Orientation {
-      PORTRAIT_0 = 0;     //   0 degrees counter-clockwise.
-      LANDSCAPE_90 = 1;   //  90 degrees counter-clockwise.
-      PORTRAIT_180 = 2;   // 180 degrees counter-clockwise.
-      LANDSCAPE_270 = 3;  // 270 degrees counter-clockwise.
-    }
-    Orientation orientation = 1;
-  }
-
-  message StartAccessibilityService {
-    // Fully qualified class name of the Accessibility Service.
-    string full_service = 1;
   }
 
   // Pins the given activity to the screen.
@@ -118,22 +79,344 @@ message AdbCall {
     string full_activity = 1;
   }
 
+  // Returns the full activity name that is currently opened to the user.
+  // If successful, a GetCurrentActivityResponse is returned.
+  message GetCurrentActivity {}
+
+  // Returns the orientation of the device.
+  message GetOrientationRequest {}
+
+  // Performs `adb push`.
+  // Please see https://developer.android.com/studio/command-line/adb#copyfiles.
+  //
+  // Notice that a source destination path for the file is not sent, but raw
+  // bytes in `content` instead. Obviously, the `content` can be set from a real
+  // file, but this is done to ensure Task definitions are as hermetic as
+  // possible, without depending on the environment from where they're run.
+  message Push {
+    // The contents of the file.
+    bytes content = 1;
+
+    // Destination path _inside_ Android. E.g. /sdcard/my_file.txt.
+    string path = 2;
+  }
+
+  // Performs `adb pull`.
+  // Please see https://developer.android.com/studio/command-line/adb#copyfiles.
+  //
+  // Notice that a local destination for the copied file is not sent, as raw
+  // bytes are returned instead (please see PullResponse). Obviously, these
+  // bytes can be written to disk by the caller of this command.
+  message Pull {
+    // Path _inside_ Android. E.g. /sdcard/my_file.txt.
+    string path = 1;
+  }
+
+  // Inserts text into the current text field (if any).
+  // Essentially `adb shell input text <text>`.
+  message InputText {
+    string text = 1;
+  }
+
+  // Issues an `adb shell settings` command.
+  message SettingsRequest {
+    // Each request has an associated namespace.
+    enum Namespace {
+      UNKNOWN = 0;
+      SYSTEM = 1;
+      SECURE = 2;
+      GLOBAL = 3;
+    }
+
+    // Retrieves the current value for `key`.
+    message Get {
+      string key = 1;
+    }
+
+    // Changes the contents `key` to `value`.
+    message Put {
+      string key = 1;
+      string value = 2;
+    }
+
+    // Deletes the entry for `key`.
+    message Delete {
+      string key = 1;
+    }
+
+    // Resets the global/secure table for a package with the given mode.
+    message Reset {
+      enum Mode {
+        UNKNOWN = 0;
+        UNTRUSTED_DEFAULTS = 1;
+        UNTRUSTED_CLEAR = 2;
+        TRUSTED_DEFAULTS = 3;
+      }
+
+      string package_name = 1;
+      Mode mode = 2;
+    }
+
+    // Prints all defined keys in the given namespace.
+    message List {}
+
+    // The part of the system where this command will take place.
+    // NOTE: We avoid the identifier `namespace` because it's a keyword in C++.
+    Namespace name_space = 1;
+
+    // The subcommand to issue to `adb settings`.
+    // NOTE: We avoid the identifiers `delete` and `del` because they're
+    // keywords in C++ and Python respectively.
+    oneof verb {
+      Get get = 2;
+      Put put = 3;
+      Delete delete_key = 4;
+      Reset reset = 5;
+      List list = 6;
+    }
+  }
+
+  // Generic ADB command. Use this for commands that are not
+  // explicitly implemented.
+  // Calls `adb [args...]`.
+  message GenericRequest {
+    repeated string args = 1;
+  }
+
+  message PackageManagerRequest {
+    message List {
+      // Lists all features of the system.
+      message Features {}
+
+      // Lists all system libraries.
+      message Libraries {}
+
+      // Lists all packages; optionally only those whose name contains the text
+      // in `filter`.
+      message Packages {
+        string filter = 1;
+
+        // Extra options that control the output. Please see `pm help` for
+        // details.
+        repeated string options = 2;
+      }
+
+      oneof what {
+        Features features = 1;
+        Libraries libraries = 2;
+        Packages packages = 3;
+      }
+    }
+
+    // Deletes all data associated with a package.
+    message Clear {
+      // The package name to clear its cache.
+      string package_name = 1;
+
+      // Optional USER_ID.
+      string user_id = 2;
+    }
+
+    message Grant {
+      string package_name = 1;
+
+      // Possible values listed at
+      // https://developer.android.com/reference/android/Manifest.permission
+      // To query an app's required permissions, use the following adb command:
+      // > adb shell dumpsys package <package>
+      // The output will contain things like
+      //     android.permission.WRITE_SECURE_SETTINGS
+      repeated string permissions = 2;
+    }
+
+    // The subcommand to issue to `pm`.
+    oneof verb {
+      List list = 1;
+      Clear clear = 2;
+      Grant grant = 3;
+    }
+  }
+
+  // For executing `dumpsys` commands.
+  message DumpsysRequest {
+    enum PriorityLevel {
+      UNSET = 0;
+      NORMAL = 1;
+      HIGH = 2;
+      CRITICAL = 3;
+    }
+
+    // The service to dump. If empty, all services will be dumped.
+    string service = 1;
+
+    // Optional arguments to pass to the specific service dump.
+    repeated string args = 2;
+
+    // Lists services, does not dump them.
+    // This effectively disables dumping information about any particular
+    // service.
+    bool list_only = 3;
+
+    // Timeouts natively supported by `dumpsys`.
+    int32 timeout_sec = 4;
+    int32 timeout_ms = 5;
+
+    // Whether to dump the process ID instead of the usual dump.
+    bool pid = 6;
+
+    // Whether dumps will be in proto format. Only works for services that
+    // support dumping data in proto format.
+    bool proto = 7;
+
+    // Filters services based on specified priority.
+    PriorityLevel priority = 8;
+
+    // Excludes services from the dump.
+    repeated string skip_services = 9;
+  }
+
   oneof command {
     InstallApk install_apk = 1;
     StartActivity start_activity = 2;
     ForceStop force_stop = 3;
-    ClearCache clear_cache = 4;
-    GrantPermissions grant_permissions = 5;
     Tap tap = 6;
     PressButton press_button = 7;
-    Rotate rotate = 8;
-    StartAccessibilityService start_accessibility_service = 9;
     StartScreenPinning start_screen_pinning = 10;
-    StartRandomActivity start_random_activity = 11;
-    ForceStopRandomActivity force_stop_random_activity = 12;
-    ClearCacheRandomActivity clear_cache_random_activity = 13;
-    DisableAnimations disable_animations = 14;
     StartIntent start_intent = 15;
     UninstallPackage uninstall_package = 16;
+    GetCurrentActivity get_current_activity = 17;
+    GetOrientationRequest get_orientation = 24;
+    Push push = 18;
+    Pull pull = 19;
+    InputText input_text = 20;
+    SettingsRequest settings = 21;
+    GenericRequest generic = 22;
+    PackageManagerRequest package_manager = 23;
+    DumpsysRequest dumpsys = 26;
+  }
+
+  // Optional (soft) deadline in seconds for completing this command.
+  // Expected to be >0. If ==0 (the default), it's ignored.
+  // Notice that not all commands accept timeouts, but because it's such a
+  // common parameter, we include it here instead of in each separate command.
+  float timeout_sec = 100;
+}
+
+message AdbResponse {
+  enum Status {
+    // Reserved value for unset statuses.
+    UNDEFINED = 0;
+    // Returned when everything goes well.
+    OK = 1;
+    // Returned when handling unknown AdbRequest commands.
+    UNKNOWN_COMMAND = 2;
+    // Returned when an argument does not respect a precondition.
+    FAILED_PRECONDITION = 3;
+    // Returned when something internal did not work as expected.
+    INTERNAL_ERROR = 4;
+    // Returned when the adb command failed.
+    ADB_ERROR = 5;
+    // Returned when the adb command timed out.
+    TIMEOUT = 6;
+  }
+  Status status = 1;
+
+  // `error_message` is only populated in case of errors.
+  string error_message = 2;
+
+  // General stats that components may optionally report.
+  map<string, float> stats = 3;
+
+  // Response for GetCurrentActivity requests.
+  message GetCurrentActivityResponse {
+    // The format of the output is `package/package.ActivityName', for example:
+    // "com.example.vokram/com.example.vokram.MainActivity"
+    string full_activity = 1;
+  }
+
+  // Response for GetOrientationRequests.
+  message GetOrientationResponse {
+    // Possible values are {0, 1, 2, 3} corresponding to {0, 90, 180, 270}
+    // degrees respectively.
+    // Please see https://developer.android.com/reference/android/view/Surface.
+    int32 orientation = 1;
+  }
+
+  // Response for StartActivity requests.
+  message StartActivityResponse {
+    // The activity that was actually started. On a failed request, this will be
+    // empty.
+    string full_activity = 1;
+    bytes output = 2;
+  }
+
+  // Response for PressButton requests.
+  message PressButtonResponse {
+    // The output, if any, by `adb` after sending a key press.
+    // This is intentionally left as `bytes` instead of `string` so that content
+    // other than `UTF-8` can be transmitted.
+    bytes output = 1;
+  }
+
+  // Response for Push requests.
+  message PushResponse {}
+
+  // Response for Pull requests.
+  message PullResponse {
+    // The contents of the file.
+    // This is intentionally left as `bytes` instead of `string` so that content
+    // other than `UTF-8` can be transmitted.
+    bytes content = 1;
+  }
+
+  // Response for InputText requests.
+  message InputTextResponse {}
+
+  // Response for SettingsRequests.
+  message SettingsResponse {
+    // The output, if any, of the `adb shell settings` command.
+    bytes output = 1;
+  }
+
+  // Response for GenericRequests.
+  message GenericResponse {
+    // The output, if any, of the generic adb command.
+    bytes output = 1;
+  }
+
+  // Response for PackageManagerRequests.
+  message PackageManagerResponse {
+    // The output, if any, of the `adb shell pm` command.
+    bytes output = 1;
+
+    message List {
+      // A list of items. The actual content depends on the request, but it
+      // could be things like features, libraries or package names.
+      repeated string items = 1;
+    }
+
+    oneof verb {
+      List list = 2;
+    }
+  }
+
+  // Response for DumpsysRequests.
+  message DumpsysResponse {
+    // The output, if any, of the `dumpsys` command.
+    bytes output = 1;
+  }
+
+  oneof payload {
+    GetCurrentActivityResponse get_current_activity = 10;
+    StartActivityResponse start_activity = 11;
+    PressButtonResponse press_button = 12;
+    PushResponse push = 13;
+    PullResponse pull = 14;
+    InputTextResponse input_text = 15;
+    SettingsResponse settings = 16;
+    GenericResponse generic = 17;
+    PackageManagerResponse package_manager = 18;
+    GetOrientationResponse get_orientation = 19;
+    DumpsysResponse dumpsys = 21;
   }
 }

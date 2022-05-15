@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,9 +39,9 @@ class TapActionWrapper(base_wrapper.BaseWrapper):
     self._num_frames = num_frames
     self._env_steps = 0
 
-  def android_logs(self):
+  def stats(self):
     """Returns a dictionary of metrics logged by the environment."""
-    logs = self._env.android_logs()
+    logs = self._env.stats()
     logs.update({'env_steps': self._env_steps})
     return logs
 
@@ -76,7 +76,7 @@ class TapActionWrapper(base_wrapper.BaseWrapper):
     """Takes a step in the environment."""
     self._env_steps += self._num_frames + 1
     actions = self._process_action(action)
-    total_reward = 0
+    total_reward = 0.0
     for idx in range(len(actions)):
       step_type, reward, discount, observation = self._env.step(actions[idx])
       if reward:
@@ -103,4 +103,3 @@ class TapActionWrapper(base_wrapper.BaseWrapper):
       }
     else:
       return self._env.action_spec()
-

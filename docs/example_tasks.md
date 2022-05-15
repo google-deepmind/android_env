@@ -24,9 +24,11 @@ task.
 | [Dodge](#dodge)                                     | Tapping              | Yes            | No                            | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/dodge.tar.gz)  |
 | [DroidFish (Chess)](#droidfish)                     | Tapping              | No             | Yes (3 levels)                | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/droidfish.tar.gz) |
 | [FlappyDroid](#flappydroid)                         | Tapping              | Yes            | Yes (2 levels)                | Dense      | No           | [Download](https://storage.googleapis.com/android_env-tasks/systemui_egg_land.tar.gz)  |
+| [FloodIt](#floodit)                                 | Tapping (buttons)    | No             | Yes (4 levels)                | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/floodit.tar.gz)  |
 | [Frozen Bubble](#frozen-bubble)                     | Dragging, tapping    | No             | No                            | Sparse     | No           | [Download](https://storage.googleapis.com/android_env-tasks/frozen_bubble.tar.gz) |
 | [Memory Game](#memory-game)                         | Tapping              | No             | Yes (6 levels)                | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/memory_game.tar.gz) |
 | [Minesweeper](#minesweeper)                         | Tapping              | No             | Yes (3 levels)                | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/minesweeper.tar.gz) |
+| [Nostalgic Racer](#nostalgic-racer)                 | Touch                | Yes           | Yes (2 variants)              | Dense       | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/nostalgic_racer.tar.gz) |
 | [Open Sudoku](#open-sudoku)                         | Tapping (buttons)    | No             | Yes (3 levels)                | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/open_sudoku.tar.gz) |
 | [Perfection](#perfection)                           | Drag & drop          | No             | Yes (3 game types)            | Dense      | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/perfection.tar.gz)  |
 | [Rocket Sleigh](#rocket-sleigh)                     | Tapping              | Yes            | No                            | Dense      | No           | [Download](https://storage.googleapis.com/android_env-tasks/rocket_sleigh.tar.gz) |
@@ -312,6 +314,56 @@ A clone of the well-known game Flappy Birds.
 ---------------------------------------------------------------------------------- | --------------------------------
 ![Screenshot of 'systemui_egg_land_default'](images/systemui_egg_land_default.gif) | ![Screenshot of 'systemui_egg_land_half_speed'](images/systemui_egg_land_half_speed.gif)
 
+## FloodIt
+
+FloodIt is a game where the player needs to fill the board with a single color.
+The dynamics of the game are driven by a few colorful buttons at the bottom of
+the screen, which when pressed cause the currently active region to change its
+color to the color of the pressed button. When this active region changes color
+it absorbs neighboring squares that have the same color, thus expanding the
+active region. The active region starts as a single square at the top-left
+corner of the board. The game gives a single reward at the end of the game if
+the player manages to fill the entire board with the same color within the
+maximum number steps, otherwise the reward is just zero.
+
+This is a very hard-exploration game because the game does not give intermediate
+rewards until the very end of the game, and the number of possible moves is
+incredibly big.
+
+You can find another implementation of this game in the task
+[SGT Puzzles - Flood](#sgt-puzzles-flood).
+
+<details>
+  <summary>Extras returned</summary>
+
+*   `board`:
+    -   State of the board, representing colours by their indices.
+    -   0: purple, 1: blue, 2: green, 3: yellow, 4: red, 5: pink
+    -   Returned when the board changes.
+    -   Has `shape=[board_size, board_size], dtype=INT32`.
+*   `clicked`:
+    -   Index of the colour clicked (between 0-5)
+    -   Returned when said colour is clicked.
+    -   Has `shape=[1], dtype=INT32`.
+*   `flipped`:
+    -   The number of new cells that just got merged into the big blob (0 or
+        more)
+    -   Returned when the board state changes
+    -   Has `shape=[1], dtype=INT32`.
+
+</details>
+
+**floodit_easy**                                         | **floodit_medium**                                           | **floodit_hard**
+-------------------------------------------------------- | ------------------------------------------------------------ | ----------------
+![Screenshot of 'floodit_easy'](images/floodit_easy.gif) | ![Screenshot of 'floodit_medium'](images/floodit_medium.gif) | ![Screenshot of 'floodit_hard'](images/floodit_hard.gif)
+
+### Task `mdp_flood_it`
+
+Custom task created for pretraining agents to locate and press FloodIt buttons
+on the screen.
+
+![Screenshot of 'mdp_flood_it'](images/mdp_flood_it.gif)
+
 ## Frozen Bubble
 
 Shoot the coloured bubbles in a direction of your choice. Groups of bubbles with
@@ -400,6 +452,36 @@ the original github repo for more info: https://gitlab.com/ar-/apple-flinger.
 **minesweeper_easy**                                             | **minesweeper_medium**                                               | **minesweeper_hard**
 ---------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------
 ![Screenshot of 'minesweeper_easy'](images/minesweeper_easy.gif) | ![Screenshot of 'minesweeper_medium'](images/minesweeper_medium.gif) | ![Screenshot of 'minesweeper_hard'](images/minesweeper_hard.gif)
+
+## Nostalgic Racer
+
+NostalgicRacer is a racing game that offers Atari-like graphics and controls.
+The object is to maximize the score which increases as the car moves forward and
+by collecting coins and speed-ups.
+
+<details>
+  <summary>Extras returned</summary>
+  Returns no extras.
+</details>
+
+### Task `nostalgic_racer`
+
+The player can only control whether the car should move left, move right or stay
+put by touching on the screen. If the touch is on the right pane the car moves
+right, if the touch is on the left pane the car moves left and no touches leaves
+the car in the same position. Pressing for too little time moves the car by
+miniscule amounts, with effects similar to staying put.
+
+### Task `nostalgic_racer_2d`
+
+This is the same underlying game as NostalgicRacer with the same objective.
+However, the interface is very different. The observation is given as a 2D view
+from the top with no perspective and the touchscreen determines the position
+that the car should move to (sideways).
+
+**nostaligc_racer**                                            | **nostalgic_racer_2d**
+-------------------------------------------------------------- | ----------------------
+![Screenshot of 'nostalgic_racer'](images/nostalgic_racer.gif) | ![Screenshot of 'nostalgic_racer_2d'](images/nostalgic_racer_2d.gif)
 
 ## Open Sudoku
 

@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 """Abstract class for handling a stream of logs from a simulator."""
 
 import abc
-from typing import List
+import threading
+from typing import Generator, List
 from absl import logging
 
 
@@ -26,13 +27,15 @@ class LogStream(metaclass=abc.ABCMeta):
   def __init__(self, verbose: bool = False):
     self._verbose = verbose
     self._filters = []
+    self._should_stream = threading.Event()
 
-  def get_stream_output(self):
+  def get_stream_output(self) -> Generator[str, None, None]:
     """Starts log process and returns the stream of logs."""
     for line in self._get_stream_output():
       if self._verbose:
         logging.info('line: %r', line)
-      yield line
+      if self._should_stream.is_set():
+        yield line
 
   @abc.abstractmethod
   def _get_stream_output(self):
@@ -40,9 +43,19 @@ class LogStream(metaclass=abc.ABCMeta):
     pass
 
   @abc.abstractmethod
-  def stop_stream(self):
-    """Stops the log stream from the simulator."""
+  def stop_stream(self) -> None:
+    """Terminates log stream process from the simulator."""
     pass
+
+  def pause_stream(self) -> None:
+    """No lines are yielded while the event is not set."""
+    logging.info('Pausing LogStream.')
+    self._should_stream.clear()
+
+  def resume_stream(self) -> None:
+    """The stream will continue yielding lines if the event is set."""
+    logging.info('Resuming LogStream.')
+    self._should_stream.set()
 
   def set_log_filters(self, log_filters: List[str]):
     """Sets the filters for the log stream."""

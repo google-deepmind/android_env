@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,18 +13,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Init file for android_env.wrappers package."""
-
-from android_env.wrappers import discrete_action_wrapper
-from android_env.wrappers import flat_interface_wrapper
-from android_env.wrappers import float_pixels_wrapper
-from android_env.wrappers import gym_wrapper
-from android_env.wrappers import image_rescale_wrapper
-from android_env.wrappers import last_action_wrapper
-
-DiscreteActionWrapper = discrete_action_wrapper.DiscreteActionWrapper
-FlatInterfaceWrapper = flat_interface_wrapper.FlatInterfaceWrapper
-FloatPixelsWrapper = float_pixels_wrapper.FloatPixelsWrapper
-GymInterfaceWrapper = gym_wrapper.GymInterfaceWrapper
-ImageRescaleWrapper = image_rescale_wrapper.ImageRescaleWrapper
-LastActionWrapper = last_action_wrapper.LastActionWrapper

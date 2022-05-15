@@ -36,7 +36,7 @@ into a `Task()` proto message, which gets passed passed to AndroidEnv.
 ### Create the environment
 
 After setting up the simulator and creating a task, you may find the
-[`android_env.load()`](https://github.com/deepmind/android_env/blob/main/android_env/loader.py)
+[`loader.load()`](https://github.com/deepmind/android_env/blob/main/android_env/loader.py)
 function handy for creating an environment instance by providing relevant
 arguments, such as:
 
@@ -67,9 +67,9 @@ Your example configuration may look like this, depending on how you set up your
 emulator:
 
 ```python
-import android_env
+from android_env import loader
 
-env = android_env.load(
+env = loader.load(
     avd_name='my_avd',
     android_avd_home='/Users/username/.android/avd',
     android_sdk_root='/Users/username/Library/Android/sdk',
@@ -105,7 +105,7 @@ from
 
 ```shell
 python3 run_random_agent.py \
---avd_name='my_avd',
+--avd_name='my_avd' \
 --android_avd_home=/Users/username/.android/avd \
 --android_sdk_root=/Users/username/Library/Android/sdk \
 --emulator_path=/Users/username/Library/Android/sdk/emulator/emulator \

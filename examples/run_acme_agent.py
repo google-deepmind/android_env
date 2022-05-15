@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,8 +23,10 @@ from acme import specs
 from acme import wrappers as acme_wrappers
 from acme.agents.tf import dqn
 from acme.tf import networks
-import android_env
-from android_env import wrappers
+from android_env import loader
+from android_env.wrappers import discrete_action_wrapper
+from android_env.wrappers import float_pixels_wrapper
+from android_env.wrappers import image_rescale_wrapper
 
 # Simulator args
 flags.DEFINE_string('avd_name', None, 'Name of AVD to use.')
@@ -46,16 +48,17 @@ FLAGS = flags.FLAGS
 
 def apply_wrappers(env):
   """Applies a series of wrappers to the environment."""
-  env = wrappers.DiscreteActionWrapper(env, action_grid=(10, 10))
-  env = wrappers.ImageRescaleWrapper(env, zoom_factors=(0.25, 0.25))
-  env = wrappers.FloatPixelsWrapper(env)
+  env = discrete_action_wrapper.DiscreteActionWrapper(env, action_grid=(10, 10))
+  env = image_rescale_wrapper.ImageRescaleWrapper(
+      env, zoom_factors=(0.25, 0.25))
+  env = float_pixels_wrapper.FloatPixelsWrapper(env)
   env = acme_wrappers.SinglePrecisionWrapper(env)
   return env
 
 
 def main(_):
 
-  with android_env.load(
+  with loader.load(
       emulator_path=FLAGS.emulator_path,
       android_sdk_root=FLAGS.android_sdk_root,
       android_avd_home=FLAGS.android_avd_home,
@@ -75,7 +78,7 @@ def main(_):
         samples_per_insert=2,
         min_replay_size=10)
 
-    loop = acme.EnvironmentLoopV2(env, agent)
+    loop = acme.EnvironmentLoop(env, agent)
     loop.run(num_episodes=FLAGS.num_episodes)
 
 

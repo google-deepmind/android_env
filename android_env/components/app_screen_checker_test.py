@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,12 +17,17 @@
 
 import re
 from typing import Sequence
+from unittest import mock
 
 from absl.testing import absltest
+from android_env.components import adb_call_parser
 from android_env.components import app_screen_checker
+from android_env.components import errors
+from android_env.proto import adb_pb2
+from android_env.proto import task_pb2
 
 
-def flatten_tree(tree: app_screen_checker.DumpsysNode,
+def flatten_tree(tree: app_screen_checker._DumpsysNode,
                  flat_tree: Sequence[str],
                  indent: int = 2):
   """Appends a list of strings to `flat_tree` from `tree`."""
@@ -224,6 +229,38 @@ TASK
     self.assertFalse(
         app_screen_checker.matches_path(
             dumpsys_output, expected_view_hierarchy_path, max_levels=2))
+
+  def test_wait_for_app_screen_zero_timeout(self):
+    """Ensures that an exception is raised if the timeout is passed."""
+    app_screen = task_pb2.AppScreen(activity='whatever.MyActivity')
+    call_parser = mock.create_autospec(adb_call_parser.AdbCallParser)
+    screen_checker = app_screen_checker.AppScreenChecker(
+        adb_call_parser=call_parser,
+        expected_app_screen=app_screen)
+    # With a zero timeout, the method should never be able to wait for the
+    # screen to pop up and an exception should be raised.
+    self.assertRaises(
+        errors.WaitForAppScreenError,
+        screen_checker.wait_for_app_screen,
+        timeout_sec=0.0)
+
+  def test_wait_for_app_screen_successful(self):
+    """Ensures that with the right conditions, the app screen should pop up."""
+    app_screen = task_pb2.AppScreen(activity='my.favorite.AwesomeActivity')
+    call_parser = mock.create_autospec(adb_call_parser.AdbCallParser)
+    call_parser.parse.return_value = adb_pb2.AdbResponse(
+        status=adb_pb2.AdbResponse.Status.OK,
+        get_current_activity=adb_pb2.AdbResponse.GetCurrentActivityResponse(
+            full_activity='my.favorite.AwesomeActivity'))
+
+    screen_checker = app_screen_checker.AppScreenChecker(
+        call_parser, app_screen)
+    timeout = 1.0
+    wait_time = screen_checker.wait_for_app_screen(timeout_sec=timeout)
+
+    # The call should not generate an exception and the return value should be
+    # less than the timeout given.
+    self.assertLess(wait_time, timeout)
 
 
 if __name__ == '__main__':

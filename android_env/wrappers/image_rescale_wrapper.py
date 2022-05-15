@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ class ImageRescaleWrapper(base_wrapper.BaseWrapper):
     # We expect `raw_observation` to have shape (W, H, 3) - 3 for RGB
     new_shape = np.array(
         self._zoom_factors[0:2] * np.array(raw_observation.shape[0:2]),
-        dtype=np.int)[::-1]
+        dtype=np.int32)[::-1]
     if self._grayscale:
       # When self._grayscale == True, we squash the RGB into a single layer
       image = np.dot(raw_observation, RGB_TO_GRAYSCALE_COEFFICIENTS)

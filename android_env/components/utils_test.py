@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 from android_env.components import utils
-from android_env.proto import adb_pb2
 import numpy as np
 
 
@@ -45,24 +44,24 @@ class UtilsTest(parameterized.TestCase):
     image = np.reshape(np.array(range(12)), (3, 2, 2))
 
     expected_90 = [[[8, 9], [4, 5], [0, 1]], [[10, 11], [6, 7], [2, 3]]]
-    rot_90 = adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90
+    rot_90 = 1  # LANDSCAPE_90
     rotated = utils.orient_pixels(image, rot_90)
     self.assertEqual(rotated.shape, (2, 3, 2))
     self.assertTrue((rotated == expected_90).all())
 
     expected_180 = [[[10, 11], [8, 9]], [[6, 7], [4, 5]], [[2, 3], [0, 1]]]
-    rot_180 = adb_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180
+    rot_180 = 2  # PORTRAIT_180
     rotated = utils.orient_pixels(image, rot_180)
     self.assertEqual(rotated.shape, (3, 2, 2))
     self.assertTrue((rotated == expected_180).all())
 
     expected_270 = [[[2, 3], [6, 7], [10, 11]], [[0, 1], [4, 5], [8, 9]]]
-    rot_270 = adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270
+    rot_270 = 3  # LANDSCAPE_270
     rotated = utils.orient_pixels(image, rot_270)
     self.assertEqual(rotated.shape, (2, 3, 2))
     self.assertTrue((rotated == expected_270).all())
 
-    rot_0 = adb_pb2.AdbCall.Rotate.Orientation.PORTRAIT_0
+    rot_0 = 0  # PORTRAIT_0
     rotated = utils.orient_pixels(image, rot_0)
     self.assertEqual(rotated.shape, (3, 2, 2))
     self.assertTrue((rotated == image).all())

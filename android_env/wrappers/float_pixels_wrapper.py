@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,17 +29,16 @@ class FloatPixelsWrapper(base_wrapper.BaseWrapper):
 
   def __init__(self, env: dm_env.Environment):
     super().__init__(env)
-    self._should_convert_int_to_float = np.issubdtype(
-        self._env.observation_spec()['pixels'].dtype, np.integer)
+    self._input_spec = self._env.observation_spec()['pixels']
+    self._should_convert_int_to_float = np.issubdtype(self._input_spec.dtype,
+                                                      np.integer)
 
   def _process_observation(
       self, observation: Dict[str, np.ndarray]
   ) -> Dict[str, np.ndarray]:
     if self._should_convert_int_to_float:
-      float_pixels = utils.convert_int_to_float(
-          observation['pixels'],
-          self._env.observation_spec()['pixels'],
-          np.float32)
+      float_pixels = utils.convert_int_to_float(observation['pixels'],
+                                                self._input_spec, np.float32)
       observation['pixels'] = float_pixels
     return observation
 
@@ -52,12 +51,10 @@ class FloatPixelsWrapper(base_wrapper.BaseWrapper):
         observation=self._process_observation(observation))
 
   def reset(self) -> dm_env.TimeStep:
-    timestep = self._env.reset()
-    return self._process_timestep(timestep)
+    return self._process_timestep(self._env.reset())
 
   def step(self, action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
-    timestep = self._env.step(action)
-    return self._process_timestep(timestep)
+    return self._process_timestep(self._env.step(action))
 
   def observation_spec(self) -> Dict[str, specs.Array]:
     if self._should_convert_int_to_float:

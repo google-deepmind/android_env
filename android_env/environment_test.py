@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,15 +15,18 @@
 
 """Unit tests for AndroidEnv."""
 
+from unittest import mock
+
 from absl.testing import absltest
 from android_env import environment
 from android_env.components import coordinator as coordinator_lib
+from android_env.proto import adb_pb2
+from android_env.proto import task_pb2
 import dm_env
-import mock
 import numpy as np
 
 
-def _create_mock_env():
+def _create_mock_coordinator() -> coordinator_lib.Coordinator:
   coordinator = mock.create_autospec(coordinator_lib.Coordinator)
   coordinator.action_spec.return_value = {
       'action_type':
@@ -40,13 +43,13 @@ def _create_mock_env():
   coordinator.task_extras_spec.return_value = {
       'click': dm_env.specs.Array(shape=(), dtype=np.int64),
   }
-  return environment.AndroidEnv(coordinator)
+  return coordinator
 
 
 class AndroidEnvTest(absltest.TestCase):
 
   def test_specs(self):
-    env = _create_mock_env()
+    env = environment.AndroidEnv(_create_mock_coordinator())
 
     # Check action spec.
     self.assertNotEmpty(env.action_spec())
@@ -99,17 +102,18 @@ class AndroidEnvTest(absltest.TestCase):
         'click': dm_env.specs.Array(shape=(1,), dtype=np.int64),
     }
     env = environment.AndroidEnv(coordinator)
-    coordinator.execute_action.return_value = (
-        {
+    coordinator.rl_step.return_value = dm_env.TimeStep(
+        step_type=dm_env.StepType.FIRST,
+        reward=0.0,
+        discount=0.0,
+        observation={
             'pixels': np.random.rand(987, 654, 3),
             'timedelta': 123456,
             'orientation': np.array((1, 0, 0, 0)),
-        },  # Observation
-        0.0,  # Reward.
-        {
-            'click': np.array([[246]], dtype=np.int64)
-        },  # Task extras.
-        False  # Episode ended?
+            'extras': {
+                'click': np.array([[246]], dtype=np.int64)
+            }
+        },
     )
 
     ts = env.reset()
@@ -132,11 +136,25 @@ class AndroidEnvTest(absltest.TestCase):
     self.assertIn('click', extras)
     self.assertEqual(extras['click'], np.array([246], dtype=np.int64))
 
-    coordinator.get_logs.return_value = {
+    coordinator.stats.return_value = {
         'my_measurement': 135,
     }
 
     # Step again in the environment and check expectations again.
+    pixels = np.random.rand(987, 654, 3)
+    latest_observation = {
+        'pixels': pixels,
+        'timedelta': 123456,
+        'orientation': np.array((1, 0, 0, 0)),
+        'extras': {
+            'click': np.array([[246]], dtype=np.int64)
+        }
+    }
+    coordinator.rl_step.return_value = dm_env.transition(
+        reward=0.0,
+        discount=0.0,
+        observation=latest_observation,
+    )
     ts = env.step({'action_type': 1, 'touch_position': (10, 20)})
     self.assertIsInstance(ts, dm_env.TimeStep)
     # The StepType now should NOT be FIRST.
@@ -158,9 +176,58 @@ class AndroidEnvTest(absltest.TestCase):
     self.assertEqual(extras['click'], np.array([246], dtype=np.int64))
 
     # At this point these methods and properties should return something.
-    self.assertNotEmpty(env.android_logs())
+    self.assertNotEmpty(env.stats())
     self.assertNotEmpty(env.raw_observation)
+    self.assertNotIn('extras', env.raw_observation)
     self.assertNotEmpty(env.raw_action)
+
+    # If the observation is None, we want to return the latest observation.
+    coordinator.rl_step.return_value = dm_env.truncation(
+        reward=0.0,
+        observation=None,
+    )
+    ts = env.step({'action_type': 1, 'touch_position': (10, 20)})
+    self.assertIsInstance(ts, dm_env.TimeStep)
+    # Assert the observation matches the latest observation.
+    obs = ts.observation
+    self.assertIn('pixels', obs)
+    self.assertEqual(obs['pixels'].shape, (987, 654, 3))
+    np.testing.assert_equal(obs['pixels'], pixels)
+    self.assertIn('timedelta', obs)
+    self.assertEqual(obs['timedelta'], 123456)
+    self.assertIn('orientation', obs)
+    self.assertEqual(obs['orientation'].shape, (4,))
+    np.testing.assert_equal(obs['orientation'], (1, 0, 0, 0))
+
+  def test_adb_call(self):
+    coordinator = _create_mock_coordinator()
+    env = environment.AndroidEnv(coordinator)
+    call = adb_pb2.AdbRequest(
+        force_stop=adb_pb2.AdbRequest.ForceStop(package_name='blah'))
+    expected_response = adb_pb2.AdbResponse(
+        status=adb_pb2.AdbResponse.Status.OK)
+    coordinator.execute_adb_call.return_value = expected_response
+
+    response = env.execute_adb_call(call)
+
+    self.assertEqual(response, expected_response)
+    coordinator.execute_adb_call.assert_called_once_with(call)
+
+  def test_update_task(self):
+    coordinator = _create_mock_coordinator()
+    env = environment.AndroidEnv(coordinator)
+    task = task_pb2.Task()
+    coordinator.update_task.return_value = True
+    response = env.update_task(task)
+    self.assertEqual(response, True)
+    coordinator.update_task.assert_called_once_with(task)
+
+  def test_double_close(self):
+    coordinator = _create_mock_coordinator()
+    env = environment.AndroidEnv(coordinator)
+    env.close()
+    env.close()
+    coordinator.close.assert_called_once()
 
 
 if __name__ == '__main__':

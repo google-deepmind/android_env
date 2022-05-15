@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 from typing import Sequence, Tuple
 
 
-from android_env.proto import adb_pb2
 import numpy as np
 
 
@@ -37,14 +36,16 @@ def transpose_pixels(frame: np.ndarray) -> np.ndarray:
   return np.transpose(frame, axes=(1, 0, 2))
 
 
-def orient_pixels(
-    frame: np.ndarray,
-    orientation: adb_pb2.AdbCall.Rotate.Orientation) -> np.ndarray:
+def orient_pixels(frame: np.ndarray, orientation: int) -> np.ndarray:
   """Rotates screen pixels according to the given orientation."""
-  if orientation == adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90:
-    frame = np.rot90(frame, k=3, axes=(0, 1))
-  elif orientation == adb_pb2.AdbCall.Rotate.Orientation.PORTRAIT_180:
-    frame = np.rot90(frame, k=2, axes=(0, 1))
-  elif orientation == adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270:
-    frame = np.rot90(frame, k=1, axes=(0, 1))
-  return frame
+  if orientation == 0:  # PORTRAIT_90
+    return frame
+  elif orientation == 1:  # LANDSCAPE_90
+    return np.rot90(frame, k=3, axes=(0, 1))
+  elif orientation == 2:  # PORTRAIT_180
+    return np.rot90(frame, k=2, axes=(0, 1))
+  elif orientation == 3:  # LANDSCAPE_270
+    return np.rot90(frame, k=1, axes=(0, 1))
+  else:
+    raise ValueError(
+        'Orientation must be an integer in [0, 3] but is %r' % orientation)

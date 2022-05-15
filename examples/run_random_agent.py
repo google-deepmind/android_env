@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ from absl import app
 from absl import flags
 from absl import logging
 
-import android_env
+from android_env import loader
 from dm_env import specs
 import numpy as np
 
@@ -46,7 +46,7 @@ flags.DEFINE_integer('num_steps', 1000, 'Number of steps to take.')
 
 def main(_):
 
-  with android_env.load(
+  with loader.load(
       emulator_path=FLAGS.emulator_path,
       android_sdk_root=FLAGS.android_sdk_root,
       android_avd_home=FLAGS.android_avd_home,
@@ -74,7 +74,6 @@ def main(_):
       timestep = env.step(action=action)
       reward = timestep.reward
       logging.info('Step %r, action: %r, reward: %r', step, action, reward)
-
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,11 +21,9 @@ from typing import Any, Dict
 from absl import app
 from absl import flags
 from absl import logging
-import android_env
+from android_env import loader
 from android_env.components import action_type
 from android_env.components import utils
-from android_env.proto import adb_pb2
-from android_env.proto import task_pb2
 import dm_env
 import numpy as np
 import pygame
@@ -50,10 +48,8 @@ flags.DEFINE_float('frame_rate', 1.0/30.0, 'Frame rate in seconds.')
 FLAGS = flags.FLAGS
 
 
-def _get_action_from_event(
-    event: pygame.event.Event,
-    screen: pygame.Surface,
-    orientation: adb_pb2.AdbCall.Rotate.Orientation) -> Dict[str, Any]:
+def _get_action_from_event(event: pygame.event.Event, screen: pygame.Surface,
+                           orientation: int) -> Dict[str, Any]:
   """Returns the current action by reading data from a pygame Event object."""
 
   act_type = action_type.ActionType.LIFT
@@ -68,9 +64,8 @@ def _get_action_from_event(
   }
 
 
-def _get_action_from_mouse(
-    screen: pygame.Surface,
-    orientation: adb_pb2.AdbCall.Rotate.Orientation) -> Dict[str, Any]:
+def _get_action_from_mouse(screen: pygame.Surface,
+                           orientation: int) -> Dict[str, Any]:
   """Returns the current action by reading data from the mouse."""
 
   act_type = action_type.ActionType.LIFT
@@ -85,14 +80,12 @@ def _get_action_from_mouse(
   }
 
 
-def _scale_position(
-    position: np.ndarray,
-    screen: pygame.Surface,
-    orientation: adb_pb2.AdbCall.Rotate.Orientation) -> np.ndarray:
+def _scale_position(position: np.ndarray, screen: pygame.Surface,
+                    orientation: int) -> np.ndarray:
   """AndroidEnv accepts mouse inputs as floats so we need to scale it."""
 
   scaled_pos = np.divide(position, screen.get_size(), dtype=np.float32)
-  if orientation == adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90:
+  if orientation == 1:  # LANDSCAPE_90
     scaled_pos = scaled_pos[::-1]
     scaled_pos[0] = 1 - scaled_pos[0]
   return scaled_pos
@@ -115,11 +108,8 @@ def _accumulate_reward(
   return episode_return
 
 
-def _render_pygame_frame(
-    surface: pygame.Surface,
-    screen: pygame.Surface,
-    orientation: adb_pb2.AdbCall.Rotate.Orientation,
-    timestep: dm_env.TimeStep) -> None:
+def _render_pygame_frame(surface: pygame.Surface, screen: pygame.Surface,
+                         orientation: int, timestep: dm_env.TimeStep) -> None:
   """Displays latest observation on pygame surface."""
 
   frame = timestep.observation['pixels'][:, :, :3]  # (H x W x C) (RGB)
@@ -137,7 +127,7 @@ def main(_):
   pygame.init()
   pygame.display.set_caption('android_human_agent')
 
-  with android_env.load(
+  with loader.load(
       emulator_path=FLAGS.emulator_path,
       android_sdk_root=FLAGS.android_sdk_root,
       android_avd_home=FLAGS.android_avd_home,
@@ -154,8 +144,7 @@ def main(_):
     screen_size = list(map(int, FLAGS.screen_size))  # (W x H)
     obs_shape = env.observation_spec()['pixels'].shape[:2]  # (H x W)
 
-    if (orientation == adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_90 or
-        orientation == adb_pb2.AdbCall.Rotate.Orientation.LANDSCAPE_270):
+    if (orientation == 1 or orientation == 3):  # LANDSCAPE_90 | LANDSCAPE_270
       screen_size = screen_size[::-1]
       obs_shape = obs_shape[::-1]
 

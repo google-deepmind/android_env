@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,33 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Prepares and launches the emulator."""
+"""Prepares and launches an emulator process."""
 
 import os
 import subprocess
-import time
+import tempfile
 from typing import Optional
 
 from absl import logging
-from android_env.components import errors
-import grpc
-
-from android_env.proto import emulator_controller_pb2
-from android_env.proto import emulator_controller_pb2_grpc
-from google.protobuf import empty_pb2
-
-# Period in milliseconds to ping the Emulator gRPC server to keep the connection
-# alive. If too frequent, we may get errors such as "Too many pings.", which can
-# bring down the process.
-_GRPC_KEEPALIVE_MS = 100000
 
 
 class EmulatorLauncher():
-  """Handles launching the emulator."""
+  """Handles launching an emulator."""
 
   def __init__(
       self,
-      local_tmp_dir: str = '/tmp',
       adb_port: Optional[int] = None,
       adb_server_port: Optional[int] = None,
       emulator_console_port: Optional[int] = None,
@@ -47,16 +35,15 @@ class EmulatorLauncher():
       emulator_path: str = '',
       android_sdk_root: str = '',
       avd_name: str = '',
+      android_avd_home: str = '',
       run_headless: bool = False,
       kvm_device: str = '/dev/kvm',
       gpu_mode: str = 'swiftshader_indirect',
-      android_avd_home: str = '',
-      startup_wait_time_sec: int = 300,
+      tmp_dir: str = '',
   ):
-    """Installs required files locally and launches the emulator.
+    """Launches an emulator.
 
     Args:
-      local_tmp_dir: Local directory for logs and maybe installing the AVD.
       adb_port: ADB port for the Android device.
       adb_server_port: Port of the ADB server deamon.
       emulator_console_port: Port for telnet communication with the emulator.
@@ -64,36 +51,46 @@ class EmulatorLauncher():
       emulator_path: Path to the emulator binary.
       android_sdk_root: Root directory of the Android SDK.
       avd_name: Name of the AVD.
+      android_avd_home: Local directory for AVDs.
       run_headless: Whether to run in headless mode.
       kvm_device: Path to the KVM device.
       gpu_mode: GPU mode override. Supported values are listed at:
         https://developer.android.com/studio/run/emulator-acceleration#accel-graphics
-      android_avd_home: Local directory for AVDs.
-      startup_wait_time_sec: Timeout for booting the emulator.
+      tmp_dir: Path to directory which will hold temporary files.
     """
-    self._local_tmp_dir = local_tmp_dir
     self._adb_port = adb_port
     self._adb_server_port = adb_server_port
     self._emulator_console_port = emulator_console_port
+    self._grpc_port = grpc_port
     self._emulator_path = emulator_path
     self._android_sdk_root = android_sdk_root
     self._avd_name = avd_name
+    self._android_avd_home = android_avd_home
     self._run_headless = run_headless
     self._kvm_device = kvm_device
     self._gpu_mode = gpu_mode
-    self._android_avd_home = android_avd_home
-    self._startup_wait_time_sec = startup_wait_time_sec
-    self._grpc_port = grpc_port
 
     self._emulator = None
     self._emulator_output = None
-    self._emulator_stub = None
+    self._is_running = False
     self._is_closed = False
 
-  def launch(self) -> None:
+    # Create directory for tmp files.
+    # Note: this will be deleted once EmulatorLauncher instance is cleaned up.
+    os.makedirs(tmp_dir, exist_ok=True)
+    self._local_tmp_dir_handle = tempfile.TemporaryDirectory(
+        dir=tmp_dir, prefix='simulator_instance_')
+    self._local_tmp_dir = self._local_tmp_dir_handle.name
+    self._logfile_path = os.path.join(self._local_tmp_dir, 'emulator_output')
+    logging.info('Simulator local_tmp_dir: %s', self._local_tmp_dir)
+
+  def logfile_path(self) -> str:
+    return self._logfile_path
+
+  def launch_emulator_process(self) -> None:
     """Launches the emulator."""
 
-    logging.info('Booting the emulator [%s]', self._emulator_path)
+    logging.info('Booting new emulator [%s]', self._emulator_path)
 
     # Set necessary environment variables.
     base_lib_dir = self._emulator_path[:-8] + 'lib64/'
@@ -113,7 +110,8 @@ class EmulatorLauncher():
         'QT_DEBUG_PLUGINS': '1',
         'QT_XKB_CONFIG_ROOT': str(self._emulator_path[:-8] + 'qt_config/'),
     }
-    logging.info('extra_env_vars: %s', str(extra_env_vars))
+    logging.info('extra_env_vars: %s',
+                 ' '.join(f'{k}={v}' for k, v in extra_env_vars.items()))
     env_vars = dict(os.environ).copy()
     env_vars.update(extra_env_vars)
 
@@ -126,14 +124,14 @@ class EmulatorLauncher():
         '-no-snapshot',
         '-gpu', self._gpu_mode,
         '-no-audio',
+        '-show-kernel',
         '-verbose',
         '-avd', self._avd_name,
     ] + grpc_port + run_headless + ports
     logging.info('Emulator launch command: %s', ' '.join(command))
 
     # Prepare logfile.
-    emulator_logfile = os.path.join(self._local_tmp_dir, 'emulator_output')
-    self._emulator_output = open(emulator_logfile, 'wb')
+    self._emulator_output = open(self._logfile_path, 'wb')
 
     # Spawn the emulator process.
     self._emulator = subprocess.Popen(
@@ -142,69 +140,12 @@ class EmulatorLauncher():
         stdout=self._emulator_output,
         stderr=self._emulator_output)
 
-    self._emulator_stub = EmulatorLauncher.create_emulator_stub(self._grpc_port)
+    self._is_running = True
 
-    # Wait for the emulator to boot.
-    start_time = time.time()
-    deadline = start_time + self._startup_wait_time_sec
-    success = False
-    while time.time() < deadline:
-      emu_status = self._emulator_stub.getStatus(empty_pb2.Empty())
-      logging.info('Waiting for emulator to start. Emulator uptime: %rms',
-                   emu_status.uptime)
-      if emu_status.booted:
-        success = True
-        break
-      time.sleep(5.0)
-
-    elapsed_time = time.time() - start_time
-    if not success:
-      raise errors.SimulatorCrashError(
-          'The emulator failed to boot after %r seconds' %
-          self._startup_wait_time_sec)
-
-    logging.info('Done booting the emulator (in %f seconds).', elapsed_time)
-
-  def restart(self) -> None:
-    logging.info('Restarting the emulator...')
-    self._kill_emulator_process()
-    self.launch()
-    logging.info('Done restarting the emulator.')
-
-  @classmethod
-  def create_emulator_stub(
-      cls,
-      grpc_port: int,
-      use_async: bool = False,
-  ) -> emulator_controller_pb2_grpc.EmulatorControllerStub:
-    """Returns a stub to the EmulatorController service."""
-    logging.info('Creating gRPC channel to the emulator on port %r', grpc_port)
-    port = f'localhost:{grpc_port}'
-    options = [('grpc.max_send_message_length', -1),
-               ('grpc.max_receive_message_length', -1),
-               ('grpc.keepalive_time_ms', _GRPC_KEEPALIVE_MS)]
-    creds = grpc.local_channel_credentials()
-    if use_async:
-      channel = grpc.aio.secure_channel(port, creds, options=options)
-    else:
-      channel = grpc.secure_channel(port, creds, options=options)
-    grpc.channel_ready_future(channel).result()  # Wait for channel to be ready.
-    logging.info('Added gRPC channel for the Emulator on port %s', port)
-    return emulator_controller_pb2_grpc.EmulatorControllerStub(channel)
-
-  def get_emulator_stub(
-      self) -> emulator_controller_pb2_grpc.EmulatorControllerStub:
-    """Returns the EmulatorController stub for the launched emulator."""
-    return self._emulator_stub
-
-  def _kill_emulator_process(self) -> None:
+  def confirm_shutdown(self) -> None:
     """Shuts down the emulator process."""
-    if self._emulator:
-      logging.info('Killing the emulator process...')
-      self._emulator_stub.setVmState(
-          emulator_controller_pb2.VmRunState(
-              state=emulator_controller_pb2.VmRunState.RunState.SHUTDOWN))
-      logging.info('Will wait 30s for it to finish gracefully...')
+    if self._is_running:
+      logging.info('Checking if emulator process has finished...')
       try:
         self._emulator.wait(timeout=30.0)
       except subprocess.TimeoutExpired:
@@ -215,12 +156,13 @@ class EmulatorLauncher():
         self._emulator.kill()
       self._emulator = None
       self._emulator_output.close()
-      logging.info('Done killing the emulator process.')
+      self._is_running = False
+      logging.info('The emulator process has finished.')
 
   def close(self):
     """Clean up launcher files and processes."""
     if not self._is_closed:
-      self._kill_emulator_process()
+      assert not self._is_running
       self._is_closed = True
 
   def __del__(self):

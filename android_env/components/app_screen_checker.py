@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,15 +17,18 @@
 
 import enum
 import re
+import time
 from typing import Callable, List, Optional, Sequence, Pattern
 
 from absl import logging
 
-from android_env.components import adb_controller as adb_control
+from android_env.components import adb_call_parser as adb_call_parser_lib
+from android_env.components import errors
+from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
 
 
-class DumpsysNode():
+class _DumpsysNode():
   """A node in a dumpsys tree."""
 
   def __init__(self, data: Optional[str] = None):
@@ -37,21 +40,21 @@ class DumpsysNode():
     return self._data
 
   @property
-  def children(self) -> List['DumpsysNode']:
+  def children(self) -> List['_DumpsysNode']:
     return self._children
 
   def find_child(self,
-                 predicate: Callable[['DumpsysNode'], bool],
-                 max_levels: int = 0) -> Optional['DumpsysNode']:
+                 predicate: Callable[['_DumpsysNode'], bool],
+                 max_levels: int = 0) -> Optional['_DumpsysNode']:
     """Returns the first direct child that matches `predicate`, None otherwise.
 
     Args:
-      predicate: Function-like that accepts a DumpsysNode and returns boolean.
+      predicate: Function-like that accepts a _DumpsysNode and returns boolean.
       max_levels: Maximum number of levels down the tree to search for a child.
         If non-positive, only direct children will be searched for.
 
     Returns:
-      A DumpsysNode or None.
+      A _DumpsysNode or None.
     """
     if not self.children:
       return None
@@ -79,7 +82,7 @@ class DumpsysNode():
       c.print_tree(indent + 2)
 
 
-def build_tree_from_dumpsys_output(dumpsys_output: str) -> DumpsysNode:
+def build_tree_from_dumpsys_output(dumpsys_output: str) -> _DumpsysNode:
   """Constructs a tree from a dumpsys string output.
 
   Args:
@@ -88,18 +91,18 @@ def build_tree_from_dumpsys_output(dumpsys_output: str) -> DumpsysNode:
       relationship with its parent or sibling.
 
   Returns:
-    DumpsysNode The root of the tree.
+    _DumpsysNode The root of the tree.
   """
   lines = dumpsys_output.split('\n')  # Split by lines.
   lines = [x.rstrip(' \r') for x in lines]
   lines = [x for x in lines if len(x)]  # Remove empty lines.
 
-  root = DumpsysNode('___root___')  # The root of all nodes.
+  root = _DumpsysNode('___root___')  # The root of all nodes.
   parents_stack = [root]
   for line in lines:
     stripped_line = line.lstrip(' ')
     indent = len(line) - len(stripped_line)  # Number of indent spaces.
-    new_node = DumpsysNode(stripped_line)  # Create a node without indentation.
+    new_node = _DumpsysNode(stripped_line)  # Create a node without indentation.
 
     parent = parents_stack.pop()
     if parent.data == '___root___':  # The root is an exception for indentation.
@@ -184,10 +187,10 @@ class AppScreenChecker():
     # The current view hierarchy does not match the expected view hierarchy.
     UNEXPECTED_VIEW_HIERARCHY = 4
 
-  def __init__(self,
-               adb_controller: adb_control.AdbController,
+  def __init__(self, adb_call_parser: adb_call_parser_lib.AdbCallParser,
                expected_app_screen: task_pb2.AppScreen):
-    self._adb_controller = adb_controller
+    self._adb_call_parser = adb_call_parser
+    self._expected_app_screen = expected_app_screen
     self._expected_activity = expected_app_screen.activity
     self._expected_view_hierarchy_path = [
         re.compile(regex) for regex in expected_app_screen.view_hierarchy_path
@@ -200,10 +203,13 @@ class AppScreenChecker():
       return AppScreenChecker.Outcome.EMPTY_EXPECTED_ACTIVITY
 
     # Check if we are still on the expected Activity.
-    current_activity = self._adb_controller.get_current_activity()
-    if current_activity is None:
+    response = self._adb_call_parser.parse(
+        adb_pb2.AdbRequest(
+            get_current_activity=adb_pb2.AdbRequest.GetCurrentActivity()))
+    if response.status != adb_pb2.AdbResponse.OK:
       return AppScreenChecker.Outcome.FAILED_ACTIVITY_EXTRACTION
 
+    current_activity = response.get_current_activity.full_activity
     if current_activity != self._expected_activity:
       logging.error('current_activity: %s,  expected_activity: %s',
                     current_activity, self._expected_activity)
@@ -214,13 +220,48 @@ class AppScreenChecker():
 
     # Check if we are in the expected view hierarchy path.
     if self._expected_view_hierarchy_path:
-      dumpsys_activity_output = self._adb_controller.get_activity_dumpsys(
-          package_name)
-      if dumpsys_activity_output:
+      dumpsys_response = self._adb_call_parser.parse(
+          adb_pb2.AdbRequest(
+              dumpsys=adb_pb2.AdbRequest.DumpsysRequest(
+                  service='activity', args=[package_name, package_name])))
+      if dumpsys_response.status != adb_pb2.AdbResponse.OK:
+        return AppScreenChecker.Outcome.FAILED_ACTIVITY_EXTRACTION
+
+      if dumpsys_response.dumpsys.output:
         if not matches_path(
-            dumpsys_activity_output,
+            dumpsys_response.dumpsys.output.decode('utf-8'),
             self._expected_view_hierarchy_path,
             max_levels=3):
           return AppScreenChecker.Outcome.UNEXPECTED_VIEW_HIERARCHY
 
     return AppScreenChecker.Outcome.SUCCESS
+
+  def wait_for_app_screen(self, timeout_sec: float) -> float:
+    """Waits for `self._expected_app_screen` to be the current screen.
+
+    Args:
+      timeout_sec: Maximum total time to wait for the screen to pop up.
+
+    Returns:
+      The total amount of time in seconds spent waiting for the screen to pop
+      up.
+    Raises:
+      errors.WaitForAppScreenError if the screen does not pop up within
+      `timeout_sec`.
+    """
+
+    logging.info('Waiting for app screen...')
+    start_time = time.time()
+    while time.time() - start_time < timeout_sec:
+      if self.matches_current_app_screen() == AppScreenChecker.Outcome.SUCCESS:
+        wait_time = time.time() - start_time
+        logging.info('Successfully waited for app screen in %r seconds: [%r]',
+                     wait_time, self._expected_app_screen)
+        return wait_time
+      time.sleep(0.1)
+
+    wait_time = time.time() - start_time
+    logging.error('Failed to wait for app screen in %r seconds: [%r].',
+                  wait_time, self._expected_app_screen)
+
+    raise errors.WaitForAppScreenError()

@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,16 +16,17 @@
 """Tests for android_env.components.task_manager.py."""
 
 import json
+from unittest import mock
 
 from absl.testing import absltest
-from android_env.components import adb_controller
+from android_env.components import action_type as action_type_lib
+from android_env.components import adb_call_parser as adb_call_parser_lib
 from android_env.components import dumpsys_thread
 from android_env.components import log_stream
 from android_env.components import logcat_thread
 from android_env.components import setup_step_interpreter
 from android_env.components import task_manager
 from android_env.proto import task_pb2
-import mock
 import numpy as np
 
 
@@ -35,16 +36,12 @@ class TaskManagerTest(absltest.TestCase):
     super().setUp()
     self.addCleanup(mock.patch.stopall)  # Disable previous patches.
 
-    self._adb_controller = mock.create_autospec(adb_controller.AdbController)
     self._setup_step_interpreter = mock.create_autospec(
         setup_step_interpreter.SetupStepInterpreter)
     self._dumpsys_thread = mock.create_autospec(dumpsys_thread.DumpsysThread)
     self._logcat_thread = mock.create_autospec(logcat_thread.LogcatThread)
     self._log_stream = mock.create_autospec(log_stream.LogStream)
 
-    mock.patch.object(
-        adb_controller, 'AdbController',
-        return_value=self._adb_controller).start()
     mock.patch.object(
         setup_step_interpreter,
         'SetupStepInterpreter',
@@ -59,13 +56,28 @@ class TaskManagerTest(absltest.TestCase):
         log_stream, 'LogStream',
         return_value=self._log_stream).start()
 
+  def test_update_task(self):
+    init_task = task_pb2.Task(id='initial_task')
+    new_task = task_pb2.Task(id='updated_task')
+    task_mgr = task_manager.TaskManager(task=init_task)
+
+    # Setting up the initial task so that the setup_step_interpreter
+    # is properly initialized.
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+
+    self.assertEqual(init_task, task_mgr.task())
+    self.assertEqual(0, task_mgr.stats()['task_updates'])
+    task_mgr.update_task(new_task)
+    self.assertEqual(new_task, task_mgr.task())
+    self.assertEqual(1, task_mgr.stats()['task_updates'])
+
   def test_setup_task(self):
     task_mgr = task_manager.TaskManager(task=task_pb2.Task())
-    task_mgr.setup_task(
-        adb_controller=self._adb_controller,
-        log_stream=self._log_stream)
-    assert hasattr(task_mgr, '_logcat_thread')
-    assert hasattr(task_mgr, '_setup_step_interpreter')
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    self.assertIsNotNone(task_mgr._logcat_thread)
+    self.assertIsNotNone(task_mgr._setup_step_interpreter)
 
   def test_get_current_reward(self):
     # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
@@ -84,10 +96,19 @@ class TaskManagerTest(absltest.TestCase):
     ])
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
-    task_mgr.setup_task(
-        adb_controller=self._adb_controller,
-        log_stream=self._log_stream)
-    self.assertEqual(task_mgr.get_current_reward(), 123.0)
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    timestep = task_mgr.rl_step(
+        agent_action={
+            'action_type': np.array(action_type_lib.ActionType.LIFT),
+            'touch_position': np.array([0.5, 0.5]),
+        },
+        simulator_signals={
+            'simulator_healthy': True,
+            'pixels': np.array([1, 2, 3]),
+        })
+    self.assertEqual(timestep.reward, 123.0)
+    np.testing.assert_equal(timestep.observation['pixels'], np.array([1, 2, 3]))
 
   def test_reward_event(self):
     # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
@@ -115,10 +136,18 @@ class TaskManagerTest(absltest.TestCase):
         ['^[Rr]eward: ([-+]?[0-9]*\\.?[0-9]*)$'])
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
-    task_mgr.setup_task(
-        adb_controller=self._adb_controller,
-        log_stream=self._log_stream)
-    self.assertEqual(task_mgr.get_current_reward(), 6.0)
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    timestep = task_mgr.rl_step(
+        agent_action={
+            'action_type': np.array(action_type_lib.ActionType.LIFT),
+            'touch_position': np.array([0.5, 0.5]),
+        },
+        simulator_signals={
+            'simulator_healthy': True,
+            'pixels': np.array([1, 2, 3]),
+        })
+    self.assertEqual(timestep.reward, 6.0)
 
   def test_get_current_reward_via_score(self):
     # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
@@ -142,10 +171,18 @@ class TaskManagerTest(absltest.TestCase):
         '^score: ([-+]?[0-9]*\\.?[0-9]*)$')
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
-    task_mgr.setup_task(
-        adb_controller=self._adb_controller,
-        log_stream=self._log_stream)
-    self.assertEqual(task_mgr.get_current_reward(), 185.0)
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    timestep = task_mgr.rl_step(
+        agent_action={
+            'action_type': np.array(action_type_lib.ActionType.LIFT),
+            'touch_position': np.array([0.5, 0.5]),
+        },
+        simulator_signals={
+            'simulator_healthy': True,
+            'pixels': np.array([1, 2, 3]),
+        })
+    self.assertEqual(timestep.reward, 185.0)
 
   def test_get_current_extras(self):
     # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
@@ -172,12 +209,22 @@ class TaskManagerTest(absltest.TestCase):
     ])
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
-    task_mgr.setup_task(
-        adb_controller=self._adb_controller,
-        log_stream=self._log_stream)
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+
+    timestep = task_mgr.rl_step(
+        agent_action={
+            'action_type': np.array(action_type_lib.ActionType.LIFT),
+            'touch_position': np.array([0.5, 0.5]),
+        },
+        simulator_signals={
+            'simulator_healthy': True,
+            'pixels': np.array([1, 2, 3]),
+        })
 
     # Check expectations.
-    extras = task_mgr.get_current_extras()
+    self.assertIn('extras', timestep.observation)
+    extras = timestep.observation['extras']
     np.testing.assert_almost_equal([[1, 2, 3], [4, 5, 6]],
                                    extras.get('an_extra'))
     np.testing.assert_almost_equal([0.5], extras.get('another_extra'))
@@ -216,11 +263,22 @@ class TaskManagerTest(absltest.TestCase):
     ])
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
-    task_mgr.setup_task(
-        adb_controller=self._adb_controller,
-        log_stream=self._log_stream)
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+
+    timestep = task_mgr.rl_step(
+        agent_action={
+            'action_type': np.array(action_type_lib.ActionType.LIFT),
+            'touch_position': np.array([0.5, 0.5]),
+        },
+        simulator_signals={
+            'simulator_healthy': True,
+            'pixels': np.array([1, 2, 3]),
+        })
 
     # Check expectations.
+    self.assertIn('extras', timestep.observation)
+    extras = timestep.observation['extras']
     expected_extra = {
         'extra_scalar': [0],
         'extra_list': [[1, 2, 3, 4]],
@@ -230,7 +288,6 @@ class TaskManagerTest(absltest.TestCase):
         'extra_string': ['a_string', 'a_new_string'],
         'extra_float': [0.6]
     }
-    extras = task_mgr.get_current_extras()
     np.testing.assert_almost_equal(
         expected_extra.get('extra_scalar'), extras.get('extra_scalar'))
     np.testing.assert_almost_equal(
@@ -260,10 +317,18 @@ class TaskManagerTest(absltest.TestCase):
     ])
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
-    task_mgr.setup_task(
-        adb_controller=self._adb_controller,
-        log_stream=self._log_stream)
-    self.assertEqual(task_mgr.get_current_reward(), 123.0)
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    timestep = task_mgr.rl_step(
+        agent_action={
+            'action_type': np.array(action_type_lib.ActionType.LIFT),
+            'touch_position': np.array([0.5, 0.5]),
+        },
+        simulator_signals={
+            'simulator_healthy': True,
+            'pixels': np.array([1, 2, 3]),
+        })
+    self.assertEqual(timestep.reward, 123.0)
 
   def test_multi_reward_regexp(self):
     # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
@@ -287,12 +352,20 @@ class TaskManagerTest(absltest.TestCase):
     ])
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
-    task_mgr.setup_task(
-        adb_controller=self._adb_controller,
-        log_stream=self._log_stream)
-    self.assertEqual(task_mgr.get_current_reward(), 15.0)
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    timestep = task_mgr.rl_step(
+        agent_action={
+            'action_type': np.array(action_type_lib.ActionType.LIFT),
+            'touch_position': np.array([0.5, 0.5]),
+        },
+        simulator_signals={
+            'simulator_healthy': True,
+            'pixels': np.array([1, 2, 3]),
+        })
+    self.assertEqual(timestep.reward, 15.0)
 
-  def test_check_episode_end(self):
+  def test_determine_transition_fn(self):
     # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
     # right away.
     def my_add_ev_listener(event_listener: logcat_thread.EventListener):
@@ -308,11 +381,18 @@ class TaskManagerTest(absltest.TestCase):
     task.log_parsing_config.log_regexps.episode_end.extend(['I am done!'])
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
-    task_mgr.setup_task(
-        adb_controller=self._adb_controller,
-        log_stream=self._log_stream)
-    episode_end = task_mgr.check_if_episode_ended()
-    self.assertTrue(episode_end)
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    timestep = task_mgr.rl_step(
+        agent_action={
+            'action_type': np.array(action_type_lib.ActionType.LIFT),
+            'touch_position': np.array([0.5, 0.5]),
+        },
+        simulator_signals={
+            'simulator_healthy': True,
+            'pixels': np.array([1, 2, 3]),
+        })
+    self.assertTrue(timestep.last())
 
 if __name__ == '__main__':
   absltest.main()

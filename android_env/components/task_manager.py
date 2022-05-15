@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,20 +19,19 @@ import ast
 import copy
 import datetime
 import json
-import queue
 import re
 import threading
-from typing import Any, Dict
+from typing import Any, Callable, Dict, Optional
 
 from absl import logging
-from android_env.components import adb_controller as adb_control
+from android_env.components import adb_call_parser as adb_call_parser_lib
 from android_env.components import app_screen_checker
 from android_env.components import dumpsys_thread
-from android_env.components import errors
 from android_env.components import log_stream as log_stream_lib
 from android_env.components import logcat_thread
 from android_env.components import setup_step_interpreter
 from android_env.proto import task_pb2
+import dm_env
 import numpy as np
 
 
@@ -64,21 +63,24 @@ class TaskManager():
 
     self._lock = threading.Lock()
     self._extras_max_buffer_size = 100
-    self._adb_controller = None
+    self._logcat_thread = None
+    self._dumpsys_thread = None
     self._setup_step_interpreter = None
 
-    # Logging settings
-    self._log_dict = {
+    # Initialize stats.
+    self._stats = {
+        'total_steps': 0,
+        'episode_steps': 0,
         'reset_count_step_timeout': 0,
-        'reset_count_player_exited': 0,
+        'reset_count_user_exited': 0,
         'reset_count_episode_end': 0,
         'reset_count_max_duration_reached': 0,
         'restart_count_max_bad_states': 0,
+        'task_updates': 0,
     }
 
     # Initialize internal state
     self._task_start_time = None
-    self._episode_steps = 0
     self._bad_state_counter = 0
     self._is_bad_episode = False
 
@@ -94,22 +96,49 @@ class TaskManager():
   def task(self) -> task_pb2.Task:
     return self._task
 
-  def increment_steps(self):
-    self._episode_steps += 1
+  def update_task(self, task: task_pb2.Task) -> None:
+    self._stats['task_updates'] += 1
+    self._task = task
 
-  def log_dict(self) -> Dict[str, Any]:
-    log_dict = copy.deepcopy(self._log_dict)
-    log_dict.update(self._setup_step_interpreter.log_dict())
-    return log_dict
+  def stats(self) -> Dict[str, Any]:
+    """Returns a dictionary of stats.
 
-  def _reset_counters(self):
-    """Reset counters at the end of an RL episode."""
+    This method is expected to be called after setup_task() has been called.
+    """
+    output = copy.deepcopy(self._stats)
+    if self._setup_step_interpreter is not None:
+      output.update(self._setup_step_interpreter.stats())
+    return output
 
+  def setup_task(
+      self,
+      adb_call_parser_factory: Callable[[], adb_call_parser_lib.AdbCallParser],
+      log_stream: log_stream_lib.LogStream) -> None:
+    """Performs one-off task setup.."""
+
+    self._start_logcat_thread(log_stream=log_stream)
+    self._start_dumpsys_thread(adb_call_parser_factory())
+    self._start_setup_step_interpreter(adb_call_parser_factory())
+    self._setup_step_interpreter.interpret(self._task.setup_steps)
+
+  def stop_task(self) -> None:
+    """Suspends task processing."""
+
+    self._stop_logcat_thread()
+
+  def reset_task(self) -> None:
+    """Resets a task for a new run."""
+
+    self._logcat_thread.pause()
+    self._setup_step_interpreter.interpret(self._task.reset_steps)
+    self._logcat_thread.resume()
+
+    # Reset some other variables.
     if not self._is_bad_episode:
       self._bad_state_counter = 0
     self._is_bad_episode = False
 
-    self._episode_steps = 0
+    self._stats['episode_steps'] = 0
     self._task_start_time = datetime.datetime.now()
     with self._lock:
       self._latest_values = {
@@ -119,142 +148,120 @@ class TaskManager():
           'episode_end': False,
       }
 
-  def setup_task(self,
-                 adb_controller: adb_control.AdbController,
-                 log_stream: log_stream_lib.LogStream) -> None:
-    """Starts the given task along with all relevant processes."""
+  def rl_step(self, agent_action: Optional[Dict[str, np.ndarray]],
+              simulator_signals: Dict[str, np.ndarray]) -> dm_env.TimeStep:
+    """Performs one RL step."""
 
-    self._adb_controller = adb_controller
-    self._start_logcat_thread(log_stream=log_stream)
-    self._start_setup_step_interpreter()
-    self._setup_step_interpreter.interpret(self._task.setup_steps)
+    simulator_healthy = simulator_signals.pop('simulator_healthy')
+    if not simulator_healthy:
+      return dm_env.truncation(reward=0.0, observation=None)
 
-  def reset_task(self) -> None:
-    """Resets a task at the end of an RL episode."""
-
-    self.pause_task()
-    self._setup_step_interpreter.interpret(self._task.reset_steps)
-    self._resume_task()
-    self._reset_counters()
-
-  def pause_task(self) -> None:
-    self._stop_dumpsys_thread()
-
-  def _resume_task(self) -> None:
-    self._start_dumpsys_thread()
-
-  def get_current_reward(self) -> float:
-    """Returns total reward accumulated since the last step."""
-
+    self._logcat_thread.line_ready().wait()
     with self._lock:
-      reward = self._latest_values['reward']
-      self._latest_values['reward'] = 0.0
+      reward = self._get_current_reward()
+      extras = self._get_current_extras()
+      transition_fn = self._determine_transition_fn(agent_action)
+
+    observation: Dict[str, Any] = simulator_signals
+    observation['extras'] = extras
+
+    return transition_fn(reward=reward, observation=observation)
+
+  def _get_current_reward(self) -> float:
+    """Returns total reward accumulated since the last step."""
+    reward = self._latest_values['reward']
+    self._latest_values['reward'] = 0.0
     return reward
 
-  def get_current_extras(self) -> Dict[str, Any]:
+  def _get_current_extras(self) -> Dict[str, Any]:
     """Returns task extras accumulated since the last step."""
+    extras = {}
+    for name, values in self._latest_values['extra'].items():
+      extras[name] = np.stack(values)
+    self._latest_values['extra'] = {}
+    return extras
 
-    with self._lock:
-      extras = {}
-      for name, values in self._latest_values['extra'].items():
-        extras[name] = np.stack(values)
-      self._latest_values['extra'] = {}
-      return extras
+  def _determine_transition_fn(
+      self, agent_action: Optional[Dict[str, np.ndarray]]
+  ) -> Callable[..., dm_env.TimeStep]:
+    """Determines the type of RL transition will be used."""
 
-  def check_if_episode_ended(self) -> bool:
-    """Determines whether the episode should be terminated and reset."""
+    if agent_action is None:  # RL reset.
 
-    # Check if player existed the task
-    if self._check_player_exited():
-      self._log_dict['reset_count_player_exited'] += 1
-      logging.warning('Player exited the game. Ending episode.')
+      def reset_timestep_fn(reward, observation):
+        del reward
+        return dm_env.TimeStep(
+            step_type=dm_env.StepType.FIRST,
+            reward=0.0,
+            discount=0.0,
+            observation=observation)
+
+      return reset_timestep_fn
+
+    self._stats['total_steps'] += 1
+    self._stats['episode_steps'] += 1
+
+    # Check if user existed the task
+    if self._dumpsys_thread.check_user_exited():
+      self._increment_bad_state()
+      self._stats['reset_count_user_exited'] += 1
+      logging.warning('User exited the task. Truncating the episode.')
       logging.info('************* END OF EPISODE *************')
-      return True
+      return dm_env.truncation
 
     # Check if episode has ended
-    with self._lock:
-      if self._latest_values['episode_end']:
-        self._log_dict['reset_count_episode_end'] += 1
-        logging.info('End of episode from logcat! Ending episode.')
-        logging.info('************* END OF EPISODE *************')
-        return True
+    if self._latest_values['episode_end']:
+      self._stats['reset_count_episode_end'] += 1
+      logging.info('End of episode from logcat! Ending episode.')
+      logging.info('************* END OF EPISODE *************')
+      return dm_env.termination
 
     # Check if step limit or time limit has been reached
-    if self._task.max_num_steps > 0:
-      if self._episode_steps > self._task.max_num_steps:
-        self._log_dict['reset_count_max_duration_reached'] += 1
-        logging.info('Maximum task duration (steps) reached. Ending episode.')
+    if self._task.max_episode_steps > 0:
+      if self._stats['episode_steps'] > self._task.max_episode_steps:
+        self._stats['reset_count_max_duration_reached'] += 1
+        logging.info('Maximum task duration (steps) reached. '
+                     'Truncating the episode.')
         logging.info('************* END OF EPISODE *************')
-        return True
+        return dm_env.truncation
 
-    if self._task.max_duration_sec > 0.0:
+    if self._task.max_episode_sec > 0.0:
       task_duration = datetime.datetime.now() - self._task_start_time
-      max_duration_sec = self._task.max_duration_sec
-      if task_duration > datetime.timedelta(seconds=int(max_duration_sec)):
-        self._log_dict['reset_count_max_duration_reached'] += 1
-        logging.info('Maximum task duration (sec) reached. Ending episode.')
+      max_episode_sec = self._task.max_episode_sec
+      if task_duration > datetime.timedelta(seconds=int(max_episode_sec)):
+        self._stats['reset_count_max_duration_reached'] += 1
+        logging.info('Maximum task duration (sec) reached. '
+                     'Truncating the episode.')
         logging.info('************* END OF EPISODE *************')
-        return True
+        return dm_env.truncation
 
-    return False
+    return dm_env.transition
 
-  def _check_player_exited(self) -> bool:
-    """Returns whether the player has exited the game."""
-    try:
-      self._check_player_exited_impl()
-      return False
-    except errors.NotAllowedError:
-      return True
-
-  def _check_player_exited_impl(self):
-    """Raises an error if the OS is not in an allowed state."""
-
-    if not hasattr(self, '_dumpsys_thread'):
-      return
-
-    self._dumpsys_thread.write(
-        dumpsys_thread.DumpsysThread.Signal.FETCH_DUMPSYS)
-
-    try:
-      v = self._dumpsys_thread.read(block=False)
-      if v == dumpsys_thread.DumpsysThread.Signal.USER_EXITED_ACTIVITY:
-        self._increment_bad_state()
-        raise errors.PlayerExitedActivityError()
-      elif v == dumpsys_thread.DumpsysThread.Signal.USER_EXITED_VIEW_HIERARCHY:
-        self._increment_bad_state()
-        raise errors.PlayerExitedViewHierarchyError()
-    except queue.Empty:
-      pass  # Don't block here, just ignore if we have nothing.
-
-  def _start_setup_step_interpreter(self):
+  def _start_setup_step_interpreter(
+      self, adb_call_parser: adb_call_parser_lib.AdbCallParser):
     self._setup_step_interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_controller=self._adb_controller,
-        logcat=self._logcat_thread)
+        adb_call_parser=adb_call_parser)
 
   def _start_logcat_thread(self, log_stream: log_stream_lib.LogStream):
-    self._logcat_thread = logcat_thread.LogcatThread(
-        log_stream=log_stream,
-        log_parsing_config=self._task.log_parsing_config)
+    log_stream.set_log_filters(list(self._task.log_parsing_config.filters))
+    self._logcat_thread = logcat_thread.LogcatThread(log_stream=log_stream)
 
     for event_listener in self._logcat_listeners():
       self._logcat_thread.add_event_listener(event_listener)
 
-  def _start_dumpsys_thread(self):
+  def _start_dumpsys_thread(self,
+                            adb_call_parser: adb_call_parser_lib.AdbCallParser):
     self._dumpsys_thread = dumpsys_thread.DumpsysThread(
         app_screen_checker=app_screen_checker.AppScreenChecker(
-            self._adb_controller, self._task.expected_app_screen),
+            adb_call_parser=adb_call_parser,
+            expected_app_screen=self._task.expected_app_screen),
         check_frequency=self._dumpsys_check_frequency,
-        max_failed_current_activity=self._max_failed_current_activity,
-        block_input=True,
-        block_output=True)
+        max_failed_current_activity=self._max_failed_current_activity)
 
   def _stop_logcat_thread(self):
-    if hasattr(self, '_logcat_thread'):
+    if self._logcat_thread is not None:
       self._logcat_thread.kill()
-
-  def _stop_dumpsys_thread(self):
-    if hasattr(self, '_dumpsys_thread'):
-      self._dumpsys_thread.kill()
+      self._logcat_thread = None
 
   def _increment_bad_state(self) -> None:
     """Increments the bad state counter.
@@ -271,7 +278,7 @@ class TaskManager():
       logging.warning('Bad state counter: %d.', self._bad_state_counter)
       if self._bad_state_counter >= self._max_bad_states:
         logging.error('Too many consecutive bad states. Restarting simulator.')
-        self._log_dict['restart_count_max_bad_states'] += 1
+        self._stats['restart_count_max_bad_states'] += 1
         self._should_restart = True
     else:
       logging.warning('Max bad states not set, bad states will be ignored.')
@@ -385,9 +392,3 @@ class TaskManager():
         self._latest_values['extra'] = latest_extras
 
     return listeners
-
-  def close(self):
-    if hasattr(self, '_logcat_thread'):
-      self._logcat_thread.kill()
-    if hasattr(self, '_dumpsys_thread'):
-      self._dumpsys_thread.kill()

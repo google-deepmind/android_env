@@ -1,4 +1,4 @@
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -111,7 +111,6 @@ setup(
         'absl-py>=0.1.0',
         'dm_env',
         'grpcio',
-        'mock',
         'numpy<1.20',
         'pexpect>=4.8.0',
         'portpicker>=1.2.0',

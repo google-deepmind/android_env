@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -52,7 +52,6 @@ def load(task_path: str,
       adb_controller_args=dict(
           adb_path=os.path.expanduser(adb_path),
           adb_server_port=5037,
-          prompt_regex=r'\w*:\/ \$',
       ),
       emulator_launcher_args=dict(
           avd_name=avd_name,

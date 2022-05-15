@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,12 +20,10 @@ import threading
 # `typing.Pattern` has been deprecated in Python 3.9 in favor of `re.Pattern`,
 # but it is not available even in slightly older Python versions.
 # Please see https://www.python.org/dev/peps/pep-0585/
-from typing import Callable, Match, NamedTuple, Optional, Pattern
+from typing import Callable, Match, NamedTuple, Pattern
 
 from absl import logging
 from android_env.components import log_stream as log_stream_lib
-from android_env.components import thread_function
-from android_env.proto import task_pb2
 
 
 class EventListener(NamedTuple):
@@ -33,14 +31,10 @@ class EventListener(NamedTuple):
   handler_fn: Callable[[Pattern[str], Match[str]], None]
 
 
-class LogcatThread(thread_function.ThreadFunction):
+class LogcatThread:
   """Reads ADB logcat entries in a separate thread."""
 
-  def __init__(
-      self,
-      log_stream: log_stream_lib.LogStream,
-      log_parsing_config: task_pb2.LogParsingConfig,
-      name: str = 'logcat'):
+  def __init__(self, log_stream: log_stream_lib.LogStream):
     """Initializes this LogcatThread with optional filters.
 
     Please see https://developer.android.com/studio/command-line/logcat for more
@@ -48,22 +42,17 @@ class LogcatThread(thread_function.ThreadFunction):
 
     Args:
       log_stream: Stream of logs from simulator.
-      log_parsing_config: Determines the types of messages we want logcat to
-        match. Contains `filters` and `log_regexps`.
-      name: Name of the thread.
     """
 
-    self._regexps = log_parsing_config.log_regexps
     self._listeners = {}
-    self._desired_event = None
-    self._thread_event = threading.Event()
-    self._max_buffer_size = 100
+    self._line_ready = threading.Event()
+    self._line_ready.set()
     self._log_stream = log_stream
-    self._log_stream.set_log_filters(list(log_parsing_config.filters))
-
     self._stdout = self._log_stream.get_stream_output()
-
-    super().__init__(block_input=True, block_output=False, name=name)
+    self._should_stop = threading.Event()
+    self._thread = threading.Thread(target=self._process_logs)
+    self._thread.daemon = True
+    self._thread.start()
 
   def add_event_listener(self, event_listener: EventListener) -> None:
     """Adds `fn` to the list of handlers to call when `event` occurs."""
@@ -80,26 +69,24 @@ class LogcatThread(thread_function.ThreadFunction):
       return
     self._listeners[event_regexp].remove(event_listener.handler_fn)
 
-  def wait(self,
-           event: Optional[Pattern[str]] = None,
-           timeout_sec: Optional[float] = None) -> None:
-    """Blocks (caller) execution for up to `timeout_sec` until `event` is fired.
+  def line_ready(self) -> threading.Event:
+    """Indicates whether all listeners have been notified for a given line."""
+    return self._line_ready
 
-    Args:
-      event: Event to wait for. If None, any new event will cause this function
-        to return.
-      timeout_sec: Maximum time to block waiting for an event.
-    """
-    self._desired_event = event
-    self._thread_event.wait(timeout=timeout_sec)
-    self._thread_event.clear()
+  def pause(self):
+    self._log_stream.pause_stream()
+
+  def resume(self):
+    self._log_stream.resume_stream()
 
   def kill(self):
+    self._should_stop.set()
     self._log_stream.stop_stream()
+    self._thread.join(timeout=3.0)
 
-    super().kill()
+  def _process_logs(self) -> None:
+    """A loop that runs until `self._should_stop` is set()."""
 
-  def main(self) -> None:
     # pylint: disable=g-line-too-long
     # Format is: "TIME_SEC PID TID PRIORITY TAG: MESSAGE"
     #
@@ -123,9 +110,7 @@ class LogcatThread(thread_function.ThreadFunction):
     logline_re = re.compile(regexp, re.VERBOSE)
 
     for line in self._stdout:
-      # We never hand back control to ThreadFunction._run() so we need to
-      # explicitly check for self._should_run here.
-      if not self._should_run:
+      if self._should_stop.is_set():
         break
 
       if not line:  # Skip empty lines.
@@ -137,18 +122,15 @@ class LogcatThread(thread_function.ThreadFunction):
       if not matches or len(matches.groups()) != 6:
         continue
 
+      # Make sure that values are not read until all listeners are notified.
+      self._line_ready.clear()
+
       content = matches.group('message')
       for ev, listeners in self._listeners.items():
         ev_matches = ev.match(content)
         if ev_matches:
-          # Unblock consumers that may be waiting for events.
-          if not self._thread_event.is_set():
-            if self._desired_event:
-              if self._desired_event == ev:
-                self._thread_event.set()
-            else:
-              self._thread_event.set()
-
           # Notify listeners.
           for listener in listeners:
             listener(ev, ev_matches)
+
+      self._line_ready.set()

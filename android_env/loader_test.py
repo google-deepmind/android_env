@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 
 import builtins
 import os
+from unittest import mock
+
 from absl.testing import absltest
 from android_env import environment
 from android_env import loader
@@ -24,7 +26,6 @@ from android_env.components import coordinator as coordinator_lib
 from android_env.components import task_manager as task_manager_lib
 from android_env.components.simulators.emulator import emulator_simulator
 from android_env.proto import task_pb2
-import mock
 
 
 class LoaderTest(absltest.TestCase):
@@ -53,7 +54,6 @@ class LoaderTest(absltest.TestCase):
         adb_controller_args=dict(
             adb_path=os.path.expanduser('~/Android/Sdk/platform-tools/adb'),
             adb_server_port=5037,
-            prompt_regex=r'\w*:\/ \$',
         ),
         emulator_launcher_args=dict(
             avd_name='my_avd',
@@ -80,7 +80,7 @@ class LoaderTest(absltest.TestCase):
 id: "fake_task"
 name: "Fake Task"
 description: "Task for testing loader."
-max_duration_sec: 0
+max_episode_sec: 0
 '''
 
     env = loader.load(
@@ -92,7 +92,7 @@ max_duration_sec: 0
     expected_task.id = 'fake_task'
     expected_task.name = 'Fake Task'
     expected_task.description = 'Task for testing loader.'
-    expected_task.max_duration_sec = 0
+    expected_task.max_episode_sec = 0
 
     task_manager.assert_called_with(expected_task)
     assert isinstance(env, environment.AndroidEnv)

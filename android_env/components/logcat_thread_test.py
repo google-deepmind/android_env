@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -55,25 +55,18 @@ class FakeStream():
         yield next_value
 
 
-def _log_parsing_config():
-  """Returns log_parsing_config object for testing."""
-
-  return task_pb2.LogParsingConfig(
-      filters=['AndroidRLTask:V'])
-
-
 def make_stdout(data):
   """Returns a valid log output with given data as message."""
   return '         1553110400.424  5583  5658 D Tag: %s' % data
 
 
 class FakeLogStream(log_stream.LogStream):
-  """Add doc string."""
+  """FakeLogStream class that wraps a FakeStream."""
 
   def __init__(self):
+    super().__init__(verbose=False)
     self.logs = FakeStream()
     self.stream_is_alive = True
-    self._verbose = False
 
   def _get_stream_output(self):
     return self.logs
@@ -94,56 +87,54 @@ class LogcatThreadTest(absltest.TestCase):
     super().tearDown()
 
   def test_set_filters(self):
-    _ = logcat_thread.LogcatThread(
-        log_stream=self.fake_log_stream,
-        log_parsing_config=_log_parsing_config())
+    log_parsing_config = task_pb2.LogParsingConfig(filters=['AndroidRLTask:V'])
+    self.fake_log_stream.set_log_filters(log_parsing_config.filters)
+    _ = logcat_thread.LogcatThread(log_stream=self.fake_log_stream)
     expected_filters = ['AndroidRLTask:V', '*:S']
     self.assertEqual(expected_filters, self.fake_log_stream._filters)
 
   def test_kill(self):
-    logcat = logcat_thread.LogcatThread(
-        log_stream=self.fake_log_stream,
-        log_parsing_config=_log_parsing_config())
+    logcat = logcat_thread.LogcatThread(log_stream=self.fake_log_stream)
     self.assertTrue(self.fake_log_stream.stream_is_alive)
     logcat.kill()
     self.assertFalse(self.fake_log_stream.stream_is_alive)
 
   def test_listeners(self):
     """Ensures that we can wait for a specific message without polling."""
-    logcat = logcat_thread.LogcatThread(
-        log_stream=self.fake_log_stream,
-        log_parsing_config=_log_parsing_config())
+    logcat = logcat_thread.LogcatThread(log_stream=self.fake_log_stream)
+    # Start yielding lines from LogStream.
+    logcat.resume()
 
     # Set up a listener that modifies an arbitrary state.
-    some_state = False
+    some_state = threading.Event()
 
     def my_handler(event: Pattern[str], match: Match[str]):
       del event, match
       nonlocal some_state
-      some_state = True
+      some_state.set()
 
     # Create a desired event and hook up the listener.
     my_event = re.compile('Hello world')
     listener = logcat_thread.EventListener(my_event, my_handler)
     logcat.add_event_listener(listener)
     self.fake_log_stream.logs.send_value('Hi there!')  # This should not match.
-    self.assertFalse(some_state)
+    self.assertFalse(some_state.is_set())
     self.fake_log_stream.logs.send_value(make_stdout('Hello world'))
-    logcat.wait(event=my_event, timeout_sec=1.0)
-    self.assertTrue(some_state)
+    some_state.wait(timeout=1.0)
+    self.assertTrue(some_state.is_set())
 
     # Waiting for any events should also trigger the listener.
-    some_state = False
+    some_state.clear()
     self.fake_log_stream.logs.send_value(make_stdout('Hello world'))
-    logcat.wait(event=None, timeout_sec=1.0)
-    self.assertTrue(some_state)
+    some_state.wait(timeout=1.0)
+    self.assertTrue(some_state.is_set())
 
     # After removing the listener, it should not be called anymore.
-    some_state = False
+    some_state.clear()
     logcat.remove_event_listener(listener)
     self.fake_log_stream.logs.send_value(make_stdout('Hello world'))
-    logcat.wait(event=my_event, timeout_sec=1.0)
-    self.assertFalse(some_state)
+    some_state.wait(timeout=1.0)
+    self.assertFalse(some_state.is_set())
 
 
 if __name__ == '__main__':

@@ -51,7 +51,7 @@ how to put these into code.
     said activity, making sure it has not accidentally quit the application we
     want it to be training on.
 
-*   `max_duration_sec`: Puts a time limit on the episodes, triggering an episode
+*   `max_episode_sec`: Puts a time limit on the episodes, triggering an episode
     reset if the current episode has lasted too long.
 
 *   `max_duration_steps`: Puts a step limit on the episodes, triggering an
@@ -156,7 +156,7 @@ expected_app_screen: {
   view_hierarchy_path: []
 }
 
-max_num_steps: 500
+max_episode_steps: 500
 
 # Capture expected format of log messages
 log_parsing_config: {

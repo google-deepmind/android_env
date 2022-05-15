@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ _PROTO_DTYPE_TO_NUMPY_DTYPE = {
     task_pb2.ArraySpec.DataType.STRING_U16: np.dtype(('<U16')),
     task_pb2.ArraySpec.DataType.STRING_U25: np.dtype(('<U25')),
     task_pb2.ArraySpec.DataType.STRING_U250: np.dtype(('<U250')),
+    task_pb2.ArraySpec.DataType.STRING: np.dtype(('<U0')),
 }
 
 
@@ -99,6 +100,8 @@ def base_observation_spec(height: int, width: int) -> Dict[str, specs.Array]:
   Returns:
     pixels: Spec for the RGB screenshot of the device. Has shape (H, W, 3)
     timedelta: Spec for time delta since the last observation (in microseconds).
+        The first timestep immediately after reset() will have this value set to
+        0.
     orientation: Spec for the latest orientation in a one-hot representation:
         [1, 0, 0, 0]: PORTRAIT  (0 degrees)
         [0, 1, 0, 0]: LANDSCAPE (90 degrees clockwise)

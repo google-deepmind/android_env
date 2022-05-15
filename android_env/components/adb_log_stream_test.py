@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 """Tests for adb_log_stream."""
 
 import subprocess
+from unittest import mock
 
 from absl.testing import absltest
 from android_env.components import adb_log_stream
-import mock
 
 
 class FakeAdbSubprocess():

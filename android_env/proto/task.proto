@@ -1,4 +1,4 @@
-// Copyright 2021 DeepMind Technologies Limited.
+// Copyright 2022 DeepMind Technologies Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,11 +52,6 @@ message CheckInstall {
   float timeout_sec = 2;
 }
 
-message WaitForMessage {
-  string message = 1;
-  float timeout_sec = 2;
-}
-
 message Sleep {
   float time_sec = 1;
 }
@@ -67,7 +62,6 @@ message SuccessCondition {
   oneof check {
     WaitForAppScreen wait_for_app_screen = 2;
     CheckInstall check_install = 3;
-    WaitForMessage wait_for_message = 4;
   }
 }
 
@@ -75,7 +69,7 @@ message SetupStep {
   SuccessCondition success_condition = 1;
 
   oneof step {
-    AdbCall adb_call = 2;
+    AdbRequest adb_request = 2;
     Sleep sleep = 3;
   }
 }
@@ -107,15 +101,14 @@ message ArraySpec {
     STRING_U16 = 13;
     STRING_U25 = 14;
     STRING_U250 = 15;
+    STRING = 16;  // String without max length
   }
 
   // Data type of elements we expect to see in an array of this spec.
   DataType dtype = 3;
 }
 
-
 message LogParsingConfig {
-
   // `filters` are tags used by the app's logging system so that we can
   // identify them in logcat's output. It's the first argument to logging calls
   // such as Log.e("ActivityManager", "My message").
@@ -125,7 +118,6 @@ message LogParsingConfig {
   // Regular expressions that define how we can extract RL information such as
   // score, extras and episode end from raw logcat messages.
   message LogRegexps {
-
     // Regexp expected to match:
     // ...a floating point value which gets accumulated over time.
     // A delta in 'score' corresponds to the reward.
@@ -150,8 +142,7 @@ message LogParsingConfig {
     // Attaches rewards to arbitrary log messages, for example:
     // {event: "coin_collected" reward: 2.3}
     // {event: "car_crashed" reward: -1.4}
-    message RewardEvent{
-
+    message RewardEvent {
       // If `event` is matched, the environment will give `reward`.
       string event = 1;
 
@@ -160,11 +151,9 @@ message LogParsingConfig {
     }
 
     repeated RewardEvent reward_event = 6;
-
   }
 
   LogRegexps log_regexps = 2;
-
 }
 
 // Description of a reinforcement learning task to be solved by an agent.
@@ -183,19 +172,19 @@ message Task {
 
   AppScreen expected_app_screen = 6;
 
-  // AndroidEnv resets the episode after `max_duration_sec` is passed since the
-  // last reset().
+  // AndroidEnv resets the episode after `max_episode_sec` is passed since the
+  // last reset(). Recommended for time sensitive tasks (e.g. reactive games).
   // Note that this is real time as measured by AndroidEnv and is independent of
   // the speed of simulation of Android.
   // If <= 0.0, this logic is disabled.
-  float max_duration_sec = 7;
+  float max_episode_sec = 7;
 
   // The maximum number of interactions in a single episode between the
   // environment and an agent.
   // This setting is appropriate for tasks that are not time-dependent or when
   // the performance of the simulation varies dramatically between runs.
   // If <= 0, this logic is disabled.
-  int32 max_num_steps = 8;
+  int32 max_episode_steps = 8;
 
   // Defines parameters for parsing messages from logcat.
   LogParsingConfig log_parsing_config = 9;
@@ -215,5 +204,4 @@ message Task {
   // definition will be passed to the agent, everything else is excluded.
   // The name of an extra must be unique across all extras.
   repeated ArraySpec extras_spec = 10;
-
 }

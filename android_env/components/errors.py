@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 DeepMind Technologies Limited.
+# Copyright 2022 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,32 +20,12 @@ class ReadObservationError(Exception):
   """When the environment is unable to obtain an observation from a simulator."""
 
 
-class ObservationDecodingError(ReadObservationError):
-  """When the environment is unable to decode the observation from a simulator."""
-
-
-class PipeTimedOutError(ReadObservationError):
-  """When the environment waited for too long for part of an observation."""
-
-
 class CoordinatorError(Exception):
   """Error raised by the Coordinator."""
 
 
 class TooManyRestartsError(CoordinatorError):
   """The number of restarts has exceeded _MAX_RESTART_TRIES."""
-
-
-class NotAllowedError(Exception):
-  """When the player does something that outside of the task scope."""
-
-
-class PlayerExitedActivityError(NotAllowedError):
-  """When the player quits the current Android activity."""
-
-
-class PlayerExitedViewHierarchyError(NotAllowedError):
-  """When the player quits the current Android app screen."""
 
 
 class AdbControllerError(Exception):
@@ -72,16 +52,8 @@ class AdbControllerInputDeviceNotFoundError(AdbControllerError):
   """Raised when an input device handle could not be found."""
 
 
-class AdbControllerScreenPinningError(AdbControllerError):
-  """Raised when screen pinning failed."""
-
-
 class SimulatorCrashError(Exception):
   """Raised when an AndroidSimulator crashed."""
-
-
-class ConsoleConnectionError(Exception):
-  """Raised when cannot connect to the emulator console."""
 
 
 class SendActionError(Exception):
@@ -98,7 +70,3 @@ class WaitForAppScreenError(StepCommandError):
 
 class CheckInstallError(StepCommandError):
   """Raised when the check_install success check is not met."""
-
-
-class WaitForMessageError(StepCommandError):
-  """Raised when the wait_for_message success check is not met."""
