@@ -162,7 +162,6 @@ class EmulatorLauncher():
   def close(self):
     """Clean up launcher files and processes."""
     if not self._is_closed:
-      assert not self._is_running
       self._is_closed = True
 
   def __del__(self):

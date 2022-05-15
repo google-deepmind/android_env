@@ -51,17 +51,6 @@ class AdbCallParserTest(parameterized.TestCase):
     self.assertEqual(response.status,
                      adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)
 
-  def test_install_apk_unsupported_location(self):
-    adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=absltest.get_default_test_tmpdir())
-    request = adb_pb2.AdbRequest()
-    request.install_apk.mpm.package_name = 'my/pkg/great_game'
-    response = parser.parse(request)
-    self.assertEqual(response.status,
-                     adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)
-    self.assertNotEmpty(response.error_message)
-
   @mock.patch.object(os.path, 'exists', autospec=True)
   def test_install_apk_file_not_found(self, mock_exists):
     adb = mock.create_autospec(adb_controller.AdbController)

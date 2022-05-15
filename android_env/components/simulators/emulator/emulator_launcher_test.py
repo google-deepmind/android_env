@@ -61,7 +61,7 @@ class EmulatorLauncherTest(absltest.TestCase):
     self._expected_env_vars = {
         'ANDROID_HOME': '',
         'ANDROID_SDK_ROOT': '',
-        'ANDROID_AVD_HOME': 'my/avd/path',
+        'ANDROID_AVD_HOME': '',
         'ANDROID_EMULATOR_KVM_DEVICE': '/dev/kvm',
         'ANDROID_ADB_SERVER_PORT': '1234',
         'LD_LIBRARY_PATH': ld_library_path,
