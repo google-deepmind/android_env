@@ -49,3 +49,16 @@ def orient_pixels(frame: np.ndarray, orientation: int) -> np.ndarray:
   else:
     raise ValueError(
         'Orientation must be an integer in [0, 3] but is %r' % orientation)
+
+def convert_int_to_float(frame: np.ndarray,
+                         observation_spec_shape,
+                         dtype: np.dtype
+                         ) -> np.ndarray:
+  """Converts image from int array to float array"""
+  float_pixels = frame / 255
+  float_pixels = float_pixels.astype(dtype)
+  assert float_pixels.shape == observation_spec_shape.shape
+  assert np.min(float_pixels) >= 0.0
+  assert np.max(float_pixels) <= 1.0
+  return float_pixels
+  
