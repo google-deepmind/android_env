@@ -18,6 +18,7 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 from android_env.components import utils
+from dm_env import specs
 import numpy as np
 
 
@@ -65,6 +66,36 @@ class UtilsTest(parameterized.TestCase):
     rotated = utils.orient_pixels(image, rot_0)
     self.assertEqual(rotated.shape, (3, 2, 2))
     self.assertTrue((rotated == image).all())
+
+  def test_convert_int_to_float_bounded_array(self):
+    spec = specs.BoundedArray(
+        shape=(4,),
+        dtype=np.int32,
+        minimum=[0, 1, 10, -2],
+        maximum=[5, 5, 20, 2],
+        name='bounded_array')
+    data = np.array([2, 2, 10, 0], dtype=np.int32)
+    float_data = utils.convert_int_to_float(data, spec, np.float64)
+    np.testing.assert_equal(
+        np.array([2. / 5., 1. / 4., 0., 0.5], dtype=np.float64), float_data)
+
+  def test_convert_int_to_float_bounded_array_broadcast(self):
+    spec = specs.BoundedArray(
+        shape=(3,), dtype=np.int16, minimum=2, maximum=4, name='bounded_array')
+    data = np.array([2, 3, 4], dtype=np.int16)
+    float_data = utils.convert_int_to_float(data, spec, np.float32)
+    np.testing.assert_equal(
+        np.array([0.0, 0.5, 1.0], dtype=np.float32), float_data)
+
+  def test_convert_int_to_float_no_bounds(self):
+    spec = specs.Array(
+        shape=(3,),
+        dtype=np.int8,  # int8 implies min=-128, max=127
+        name='bounded_array')
+    data = np.array([-128, 0, 127], dtype=np.int16)
+    float_data = utils.convert_int_to_float(data, spec, np.float32)
+    np.testing.assert_equal(
+        np.array([0.0, 128. / 255., 1.0], dtype=np.float32), float_data)
 
 if __name__ == '__main__':
   absltest.main()
