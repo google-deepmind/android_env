@@ -49,3 +49,22 @@ def orient_pixels(frame: np.ndarray, orientation: int) -> np.ndarray:
   else:
     raise ValueError(
         'Orientation must be an integer in [0, 3] but is %r' % orientation)
+
+
+def convert_int_to_float(data: np.ndarray,
+                         data_spec: dm_env_specs.Array,
+                         float_type: np.dtype = np.float32):
+  """Converts an array of int values to floats between 0 and 1."""
+  if not np.issubdtype(data.dtype, np.integer):
+    raise TypeError(f'{data.dtype} is not an integer type')
+  if not np.issubdtype(float_type, np.floating):
+    raise TypeError(f'{float_type} is not a floating-point type')
+  if isinstance(data_spec, dm_env_specs.BoundedArray):
+    value_min = data_spec.minimum
+    value_max = data_spec.maximum
+  else:
+    # We use the int type to figure out the boundaries.
+    iinfo = np.iinfo(data_spec.dtype)
+    value_min = iinfo.min
+    value_max = iinfo.max
+  return float_type(1.0 * (data - value_min) / (value_max - value_min))
