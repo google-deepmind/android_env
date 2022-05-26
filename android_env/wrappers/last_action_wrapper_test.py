@@ -49,6 +49,9 @@ class FakeEnv(environment.AndroidEnv):
 
   def set_next_timestep(self, timestep):
     self._next_timestep = timestep
+    
+  def close(self):
+    pass
 
 
 def _simple_spec():
