@@ -43,6 +43,7 @@ testing_requirements = [
     'pillow',
     'pytype',
     'pytest-xdist',
+    'gym',
 ]
 
 
