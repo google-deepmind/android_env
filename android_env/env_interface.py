@@ -55,33 +55,34 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
 
   # Extensions provided by AndroidEnv.
 
-  @abc.abstractmethod
   def task_extras_spec(self) -> Dict[str, dm_env.specs.Array]:
     """Returns the specification for extra info provided by tasks."""
 
-  @abc.abstractmethod
+    return {}
+
   def task_extras(self, latest_only: bool = True) -> Dict[str, np.ndarray]:
     """Returns extra info provided by tasks."""
 
+    return {}
+
   @property
-  @abc.abstractmethod
   def raw_action(self):
     """Returns the latest action."""
 
   @property
-  @abc.abstractmethod
   def raw_observation(self):
     """Returns the latest observation."""
 
-  @abc.abstractmethod
   def stats(self) -> Dict[str, Any]:
     """Returns information generated inside the implementation."""
 
-  @abc.abstractmethod
+    return {}
+
   def execute_adb_call(self, call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
     """Executes `call` and returns its response."""
 
-  @abc.abstractmethod
+    return adb_pb2.AdbResponse()
+
   def update_task(self, task: task_pb2.Task) -> bool:
     """Replaces the current task with a new task.
 
@@ -93,3 +94,5 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
     Returns:
       A bool indicating the success of the task setup.
     """
+
+    return True
