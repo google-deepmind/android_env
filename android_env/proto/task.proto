@@ -1,0 +1,207 @@
+// Copyright 2022 DeepMind Technologies Limited.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package android_env;
+
+import "android_env/proto/adb.proto";
+
+// An AppScreen identifies a unique configuration that we can observe on the
+// screen of a device.
+message AppScreen {
+  // Fully-qualified name of the activity.
+  string activity = 1;
+
+  // A list of regexes to match at each level of the current view hierarchy.
+  // The environment uses this list to determine whether the agent has "exited"
+  // this current task.
+  // Example: [
+  //     "^DecorView@.*\[MainActivity\]$",
+  //     "^android.widget.LinearLayout\{.*\}$",
+  //     "^android.widget.FrameLayout\{.*android\:id\/content\}",
+  //     "^android.widget.RelativeLayout\{.*\}",
+  //     "^android.widget.FrameLayout\{.*app\:id\/fragment_holder\}",
+  //     "^android.widget.RelativeLayout\{.*\}",
+  //     "^com.google.example.games.nostalgicracer.views.RaceView3D\{.*app\:id\/gameplay_screen_3d\}",
+  // ],
+  repeated string view_hierarchy_path = 2;
+}
+
+// Waits for `app_screen` to be the current app screen shown to the user.
+message WaitForAppScreen {
+  AppScreen app_screen = 1;
+  // Maximum time in seconds to wait for the activity to become the current one.
+  float timeout_sec = 2;
+}
+
+message CheckInstall {
+  string package_name = 1;
+  // Maximum time in seconds to wait.
+  float timeout_sec = 2;
+}
+
+message Sleep {
+  float time_sec = 1;
+}
+
+message SuccessCondition {
+  int32 num_retries = 1;
+
+  oneof check {
+    WaitForAppScreen wait_for_app_screen = 2;
+    CheckInstall check_install = 3;
+  }
+}
+
+message SetupStep {
+  SuccessCondition success_condition = 1;
+
+  oneof step {
+    AdbRequest adb_request = 2;
+    Sleep sleep = 3;
+  }
+}
+
+// A specification of structured observations
+// Analogous to dm_env.specs.Array()
+
+message ArraySpec {
+  // An identifier for this ArraySpec.
+  string name = 1;
+
+  // The shape of the multi-dimensional values associated with this ArraySpec,
+  repeated int32 shape = 2;
+
+  enum DataType {
+    INVALID_DATA_TYPE = 0;
+    FLOAT = 1;
+    DOUBLE = 2;
+    INT8 = 3;
+    INT16 = 4;
+    INT32 = 5;
+    INT64 = 6;
+    UINT8 = 7;
+    UINT16 = 8;
+    UINT32 = 9;
+    UINT64 = 10;
+    BOOL = 11;
+    STRING_U1 = 12;
+    STRING_U16 = 13;
+    STRING_U25 = 14;
+    STRING_U250 = 15;
+    STRING = 16;  // String without max length
+  }
+
+  // Data type of elements we expect to see in an array of this spec.
+  DataType dtype = 3;
+}
+
+message LogParsingConfig {
+  // `filters` are tags used by the app's logging system so that we can
+  // identify them in logcat's output. It's the first argument to logging calls
+  // such as Log.e("ActivityManager", "My message").
+  // Example: "ActivityManager"
+  repeated string filters = 1;
+
+  // Regular expressions that define how we can extract RL information such as
+  // score, extras and episode end from raw logcat messages.
+  message LogRegexps {
+    // Regexp expected to match:
+    // ...a floating point value which gets accumulated over time.
+    // A delta in 'score' corresponds to the reward.
+    string score = 1;
+
+    // Regexp expected to match:
+    // ...a floating point value directly forwarded by the environment.
+    repeated string reward = 2;
+
+    // Regexp expected to match:
+    // ...a signal marking the end of an episode.
+    repeated string episode_end = 3;
+
+    // Regexp expected to match:
+    // ...a string representing pairs of extra names and values.
+    repeated string extra = 4;
+
+    // Regexp expected to match:
+    // ...a dict of extra names and values in json format.
+    repeated string json_extra = 5;
+
+    // Attaches rewards to arbitrary log messages, for example:
+    // {event: "coin_collected" reward: 2.3}
+    // {event: "car_crashed" reward: -1.4}
+    message RewardEvent {
+      // If `event` is matched, the environment will give `reward`.
+      string event = 1;
+
+      // Numerical value to give as reward if `event` is matched.
+      float reward = 2;
+    }
+
+    repeated RewardEvent reward_event = 6;
+  }
+
+  LogRegexps log_regexps = 2;
+}
+
+// Description of a reinforcement learning task to be solved by an agent.
+message Task {
+  // A globally unique identifier for this task.
+  string id = 1;
+
+  // A human readable name for this task.
+  string name = 2;
+
+  // A description of the task.
+  string description = 3;
+
+  repeated SetupStep setup_steps = 4;
+  repeated SetupStep reset_steps = 5;
+
+  AppScreen expected_app_screen = 6;
+
+  // AndroidEnv resets the episode after `max_episode_sec` is passed since the
+  // last reset(). Recommended for time sensitive tasks (e.g. reactive games).
+  // Note that this is real time as measured by AndroidEnv and is independent of
+  // the speed of simulation of Android.
+  // If <= 0.0, this logic is disabled.
+  float max_episode_sec = 7;
+
+  // The maximum number of interactions in a single episode between the
+  // environment and an agent.
+  // This setting is appropriate for tasks that are not time-dependent or when
+  // the performance of the simulation varies dramatically between runs.
+  // If <= 0, this logic is disabled.
+  int32 max_episode_steps = 8;
+
+  // Defines parameters for parsing messages from logcat.
+  LogParsingConfig log_parsing_config = 9;
+
+  // (Optional): The task may also define extras to help the RL agent.
+  // An Extra in AndroidEnv is any information that apps may send to aid the
+  // understanding of the task. The type of information sent through this
+  // channel is usually something difficult to obtain from raw pixels and may
+  // include things such as:
+  //
+  // - The current board configuration (e.g. of a chess game or a tetris game)
+  // - The position of the avatar in a map
+  // - Events (e.g. whether a button was pressed or a checkpoint was achieved)
+  //
+  // Notice that these are entirely optional and may not be available at all.
+  // This specification ensures that only extras specified in the Task
+  // definition will be passed to the agent, everything else is excluded.
+  // The name of an extra must be unique across all extras.
+  repeated ArraySpec extras_spec = 10;
+}
