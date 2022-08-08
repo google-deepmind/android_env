@@ -19,7 +19,7 @@ from unittest import mock
 
 from absl import logging
 from absl.testing import absltest
-from android_env import environment
+from android_env import env_interface
 from android_env.proto import task_pb2
 from android_env.wrappers import base_wrapper
 
@@ -28,7 +28,7 @@ class BaseWrapperTest(absltest.TestCase):
 
   @mock.patch.object(logging, 'info')
   def test_base_function_forwarding(self, mock_info):
-    base_env = mock.create_autospec(environment.AndroidEnv)
+    base_env = mock.create_autospec(env_interface.AndroidEnvInterface)
     wrapped_env = base_wrapper.BaseWrapper(base_env)
     mock_info.assert_called_with('Wrapping with %s', 'BaseWrapper')
 
@@ -87,7 +87,7 @@ class BaseWrapperTest(absltest.TestCase):
       base_env.some_random_function.return_value = fake_return_value
 
   def test_multiple_wrappers(self):
-    base_env = mock.create_autospec(environment.AndroidEnv)
+    base_env = mock.create_autospec(env_interface.AndroidEnvInterface)
     wrapped_env_1 = base_wrapper.BaseWrapper(base_env)
     wrapped_env_2 = base_wrapper.BaseWrapper(wrapped_env_1)
 
@@ -101,7 +101,7 @@ class BaseWrapperTest(absltest.TestCase):
     self.assertEqual(base_env, wrapped_env_2.raw_env)
 
   def test_stats(self):
-    base_env = mock.create_autospec(environment.AndroidEnv)
+    base_env = mock.create_autospec(env_interface.AndroidEnvInterface)
     wrapped_env = base_wrapper.BaseWrapper(base_env)
     base_stats = {'base': 'stats'}
     base_env.stats.return_value = base_stats
@@ -109,7 +109,7 @@ class BaseWrapperTest(absltest.TestCase):
 
   @mock.patch.object(logging, 'info')
   def test_wrapped_stats(self, mock_info):
-    base_env = mock.create_autospec(environment.AndroidEnv)
+    base_env = mock.create_autospec(env_interface.AndroidEnvInterface)
 
     class LoggingWrapper1(base_wrapper.BaseWrapper):
 
