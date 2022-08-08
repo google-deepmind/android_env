@@ -25,16 +25,16 @@ from gym import spaces
 import numpy as np
 
 
-class GymInterfaceWrapper(base_wrapper.BaseWrapper, gym.Env):
+class GymInterfaceWrapper(gym.Env):
   """AndroidEnv with OpenAI Gym interface."""
 
   def __init__(self, env: dm_env.Environment):
-
-    base_wrapper.BaseWrapper.__init__(self, env)
+    self._env = env
     self.spec = None
     self.action_space = self._spec_to_space(self._env.action_spec())
     self.observation_space = self._spec_to_space(self._env.observation_spec())
     self.metadata = {'render.modes': ['rgb_array']}
+    self._latest_observation = None
 
   def _spec_to_space(self, spec: specs.Array) -> spaces.Space:
     """Converts dm_env specs to OpenAI Gym spaces."""
@@ -74,18 +74,21 @@ class GymInterfaceWrapper(base_wrapper.BaseWrapper, gym.Env):
     if mode == 'rgb_array':
       if self._latest_observation is None:
         return
+
       return self._latest_observation['pixels']
     else:
       raise ValueError('Only supported render mode is rgb_array.')
 
   def reset(self) -> np.ndarray:
+    self._latest_observation = None
     timestep = self._env.reset()
     return timestep.observation
 
   def step(self, action: Dict[str, int]) -> Tuple[Any, ...]:
     """Take a step in the base environment."""
-    timestep = self._env.step(self._process_action(action))
+    timestep = self._env.step(action)
     observation = timestep.observation
+    self._latest_observation = observation
     reward = timestep.reward
     done = timestep.step_type == dm_env.StepType.LAST
     info = {'discount': timestep.discount}

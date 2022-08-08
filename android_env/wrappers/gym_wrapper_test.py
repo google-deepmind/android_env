@@ -68,7 +68,6 @@ class GymInterfaceWrapperTest(absltest.TestCase):
   def test_render(self):
     self._base_env.step.return_value = self._fake_ts
     _ = self._wrapped_env.step(action=np.zeros(shape=(1,)))
-    self._base_env._latest_observation = {'pixels': np.ones(shape=(2, 3))}
     image = self._wrapped_env.render(mode='rgb_array')
     self.assertTrue(np.array_equal(image, np.ones(shape=(2, 3))))
 
@@ -90,7 +89,6 @@ class GymInterfaceWrapperTest(absltest.TestCase):
     self._base_env.step.return_value = self._fake_ts
     obs, _, _, _ = self._wrapped_env.step(action=np.zeros(shape=(1,)))
     self._base_env.step.assert_called_once()
-    print(obs)
     self.assertTrue(np.array_equal(obs['pixels'], np.ones(shape=(2, 3))))
 
   def test_spec_to_space(self):
