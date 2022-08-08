@@ -366,39 +366,41 @@ class TaskManagerTest(absltest.TestCase):
         })
     self.assertTrue(timestep.last())
 
+  def test_setup_steps_skipped_if_no_change(self):
+    setup_steps = [task_pb2.SetupStep(sleep=task_pb2.Sleep(time_sec=10))]
+    task_mgr = task_manager.TaskManager(
+        task=task_pb2.Task(id='first_task', setup_steps=setup_steps))
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    self.assertIsNotNone(task_mgr._logcat_thread)
+    self.assertIsNotNone(task_mgr._setup_step_interpreter)
+    args, kwargs = self._setup_step_interpreter.interpret.call_args
+    self.assertLen(args, 1)
+    self.assertEqual(args[0][0], setup_steps[0])
+    self._setup_step_interpreter.interpret.reset_mock()
+    task_mgr.update_task(
+        task=task_pb2.Task(id='second_task', setup_steps=setup_steps))
+    # The interpreter should not be called again.
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
 
-def test_setup_steps_skipped_if_no_change(self):
-  setup_steps = [task_pb2.SetupStep(sleep=task_pb2.Sleep(time_sec=10))]
-  task_mgr = task_manager.TaskManager(
-      task=task_pb2.Task(id='first_task', setup_steps=setup_steps))
-  adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-  task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
-  self.assertIsNotNone(task_mgr._logcat_thread)
-  self.assertIsNotNone(task_mgr._setup_step_interpreter)
-  self._setup_step_interpreter.interpret.assert_called_once_with(setup_steps)
-  task_mgr.update_task(
-      task=task_pb2.Task(id='second_task', setup_steps=setup_steps))
-  # The interpreter should not be called again.
-  task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
-  self._setup_step_interpreter.interpret.assert_called_once()
-
-
-def test_setup_steps_interpreted_if_changed(self):
-  setup_steps = [task_pb2.SetupStep(sleep=task_pb2.Sleep(time_sec=10))]
-  task_mgr = task_manager.TaskManager(
-      task=task_pb2.Task(id='first_task', setup_steps=setup_steps))
-  adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-  task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
-  self.assertIsNotNone(task_mgr._logcat_thread)
-  self.assertIsNotNone(task_mgr._setup_step_interpreter)
-  self._setup_step_interpreter.interpret.assert_called_once_with(setup_steps)
-  new_setup_steps = [task_pb2.SetupStep(sleep=task_pb2.Sleep(time_sec=5))]
-  task_mgr.update_task(
-      task=task_pb2.Task(id='second_task', setup_steps=new_setup_steps))
-  task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
-  self.assertEqual(2, self._setup_step_interpreter.interpret.num_calls())
-  self._setup_step_interpreter.interpret.assert_has_calls(
-      mock.call(setup_steps), mock.call(new_setup_steps))
+  def test_setup_steps_interpreted_if_changed(self):
+    setup_steps = [task_pb2.SetupStep(sleep=task_pb2.Sleep(time_sec=10))]
+    task_mgr = task_manager.TaskManager(
+        task=task_pb2.Task(id='first_task', setup_steps=setup_steps))
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    self.assertIsNotNone(task_mgr._logcat_thread)
+    self.assertIsNotNone(task_mgr._setup_step_interpreter)
+    args, kwargs = self._setup_step_interpreter.interpret.call_args
+    self.assertLen(args, 1)
+    self.assertEqual(args[0][0], setup_steps[0])
+    new_setup_steps = [task_pb2.SetupStep(sleep=task_pb2.Sleep(time_sec=5))]
+    task_mgr.update_task(
+        task=task_pb2.Task(id='second_task', setup_steps=new_setup_steps))
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    args, kwargs = self._setup_step_interpreter.interpret.call_args
+    self.assertLen(args, 1)
+    self.assertEqual(args[0][0], new_setup_steps[0])
 
 if __name__ == '__main__':
   absltest.main()
