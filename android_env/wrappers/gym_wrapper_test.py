@@ -18,7 +18,7 @@
 from unittest import mock
 
 from absl.testing import absltest
-from android_env import environment
+from android_env import env_interface
 from android_env.wrappers import gym_wrapper
 import dm_env
 from dm_env import specs
@@ -30,7 +30,7 @@ class GymInterfaceWrapperTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
-    self._base_env = mock.create_autospec(environment.AndroidEnv)
+    self._base_env = mock.create_autospec(env_interface.AndroidEnvInterface)
     self._base_env.action_spec.return_value = {
         'action_type':
             specs.DiscreteArray(

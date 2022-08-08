@@ -16,42 +16,15 @@
 """Tests for android_env.wrappers.last_action_wrapper."""
 
 from typing import Any, Dict
+from unittest import mock
 
 from absl.testing import absltest
-from android_env import environment
+from android_env import env_interface
 from android_env.components import action_type
 from android_env.wrappers import last_action_wrapper
 import dm_env
 from dm_env import specs
 import numpy as np
-
-
-class FakeEnv(environment.AndroidEnv):
-  """A class that we can use to inject custom observations and specs."""
-
-  def __init__(self, obs_spec):
-    self._obs_spec = obs_spec
-    self._next_obs = None
-    self._latest_action = {}
-
-  def reset(self) -> dm_env.TimeStep:
-    return self._next_timestep
-
-  def step(self, action: Any) -> dm_env.TimeStep:
-    self._latest_action = action
-    return self._next_timestep
-
-  def observation_spec(self) -> Dict[str, specs.Array]:
-    return self._obs_spec
-
-  def action_spec(self) -> Dict[str, specs.Array]:
-    assert False, 'This should not be called by tests.'
-
-  def set_next_timestep(self, timestep):
-    self._next_timestep = timestep
-
-  def close(self):
-    pass
 
 
 def _simple_spec():
@@ -71,9 +44,11 @@ def _simple_timestep():
 class LastActionWrapperTest(absltest.TestCase):
 
   def test_concat_to_pixels(self):
-    obs_spec = {'pixels': _simple_spec()}
-    fake_env = FakeEnv(obs_spec)
-    fake_env.set_next_timestep(_simple_timestep())
+    fake_timestep = _simple_timestep()
+    fake_env = mock.create_autospec(env_interface.AndroidEnvInterface)
+    fake_env.observation_spec.return_value = {'pixels': _simple_spec()}
+    fake_env.reset.return_value = fake_timestep
+    fake_env.step.return_value = fake_timestep
 
     wrapper = last_action_wrapper.LastActionWrapper(
         fake_env, concat_to_pixels=True)
@@ -86,10 +61,12 @@ class LastActionWrapperTest(absltest.TestCase):
     last_action_layer = reset_image[:, :, -1]
     self.assertEqual(np.sum(last_action_layer), 0)
 
-    step_timestep = wrapper.step(action={
+    action1 = {
         'action_type': action_type.ActionType.TOUCH,
         'touch_position': np.array([0.25, 0.75], dtype=np.float32),  # (W x H)
-    })
+    }
+    type(fake_env).raw_action = mock.PropertyMock(return_value=action1)
+    step_timestep = wrapper.step(action=action1)
     step_image = step_timestep.observation['pixels']
     self.assertEqual(step_image.shape, (120, 80, 4))  # (H x W)
     last_action_layer = step_image[:, :, -1]
@@ -97,19 +74,23 @@ class LastActionWrapperTest(absltest.TestCase):
     y, x = np.where(last_action_layer == 255)
     self.assertEqual((y.item(), x.item()), (90, 20))
 
-    step_timestep = wrapper.step(action={
+    action2 = {
         'action_type': action_type.ActionType.LIFT,
         'touch_position': np.array([0.25, 0.75], dtype=np.float32),
-    })
+    }
+    type(fake_env).raw_action = mock.PropertyMock(return_value=action2)
+    step_timestep = wrapper.step(action=action2)
     step_image = step_timestep.observation['pixels']
     self.assertEqual(step_image.shape, (120, 80, 4))
     last_action_layer = step_image[:, :, -1]
     self.assertEqual(np.sum(last_action_layer), 0)
 
-    step_timestep = wrapper.step(action={
+    action3 = {
         'action_type': action_type.ActionType.TOUCH,
         'touch_position': np.array([0.25, 1.0], dtype=np.float32),
-    })
+    }
+    type(fake_env).raw_action = mock.PropertyMock(return_value=action3)
+    step_timestep = wrapper.step(action=action3)
     step_image = step_timestep.observation['pixels']
     self.assertEqual(step_image.shape, (120, 80, 4))
     last_action_layer = step_image[:, :, -1]
@@ -118,9 +99,11 @@ class LastActionWrapperTest(absltest.TestCase):
     self.assertEqual((y.item(), x.item()), (119, 20))
 
   def test_no_concat_to_pixels(self):
-    obs_spec = {'pixels': _simple_spec()}
-    fake_env = FakeEnv(obs_spec)
-    fake_env.set_next_timestep(_simple_timestep())
+    fake_timestep = _simple_timestep()
+    fake_env = mock.create_autospec(env_interface.AndroidEnvInterface)
+    fake_env.observation_spec.return_value = {'pixels': _simple_spec()}
+    fake_env.reset.return_value = fake_timestep
+    fake_env.step.return_value = fake_timestep
 
     wrapper = last_action_wrapper.LastActionWrapper(
         fake_env, concat_to_pixels=False)
@@ -134,10 +117,12 @@ class LastActionWrapperTest(absltest.TestCase):
     last_action_layer = reset_timestep.observation['last_action']
     self.assertEqual(np.sum(last_action_layer), 0)
 
-    step_timestep = wrapper.step(action={
+    action1 = {
         'action_type': action_type.ActionType.TOUCH,
         'touch_position': np.array([0.25, 0.75], dtype=np.float32),
-    })
+    }
+    type(fake_env).raw_action = mock.PropertyMock(return_value=action1)
+    step_timestep = wrapper.step(action=action1)
     step_image = step_timestep.observation['pixels']
     self.assertEqual(step_image.shape, (120, 80, 3))
     last_action_layer = step_timestep.observation['last_action']
@@ -145,19 +130,23 @@ class LastActionWrapperTest(absltest.TestCase):
     y, x = np.where(last_action_layer == 255)
     self.assertEqual((y.item(), x.item()), (90, 20))
 
-    step_timestep = wrapper.step(action={
+    action2 = {
         'action_type': action_type.ActionType.LIFT,
         'touch_position': np.array([0.25, 0.75], dtype=np.float32),
-    })
+    }
+    type(fake_env).raw_action = mock.PropertyMock(return_value=action2)
+    step_timestep = wrapper.step(action=action2)
     step_image = step_timestep.observation['pixels']
     self.assertEqual(step_image.shape, (120, 80, 3))
     last_action_layer = step_timestep.observation['last_action']
     self.assertEqual(np.sum(last_action_layer), 0)
 
-    step_timestep = wrapper.step(action={
+    action3 = {
         'action_type': action_type.ActionType.TOUCH,
         'touch_position': np.array([1.0, 0.75], dtype=np.float32),
-    })
+    }
+    type(fake_env).raw_action = mock.PropertyMock(return_value=action3)
+    step_timestep = wrapper.step(action=action3)
     step_image = step_timestep.observation['pixels']
     self.assertEqual(step_image.shape, (120, 80, 3))
     last_action_layer = step_timestep.observation['last_action']

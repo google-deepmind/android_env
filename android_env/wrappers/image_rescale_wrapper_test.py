@@ -16,36 +16,14 @@
 """Tests for android_env.wrappers.image_rescale_wrapper."""
 
 from typing import Any, Dict
+from unittest import mock
 
 from absl.testing import absltest
-from android_env import environment
+from android_env import env_interface
 from android_env.wrappers import image_rescale_wrapper
 import dm_env
 from dm_env import specs
 import numpy as np
-
-
-class FakeEnv(environment.AndroidEnv):
-  """A class that we can use to inject custom observations and specs."""
-
-  def __init__(self, obs_spec):
-    self._obs_spec = obs_spec
-    self._next_obs = None
-
-  def reset(self) -> dm_env.TimeStep:
-    return self._next_timestep
-
-  def step(self, action: Any) -> dm_env.TimeStep:
-    return self._next_timestep
-
-  def observation_spec(self) -> Dict[str, specs.Array]:
-    return self._obs_spec
-
-  def action_spec(self) -> Dict[str, specs.Array]:
-    assert False, 'This should not be called by tests.'
-
-  def set_next_timestep(self, timestep):
-    self._next_timestep = timestep
 
 
 def _simple_spec():
@@ -65,9 +43,11 @@ def _simple_timestep():
 class ImageRescaleWrapperTest(absltest.TestCase):
 
   def test_100x50_grayscale(self):
-    obs_spec = {'pixels': _simple_spec()}
-    fake_env = FakeEnv(obs_spec)
-    fake_env.set_next_timestep(_simple_timestep())
+    fake_timestep = _simple_timestep()
+    fake_env = mock.create_autospec(env_interface.AndroidEnvInterface)
+    fake_env.observation_spec.return_value = {'pixels': _simple_spec()}
+    fake_env.reset.return_value = fake_timestep
+    fake_env.step.return_value = fake_timestep
 
     wrapper = image_rescale_wrapper.ImageRescaleWrapper(
         fake_env, zoom_factors=(1.0 / 3, 1.0 / 6.0), grayscale=True)
@@ -81,9 +61,11 @@ class ImageRescaleWrapperTest(absltest.TestCase):
     self.assertEqual(step_image.shape, (100, 50, 1))
 
   def test_150x60_full_channels(self):
-    obs_spec = {'pixels': _simple_spec()}
-    fake_env = FakeEnv(obs_spec)
-    fake_env.set_next_timestep(_simple_timestep())
+    fake_timestep = _simple_timestep()
+    fake_env = mock.create_autospec(env_interface.AndroidEnvInterface)
+    fake_env.observation_spec.return_value = {'pixels': _simple_spec()}
+    fake_env.reset.return_value = fake_timestep
+    fake_env.step.return_value = fake_timestep
 
     wrapper = image_rescale_wrapper.ImageRescaleWrapper(
         fake_env, zoom_factors=(1.0 / 2.0, 1.0 / 5.0))
@@ -97,9 +79,11 @@ class ImageRescaleWrapperTest(absltest.TestCase):
     self.assertEqual(step_image.shape, (150, 60, 3))
 
   def test_list_zoom_factor(self):
-    obs_spec = {'pixels': _simple_spec()}
-    fake_env = FakeEnv(obs_spec)
-    fake_env.set_next_timestep(_simple_timestep())
+    fake_timestep = _simple_timestep()
+    fake_env = mock.create_autospec(env_interface.AndroidEnvInterface)
+    fake_env.observation_spec.return_value = {'pixels': _simple_spec()}
+    fake_env.reset.return_value = fake_timestep
+    fake_env.step.return_value = fake_timestep
 
     wrapper = image_rescale_wrapper.ImageRescaleWrapper(
         fake_env, zoom_factors=[0.5, 0.2])

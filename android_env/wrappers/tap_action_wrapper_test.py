@@ -18,7 +18,7 @@
 from unittest import mock
 
 from absl.testing import absltest
-from android_env import environment
+from android_env import env_interface
 from android_env.components import action_type
 from android_env.wrappers import tap_action_wrapper
 import dm_env
@@ -49,7 +49,7 @@ class TapActionWrapperTest(absltest.TestCase):
         'touch_position': _make_array_spec(
             shape=(2,), dtype=np.float32, name='touch_position'),
     }
-    self.base_env = mock.create_autospec(environment.AndroidEnv)
+    self.base_env = mock.create_autospec(env_interface.AndroidEnvInterface)
     self.base_env.action_spec.return_value = self._base_action_spec
 
   def test_process_action_repeat(self):
