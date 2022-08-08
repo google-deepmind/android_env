@@ -18,7 +18,7 @@
 from unittest import mock
 
 from absl.testing import absltest
-from android_env import environment
+from android_env import env_interface
 from android_env.components import action_type as action_type_lib
 from android_env.wrappers import discrete_action_wrapper
 from dm_env import specs
@@ -64,7 +64,7 @@ class DiscreteActionWrapperTest(absltest.TestCase):
         'touch_position': _make_array_spec(
             shape=(2,), dtype=np.float32, name='touch_position'),
     }
-    self.base_env = mock.create_autospec(environment.AndroidEnv)
+    self.base_env = mock.create_autospec(env_interface.AndroidEnvInterface)
     self.base_env.action_spec.return_value = self._base_action_spec
 
   def test_num_actions(self):
@@ -295,7 +295,7 @@ class DiscreteActionWrapperTest(absltest.TestCase):
         'touch_position': _make_array_spec(
             shape=(2,), dtype=np.float64, name='touch_position'),
     }
-    base_env = mock.create_autospec(environment.AndroidEnv)
+    base_env = mock.create_autospec(env_interface.AndroidEnvInterface)
     base_env.action_spec.return_value = base_action_spec
 
     wrapped_env = discrete_action_wrapper.DiscreteActionWrapper(
