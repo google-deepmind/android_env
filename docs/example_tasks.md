@@ -456,8 +456,8 @@ the original github repo for more info: https://gitlab.com/ar-/apple-flinger.
 ## Nostalgic Racer
 
 NostalgicRacer is a racing game that offers Atari-like graphics and controls.
-The object is to maximize the score which increases as the car moves forward and
-by collecting coins and speed-ups.
+The objective is to maximize the score which increases as the car moves forward
+and by collecting coins and speed-ups.
 
 <details>
   <summary>Extras returned</summary>
