@@ -61,11 +61,13 @@ class GymInterfaceWrapper(gym.Env):
           high=spec.maximum)
 
     if isinstance(spec, specs.Array):
-      return spaces.Box(
-          shape=spec.shape,
-          dtype=spec.dtype,
-          low=-np.inf,
-          high=np.inf)
+      if spec.dtype == np.uint8:
+        low = 0
+        high = 255
+      else:
+        low = -np.inf
+        high = np.inf
+      return spaces.Box(shape=spec.shape, dtype=spec.dtype, low=low, high=high)
 
     raise ValueError('Unknown type for specs: {}'.format(spec))
 
