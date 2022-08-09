@@ -16,6 +16,7 @@
 """Android environment implementation."""
 
 from typing import Any, Dict
+
 from absl import logging
 from android_env import env_interface
 from android_env.components import coordinator as coordinator_lib
@@ -119,17 +120,8 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
     for key, spec in self.task_extras_spec().items():
       if key in self._latest_extras:
         extra_values = self._latest_extras[key].astype(spec.dtype)
-        for extra in extra_values:
-          self._validate_type(spec, extra)
         task_extras[key] = extra_values[-1] if latest_only else extra_values
     return task_extras
-
-  def _validate_type(self, spec: dm_env.specs.Array, data: np.ndarray):
-    # Handling of spec data type of string of arbitary length.
-    if spec.dtype.str == '<U0' and data.dtype.str.startswith(
-        '<U') and spec.shape == data.shape:
-      return
-    spec.validate(data)
 
   def execute_adb_call(self, call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
     return self._coordinator.execute_adb_call(call)
