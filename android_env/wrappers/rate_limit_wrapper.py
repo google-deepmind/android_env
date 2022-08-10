@@ -81,6 +81,10 @@ class RateLimitWrapper(base_wrapper.BaseWrapper):
   def step(self, action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
     """Takes a step while maintaining a steady interaction rate."""
 
+    # If max_wait is non-positive, the wrapper has no effect.
+    if self._max_wait <= 0.0:
+      return self._env.step(action)
+
     if self._sleep_type == RateLimitWrapper.SleepType.BEFORE:
       self._wait()
 

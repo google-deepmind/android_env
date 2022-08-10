@@ -64,6 +64,8 @@ class RateLimitWrapperTest(parameterized.TestCase):
         'touch_position': np.array([0.123, 0.456])
     })
     mock_sleep.assert_not_called()
+    # When the wrapper is disabled, base step should only be called once.
+    env.step.assert_called_once()
 
   @mock.patch.object(time, 'sleep', autospec=True)
   def test_enabled(self, mock_sleep):
@@ -211,6 +213,9 @@ class RateLimitWrapperTest(parameterized.TestCase):
         'action_type': np.array(action_type.ActionType.LIFT, dtype=np.uint8),
         'touch_position': np.array([0.123, 0.456])
     })
+
+    # When the wrapper is enabled, base step should be called twice.
+    self.assertEqual(env.step.call_count, 2)
 
     # `step()` should be called twice: before `sleep()` and after it.
     self.assertLen(_step_fn.timestamps, 2)
