@@ -119,14 +119,21 @@ def base_observation_spec(height: int, width: int) -> Dict[str, specs.Array]:
 
   return {
       'pixels':
-          specs.Array(
+          specs.BoundedArray(
               shape=(height, width, 3),
               dtype=np.uint8,
-              name='pixels'),
+              name='pixels',
+              minimum=0,
+              maximum=255),
       'timedelta':
           specs.Array(shape=(), dtype=np.int64, name='timedelta'),
       'orientation':
-          specs.Array(shape=np.array([4]), dtype=np.uint8, name='orientation'),
+          specs.BoundedArray(
+              shape=np.array([4]),
+              dtype=np.uint8,
+              name='orientation',
+              minimum=0,
+              maximum=1),
   }
 
 

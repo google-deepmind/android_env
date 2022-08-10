@@ -28,8 +28,12 @@ import numpy as np
 
 
 def _simple_spec():
-  return specs.Array(
-      shape=np.array([120, 80, 3]), dtype=np.uint8, name='pixels')
+  return specs.BoundedArray(
+      shape=np.array([120, 80, 3]),
+      dtype=np.uint8,
+      name='pixels',
+      minimum=0,
+      maximum=255)
 
 
 def _simple_timestep():

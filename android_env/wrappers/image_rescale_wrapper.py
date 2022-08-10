@@ -105,8 +105,10 @@ class ImageRescaleWrapper(base_wrapper.BaseWrapper):
     if self._grayscale:
       # In grayscale mode we want the output shape to be [W, H, 1]
       out_shape[-1] = 1
-    parent_spec['pixels'] = specs.Array(
+    parent_spec['pixels'] = specs.BoundedArray(
         shape=out_shape,
         dtype=parent_spec['pixels'].dtype,
-        name=parent_spec['pixels'].name)
+        name=parent_spec['pixels'].name,
+        minimum=parent_spec['pixels'].minimum,
+        maximum=parent_spec['pixels'].maximum)
     return parent_spec

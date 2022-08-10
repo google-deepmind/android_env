@@ -96,16 +96,20 @@ class LastActionWrapper(base_wrapper.BaseWrapper):
     parent_spec = self._env.observation_spec().copy()
     shape = parent_spec['pixels'].shape
     if self._concat_to_pixels:
-      parent_spec['pixels'] = specs.Array(
+      parent_spec['pixels'] = specs.BoundedArray(
           shape=(shape[0], shape[1], shape[2] + 1),
           dtype=parent_spec['pixels'].dtype,
-          name=parent_spec['pixels'].name)
+          name=parent_spec['pixels'].name,
+          minimum=parent_spec['pixels'].minimum,
+          maximum=parent_spec['pixels'].maximum)
     else:
       parent_spec.update({
           'last_action':
-              specs.Array(
+              specs.BoundedArray(
                   shape=(shape[0], shape[1]),
                   dtype=parent_spec['pixels'].dtype,
-                  name='last_action')
+                  name='last_action',
+                  minimum=parent_spec['pixels'].minimum,
+                  maximum=parent_spec['pixels'].maximum)
       })
     return parent_spec
