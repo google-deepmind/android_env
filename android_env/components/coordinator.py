@@ -177,7 +177,7 @@ class Coordinator():
 
     If a periodic restart time was specified, the Coordinator will re-launch
     the simulator at regular time intervals. This helps to make sure that the
-    simulator is not is a stale state even if the environment has been running
+    simulator is not in a stale state even if the environment has been running
     for a significant amount of time.
 
     Returns:
