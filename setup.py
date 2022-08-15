@@ -112,7 +112,6 @@ setup(
         'dm_env',
         'grpcio',
         'numpy>=1.21',
-        'pexpect>=4.8.0',
         'portpicker>=1.2.0',
         'protobuf>=2.6',
         'pygame',
