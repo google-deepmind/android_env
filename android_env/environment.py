@@ -90,6 +90,8 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
   def step(self, action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
     """Takes a step in the environment."""
 
+    logging.debug('AndroidEnv action: %r', action)
+
     # Check if it's time to reset the episode.
     if self._reset_next_step:
       return self.reset()
