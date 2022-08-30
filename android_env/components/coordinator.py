@@ -106,6 +106,7 @@ class Coordinator():
         'restart_count_simulator_reset': 0,
         'restart_count_execute_action': 0,
         'restart_count_fetch_observation': 0,
+        'restart_count_wait_for_device': 0,
         'failed_task_updates': 0,
     }
 
@@ -221,8 +222,15 @@ class Coordinator():
         self._simulator_start_time = time.time()
 
       self._adb_call_parser = self._create_adb_call_parser()
-      self._wait_for_device(self._check_services_max_tries)
-      self._update_settings()
+      try:
+        self._wait_for_device(self._check_services_max_tries)
+        self._update_settings()
+      except errors.AdbControllerError as e:
+        logging.exception('_wait_for_device() failed.')
+        self._stats['restart_count_wait_for_device'] += 1
+        self._latest_error = e
+        num_tries += 1
+        continue
 
       # Start the task.
       try:

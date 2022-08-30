@@ -384,7 +384,7 @@ class CoordinatorTest(parameterized.TestCase):
     self._adb_call_parser.parse.side_effect = _parse_fn
 
     self.assertRaises(
-        errors.AdbControllerDeviceTimeoutError,
+        errors.TooManyRestartsError,
         coordinator_lib.Coordinator,
         simulator=self._simulator,
         task_manager=self._task_manager)
