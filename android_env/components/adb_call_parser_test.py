@@ -93,9 +93,8 @@ class AdbCallParserTest(parameterized.TestCase):
 
   def test_start_activity_successful(self):
     adb = mock.create_autospec(adb_controller.AdbController)
-    command_output = (
-        b'Stopping: my.project.SplashActivity\n'
-        b'Starting: Intent { cmp=my.project.SplashActivity }\n')
+    command_output = (b'Stopping: my.project.SplashActivity\n'
+                      b'Starting: Intent { cmp=my.project.SplashActivity }\n')
     adb.execute_command.return_value = command_output
     parser = adb_call_parser.AdbCallParser(
         adb, tmp_dir=absltest.get_default_test_tmpdir())
@@ -110,14 +109,14 @@ class AdbCallParserTest(parameterized.TestCase):
         mock.call([
             'shell', 'am', 'start', '-S', '-W', '-n',
             'my.project.SplashActivity', 'blah'
-        ], timeout=None),
+        ],
+                  timeout=None),
     ])
 
   def test_start_activity_successful_no_force_stop(self):
     adb = mock.create_autospec(adb_controller.AdbController)
-    command_output = (
-        b'Stopping: my.project.SplashActivity\n'
-        b'Starting: Intent { cmp=my.project.SplashActivity }\n')
+    command_output = (b'Stopping: my.project.SplashActivity\n'
+                      b'Starting: Intent { cmp=my.project.SplashActivity }\n')
     adb.execute_command.return_value = command_output
     parser = adb_call_parser.AdbCallParser(
         adb, tmp_dir=absltest.get_default_test_tmpdir())
@@ -138,10 +137,9 @@ class AdbCallParserTest(parameterized.TestCase):
 
   def test_start_activity_error(self):
     adb = mock.create_autospec(adb_controller.AdbController)
-    command_output = (
-        b'Stopping: my.project.SplashActivity\n'
-        b'Starting: Intent { cmp=my.project.SplashActivity }\n'
-        b'Error: Activity not started, unknown error code 101\n')
+    command_output = (b'Stopping: my.project.SplashActivity\n'
+                      b'Starting: Intent { cmp=my.project.SplashActivity }\n'
+                      b'Error: Activity not started, unknown error code 101\n')
     adb.execute_command.return_value = command_output
     parser = adb_call_parser.AdbCallParser(
         adb, tmp_dir=absltest.get_default_test_tmpdir())
@@ -150,8 +148,9 @@ class AdbCallParserTest(parameterized.TestCase):
     request.start_activity.extra_args.extend(['blah'])
     response = parser.parse(request)
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.INTERNAL_ERROR)
-    self.assertEqual(response.error_message,
-                     f'start_activity failed with error: {str(command_output)}')
+    self.assertEqual(
+        response.error_message,
+        f'start_activity failed with error: {str(command_output)}')
 
   def test_force_stop(self):
     adb = mock.create_autospec(adb_controller.AdbController)
@@ -362,6 +361,29 @@ class AdbCallParserTest(parameterized.TestCase):
         'my.project'
     ],
                                                 timeout=None)
+
+  def test_send_broadcast_empty_action(self):
+    adb = mock.create_autospec(adb_controller.AdbController)
+    parser = adb_call_parser.AdbCallParser(
+        adb, tmp_dir=absltest.get_default_test_tmpdir())
+    request = adb_pb2.AdbRequest(
+        send_broadcast=adb_pb2.AdbRequest.SendBroadcast())
+    response = parser.parse(request)
+    self.assertEqual(response.status,
+                     adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)
+    self.assertNotEmpty(response.error_message)
+    
+  def test_send_broadcast_successful(self):
+    adb = mock.create_autospec(adb_controller.AdbController)
+    parser = adb_call_parser.AdbCallParser(
+        adb, tmp_dir=absltest.get_default_test_tmpdir())
+    request = adb_pb2.AdbRequest()
+    request.send_broadcast.action = 'SOME-ACTION'
+    response = parser.parse(request)
+    self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
+    self.assertEmpty(response.error_message)
+
+
 
   def test_uninstall_package_empty_package_name(self):
     adb = mock.create_autospec(adb_controller.AdbController)
@@ -1240,6 +1262,7 @@ package:com.another.great.thingie
     self.assertEmpty(response.error_message)
     adb.execute_command.assert_called_once_with(
         ['shell', 'dumpsys', 'window', '--proto'], timeout=None)
+
 
 if __name__ == '__main__':
   absltest.main()
