@@ -48,6 +48,11 @@ message AdbRequest {
     string package_name = 3;
   }
 
+  message SendBroadcast {
+    // Action to send during the broadcast event.
+    string action = 1;
+  }
+
   message UninstallPackage {
     string package_name = 1;
   }
@@ -293,6 +298,7 @@ message AdbRequest {
     GenericRequest generic = 22;
     PackageManagerRequest package_manager = 23;
     DumpsysRequest dumpsys = 26;
+    SendBroadcast send_broadcast = 25;
   }
 
   // Optional (soft) deadline in seconds for completing this command.

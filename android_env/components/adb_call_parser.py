@@ -52,6 +52,7 @@ class AdbCallParser:
         'press_button': self._press_button,
         'start_screen_pinning': self._start_screen_pinning,
         'start_intent': self._start_intent,
+        'send_broadcast': self._send_broadcast,
         'uninstall_package': self._handle_uninstall_package,
         'get_current_activity': self._get_current_activity,
         'get_orientation': self._get_orientation,
@@ -247,6 +248,30 @@ class AdbCallParser:
     ],
                                         timeout=timeout)
 
+    return response
+
+  def _send_broadcast(self,
+                      request: adb_pb2.AdbRequest,
+                      timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+    """Sends a broadcast.
+
+    Args:
+      request: THe request with the information for the broadcast event.
+      timeout: Optional time limit in seconds.
+
+    Returns:
+      An AdbResponse.
+    """
+
+    send_brodcast = request.send_broadcast
+    response = adb_pb2.AdbResponse(status=adb_pb2.AdbResponse.Status.OK)
+    if not send_brodcast.action:
+      response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
+      response.error_message = ('`send_broadcast.{action}` cannot be empty.')
+
+    response, _ = self._execute_command(
+        ['shell', 'am', 'broadcast', '-a', send_brodcast.action],
+        timeout=timeout)
     return response
 
   def _install_apk(self,
