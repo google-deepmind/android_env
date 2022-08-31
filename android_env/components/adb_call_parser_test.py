@@ -372,7 +372,7 @@ class AdbCallParserTest(parameterized.TestCase):
     self.assertEqual(response.status,
                      adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)
     self.assertNotEmpty(response.error_message)
-    
+
   def test_send_broadcast_successful(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(
@@ -382,8 +382,6 @@ class AdbCallParserTest(parameterized.TestCase):
     response = parser.parse(request)
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
     self.assertEmpty(response.error_message)
-
-
 
   def test_uninstall_package_empty_package_name(self):
     adb = mock.create_autospec(adb_controller.AdbController)
