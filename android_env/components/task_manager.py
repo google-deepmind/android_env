@@ -342,6 +342,8 @@ class TaskManager():
         # Except all to avoid unnecessary crashes, only log error.
         except Exception:  # pylint: disable=broad-except
           logging.exception('Could not parse extra: %s', extra)
+          # Don't try to process the extra as text; that would probably crash.
+          return
       else:
         # No extra value provided for boolean extra. Setting value to True.
         extra = 1

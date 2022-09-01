@@ -286,6 +286,48 @@ class TaskManagerTest(absltest.TestCase):
     np.testing.assert_equal(
         expected_extra.get('extra_dict'), extras.get('extra_dict'))
 
+  def test_get_current_extras_failed_to_parse(self):
+    # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
+    # right away.
+    def my_add_ev_listener(event_listener: logcat_thread.EventListener):
+      # Check that the event matches what's expected.
+      event = event_listener.regexp
+      match = event.match('extra: some_extra [1, 2]')
+      if match is None:  # Ignore events that are not extras.
+        return
+
+      # Emit events.
+      fn = event_listener.handler_fn
+      fn(event, event.match('extra: extra_with_malformed_1 [1]'))
+      fn(event, event.match('extra: extra_with_malformed_1 [\'this is \\ bad]'))
+      fn(event, event.match('extra: extra_with_malformed_1 [2]'))
+      fn(event, event.match('extra: extra_with_malformed_2 [\'this is bad]'))
+      fn(event, event.match('extra: extra_with_malformed_2 [1]'))
+      fn(event, event.match('extra: extra_malformed_only [_very_bad_news]'))
+
+    # Setup the task and trigger the listener.
+    task = task_pb2.Task()
+    task.log_parsing_config.log_regexps.extra.extend([
+        '^extra: (?P<name>[^ ]*)[ ]?(?P<extra>.*)$'
+    ])
+    task_mgr = task_manager.TaskManager(task=task)
+    self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+
+    timestep = task_mgr.rl_step(
+        observation={
+            'pixels': np.array([1, 2, 3]),
+        })
+
+    # Check expectations.
+    self.assertIn('extras', timestep.observation)
+    extras = timestep.observation['extras']
+    np.testing.assert_almost_equal(extras.get('extra_with_malformed_1'),
+                                   [[1], [2]])
+    np.testing.assert_almost_equal(extras.get('extra_with_malformed_2'), [[1]])
+    self.assertNotIn('extra_malformed_only', extras)
+
   def test_multi_log_regexp(self):
     # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
     # right away.
