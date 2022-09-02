@@ -107,7 +107,12 @@ class AdbController():
         logging.error('**stdout**:')
         for line in error.stdout.splitlines():
           logging.error(line)
+      if error.stderr is not None:
+        logging.error('**stderr**:')
+        for line in error.stderr.splitlines():
+          logging.error(line)
       raise errors.AdbControllerError(
           f'Error executing adb command: [{command_str}]\n'
-          f'Caused by {error}\n'
-          f'adb output: [{error.stdout}]') from error
+          f'Caused by: {error}\n'
+          f'adb stdout: [{error.stdout}]\n'
+          f'adb stderr: [{error.stderr}]') from error
