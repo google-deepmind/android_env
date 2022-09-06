@@ -34,8 +34,9 @@ class FakeAdbSubprocess():
 
 class AdbLogStreamTest(absltest.TestCase):
 
+  @mock.patch.object(subprocess, 'check_output', return_value=b'')
   @mock.patch.object(subprocess, 'Popen', return_value=FakeAdbSubprocess())
-  def test_get_stream_output(self, mock_popen):
+  def test_get_stream_output(self, mock_popen, unused_mock_check_output):
     stream = adb_log_stream.AdbLogStream(adb_command_prefix=['foo'])
     stream.set_log_filters(['bar'])
     stream_output = stream.get_stream_output()

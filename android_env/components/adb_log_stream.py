@@ -18,6 +18,7 @@
 import subprocess
 from typing import List
 
+from absl import logging
 from android_env.components import log_stream
 
 
@@ -32,6 +33,14 @@ class AdbLogStream(log_stream.LogStream):
     self._adb_command_prefix = adb_command_prefix
 
   def _get_stream_output(self):
+
+    # Before spawning a long-lived process, we issue `logcat -b all -c` to clear
+    # all buffers to avoid interference from previous runs.
+    clear_buffer_output = subprocess.check_output(
+        self._adb_command_prefix + ['logcat', '-b', 'all', '-c'],
+        stderr=subprocess.STDOUT,
+        timeout=100)
+    logging.info('clear_buffer_output: %r', clear_buffer_output)
     cmd = self._adb_command_prefix + _LOGCAT_COMMAND + self._filters
     self._adb_subprocess = subprocess.Popen(
         cmd,
