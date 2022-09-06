@@ -16,8 +16,8 @@
 """Prepares and launches an emulator process."""
 
 import os
-import sys
 import subprocess
+import sys
 import tempfile
 from typing import Optional
 
