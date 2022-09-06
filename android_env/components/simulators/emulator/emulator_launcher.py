@@ -16,6 +16,7 @@
 """Prepares and launches an emulator process."""
 
 import os
+import sys
 import subprocess
 import tempfile
 from typing import Optional
@@ -23,7 +24,7 @@ from typing import Optional
 from absl import logging
 
 
-class EmulatorLauncher():
+class EmulatorLauncher:
   """Handles launching an emulator."""
 
   def __init__(
@@ -92,87 +93,6 @@ class EmulatorLauncher():
   def logfile_path(self) -> str:
     return self._logfile_path
 
-  def launch_emulator_process(self) -> None:
-    """Launches the emulator."""
-
-    logging.info('Booting new emulator [%s]', self._emulator_path)
-
-    # Set necessary environment variables.
-    base_lib_dir = self._emulator_path[:-8] + 'lib64/'
-    ld_library_path = ':'.join([
-        base_lib_dir + 'x11/', base_lib_dir + 'qt/lib/',
-        base_lib_dir + 'gles_swiftshader/', base_lib_dir
-    ])
-    extra_env_vars = {
-        'ANDROID_HOME': '',
-        'ANDROID_SDK_ROOT': self._android_sdk_root,
-        'ANDROID_AVD_HOME': self._android_avd_home,
-        'ANDROID_EMULATOR_KVM_DEVICE': self._kvm_device,
-        'ANDROID_ADB_SERVER_PORT': str(self._adb_server_port),
-        'LD_LIBRARY_PATH': ld_library_path,
-        'QT_XKB_CONFIG_ROOT': str(self._emulator_path[:-8] + 'qt_config/'),
-    }
-    logging.info('extra_env_vars: %s',
-                 ' '.join(f'{k}={v}' for k, v in extra_env_vars.items()))
-    env_vars = dict(os.environ).copy()
-    env_vars.update(extra_env_vars)
-
-    # Compile command.
-    grpc_port = ['-grpc', str(self._grpc_port)] if self._grpc_port >= 0 else []
-    run_headless = ['-no-skin', '-no-window'] if self._run_headless else []
-    ports = ['-ports', '%s,%s' % (self._emulator_console_port, self._adb_port)]
-    snapshot = [
-        '-snapshot', self._snapshot_name, '-feature',
-        'AllowSnapshotMigration,MigratableSnapshotSave'
-    ]
-    snapshot = snapshot if self._snapshot_name else ['-no-snapshot']
-    restrict_network_args = [
-        '-network-user-mode-options', 'restrict=y', '-wifi-user-mode-options',
-        'restrict=y'
-    ]
-    network_args = restrict_network_args if self._restrict_network else []
-    command = [
-        self._emulator_path,
-        '-gpu',
-        self._gpu_mode,
-        '-no-audio',
-        '-show-kernel',
-        '-verbose',
-        '-avd',
-        self._avd_name,
-    ] + grpc_port + run_headless + ports + snapshot + network_args
-    logging.info('Emulator launch command: %s', ' '.join(command))
-
-    # Prepare logfile.
-    self._emulator_output = open(self._logfile_path, 'wb')
-
-    # Spawn the emulator process.
-    self._emulator = subprocess.Popen(
-        command,
-        env=env_vars,
-        stdout=self._emulator_output,
-        stderr=self._emulator_output)
-
-  def confirm_shutdown(self) -> None:
-    """Shuts down the emulator process."""
-    if self._emulator is not None:
-      logging.info('Checking if emulator process has finished...')
-      try:
-        self._emulator.wait(timeout=30.0)
-      except subprocess.TimeoutExpired:
-        logging.exception(
-            'The emulator process did not finish after 30s. '
-            'returncode: %s. Will now try to kill() it.',
-            self._emulator.returncode)
-        self._emulator.kill()
-      self._emulator = None
-      self._emulator_output.close()
-      logging.info('The emulator process has finished.')
-
-  def close(self):
-    """Clean up launcher files and processes."""
-    if not self._is_closed:
-      self.confirm_shutdown()
       self._is_closed = True
 
   def __del__(self):
