@@ -83,7 +83,7 @@ class EmulatorLauncherTest(absltest.TestCase):
         grpc_port=-1)
 
     with mock.patch.object(
-        subprocess, 'Popen', autospec=True, return_value=('stderr', 'stdout')) as emulator_init, \
+        subprocess, 'Popen', autospec=True) as emulator_init, \
         mock.patch.object(builtins, 'open', autospec=True) as f:
       f.return_value.__enter__ = f()
       launcher.launch_emulator_process()
@@ -109,7 +109,7 @@ class EmulatorLauncherTest(absltest.TestCase):
         grpc_port=8554)
 
     with mock.patch.object(
-        subprocess, 'Popen', autospec=True, return_value=('stderr', 'stdout')) as emulator_init, \
+        subprocess, 'Popen', autospec=True) as emulator_init, \
         mock.patch.object(builtins, 'open', autospec=True) as f:
       f.return_value.__enter__ = f()
       launcher.launch_emulator_process()
@@ -142,7 +142,7 @@ class EmulatorLauncherTest(absltest.TestCase):
     ]
 
     with mock.patch.object(
-        subprocess, 'Popen', autospec=True, return_value=('stderr', 'stdout')) as emulator_init, \
+        subprocess, 'Popen', autospec=True) as emulator_init, \
         mock.patch.object(builtins, 'open', autospec=True) as f:
       f.return_value.__enter__ = f()
       launcher.launch_emulator_process()
@@ -175,7 +175,7 @@ class EmulatorLauncherTest(absltest.TestCase):
     ]
 
     with mock.patch.object(
-        subprocess, 'Popen', autospec=True, return_value=('stderr', 'stdout')) as emulator_init, \
+        subprocess, 'Popen', autospec=True) as emulator_init, \
         mock.patch.object(builtins, 'open', autospec=True) as f:
       f.return_value.__enter__ = f()
       launcher.launch_emulator_process()
