@@ -60,6 +60,12 @@ class BaseWrapper(env_interface.AndroidEnvInterface):
   def action_spec(self) -> Dict[str, specs.Array]:
     return self._env.action_spec()
 
+  def reward_spec(self) -> specs.Array:
+    return self._env.reward_spec()
+
+  def discount_spec(self) -> specs.Array:
+    return self._env.discount_spec()
+
   def task_extras_spec(self) -> Dict[str, specs.Array]:
     return self._env.task_extras_spec()
 
