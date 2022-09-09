@@ -235,7 +235,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     """Sends a touch event to be executed on the simulator.
 
     Args:
-      touches: A list of touch events. Each elemet in the list corresponds to a
+      touches: A list of touch events. Each element in the list corresponds to a
           single touch event. Each touch event tuple should have:
           0 x: The horizontal coordinate of this event.
           1 y: The vertical coordinate of this event.
