@@ -215,9 +215,10 @@ class Coordinator():
             'Maximum number of restart attempts reached.') from latest_error
       logging.info('Simulator launch attempt %d of %d', num_tries, max_retries)
 
+      self._task_manager.stop_task()
+
       # Launch the simulator (will restart if already launched).
       if self._force_simulator_launch or not self._simulator.is_launched():
-        self._task_manager.stop_task()
         self._simulator.launch()
         self._simulator_start_time = time.time()
 
