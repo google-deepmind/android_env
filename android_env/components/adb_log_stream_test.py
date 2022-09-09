@@ -52,13 +52,17 @@ class AdbLogStreamTest(absltest.TestCase):
         universal_newlines=True)
 
   def test_stop_stream_before_get_stream_output(self):
-    """Calling `stop_stream()` before `get_stream_output()` should raise."""
+    """Calling `stop_stream()` before `get_stream_output()` should not crash."""
 
     # Arrange.
     stream = adb_log_stream.AdbLogStream(adb_command_prefix=['foo'])
 
-    # Act & Assert.
-    self.assertRaises(ValueError, stream.stop_stream)
+    # Act.
+    stream.stop_stream()
+
+    # Assert.
+    # Nothing to assert. The test should just finish without raising an
+    # exception.
 
 
 if __name__ == '__main__':
