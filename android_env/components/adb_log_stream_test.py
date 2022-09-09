@@ -51,6 +51,15 @@ class AdbLogStreamTest(absltest.TestCase):
         bufsize=1,
         universal_newlines=True)
 
+  def test_stop_stream_before_get_stream_output(self):
+    """Calling `stop_stream()` before `get_stream_output()` should raise."""
+
+    # Arrange.
+    stream = adb_log_stream.AdbLogStream(adb_command_prefix=['foo'])
+
+    # Act & Assert.
+    self.assertRaises(ValueError, stream.stop_stream)
+
 
 if __name__ == '__main__':
   absltest.main()

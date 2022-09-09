@@ -51,4 +51,8 @@ class AdbLogStream(log_stream.LogStream):
     return self._adb_subprocess.stdout
 
   def stop_stream(self):
+    if not hasattr(self, '_adb_subprocess') or self._adb_subprocess is None:
+      raise ValueError('`stop_stream()` called before `get_stream_output()`. '
+                       'This violates the `LogStream` API.')
+
     self._adb_subprocess.kill()

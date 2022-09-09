@@ -44,8 +44,10 @@ class LogStream(metaclass=abc.ABCMeta):
 
   @abc.abstractmethod
   def stop_stream(self) -> None:
-    """Terminates log stream process from the simulator."""
-    pass
+    """Terminates the log stream.
+
+    NOTE: This should only be called _after_ `get_stream_output()`.
+    """
 
   def pause_stream(self) -> None:
     """No lines are yielded while the event is not set."""
