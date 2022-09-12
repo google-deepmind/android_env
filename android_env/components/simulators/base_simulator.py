@@ -55,10 +55,9 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     """
 
     self._verbose_logs = verbose_logs
-    self._launched = False
 
-  def is_launched(self) -> bool:
-    return self._launched
+    # An increasing number that tracks the attempt at launching the simulator.
+    self._num_launch_attempts: int = 0
 
   def get_logs(self) -> str:
     """Returns logs recorded by the simulator (if provided)."""
@@ -76,9 +75,12 @@ class BaseSimulator(metaclass=abc.ABCMeta):
   def create_log_stream(self) -> log_stream.LogStream:
     """Creates a stream of logs from the simulator."""
 
-  @abc.abstractmethod
-  def _restart_impl(self) -> None:
-    """Platform specific restart implementation."""
+  @_print_logs_on_exception
+  def launch(self) -> None:
+    """Starts the simulator."""
+
+    self._num_launch_attempts += 1
+    self._launch_impl()
 
   @abc.abstractmethod
   def _launch_impl(self) -> None:
@@ -106,22 +108,6 @@ class BaseSimulator(metaclass=abc.ABCMeta):
         simulator-specific.
       event_type: Type of key event to be sent.
     """
-
-  @_print_logs_on_exception
-  def launch(self) -> None:
-    """Launches the simulator."""
-    if not self._launched:
-      self._launched = True
-      self._launch_impl()
-    else:
-      self.restart()
-
-  @_print_logs_on_exception
-  def restart(self) -> None:
-    """Restarts the simulator."""
-    logging.info('Restarting the simulator...')
-    self._restart_impl()
-    logging.info('Done restarting the simulator.')
 
   @abc.abstractmethod
   def get_screenshot(self) -> np.ndarray:

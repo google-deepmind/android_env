@@ -59,11 +59,11 @@ class CoordinatorTest(parameterized.TestCase):
         periodic_restart_time_min=0,
         check_services_max_tries=0)
 
-  def test_restart_simulator(self):
-    restart_count = self._coordinator.stats()['restart_count']
-    self._coordinator._restart_simulator()
-    self.assertEqual(self._coordinator.stats()['restart_count'],
-                     restart_count + 1)
+  def test_relaunch_simulator(self):
+    relaunch_count = self._coordinator.stats()['relaunch_count']
+    self._coordinator._launch_simulator()
+    self.assertEqual(self._coordinator.stats()['relaunch_count'],
+                     relaunch_count + 1)
 
   def test_reset(self):
     self._coordinator.rl_reset()
@@ -232,8 +232,8 @@ class CoordinatorTest(parameterized.TestCase):
     init_fn_call = self._task_manager.setup_task.call_count
     self._task_manager.setup_task.side_effect = errors.StepCommandError
     self.assertRaises(errors.TooManyRestartsError,
-                      self._coordinator._restart_simulator)
-    # The method was called three more times when attempting to restart.
+                      self._coordinator._launch_simulator)
+    # The method was called three more times when attempting to relaunch.
     self.assertEqual(init_fn_call + 3,
                      self._task_manager.setup_task.call_count)
 

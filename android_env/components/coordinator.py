@@ -49,7 +49,6 @@ class Coordinator():
       show_status_bar: bool = False,
       show_navigation_bar: bool = False,
       periodic_restart_time_min: float = 0.0,
-      force_simulator_launch: bool = True,
       check_services_max_tries: int = 20,
       tmp_dir: Optional[str] = None,
   ):
@@ -71,8 +70,6 @@ class Coordinator():
       periodic_restart_time_min: Time between periodic restarts in minutes. If >
         0.0, will trigger a simulator restart at the end of the next episode
         once the time has been reached.
-      force_simulator_launch: Forces the simulator to relaunch even if it is
-        already launched.
       check_services_max_tries: The maximum number of tries to check for a few
         Android services like the display or package management to be up and
         running at __init__. If <=0, nothing is checked.
@@ -88,7 +85,6 @@ class Coordinator():
     self._show_navigation_bar = show_navigation_bar
     self._adb_call_parser: adb_call_parser.AdbCallParser = None
     self._periodic_restart_time_min = periodic_restart_time_min
-    self._force_simulator_launch = force_simulator_launch
     self._check_services_max_tries = check_services_max_tries
     self._tmp_dir = tmp_dir or tempfile.gettempdir()
     self._orientation = np.zeros(4, dtype=np.uint8)
@@ -98,15 +94,15 @@ class Coordinator():
 
     # Initialize stats.
     self._stats = {
-        'restart_count': 0,
-        'restart_count_periodic': 0,
-        'restart_count_setup_steps': 0,
-        'restart_count_reset_steps': 0,
-        'restart_count_simulator_launch': 0,
-        'restart_count_simulator_reset': 0,
-        'restart_count_execute_action': 0,
-        'restart_count_fetch_observation': 0,
-        'restart_count_wait_for_device': 0,
+        'relaunch_count': 0,
+        'relaunch_count_periodic': 0,
+        'relaunch_count_setup_steps': 0,
+        'relaunch_count_reset_steps': 0,
+        'relaunch_count_simulator_launch': 0,
+        'relaunch_count_simulator_reset': 0,
+        'relaunch_count_execute_action': 0,
+        'relaunch_count_fetch_observation': 0,
+        'relaunch_count_wait_for_device': 0,
         'failed_task_updates': 0,
     }
 
@@ -116,7 +112,7 @@ class Coordinator():
     self._simulator_start_time = None
 
     logging.info('Starting the simulator...')
-    self._restart_simulator()
+    self._launch_simulator()
 
   def action_spec(self) -> Dict[str, dm_env.specs.Array]:
     return specs.base_action_spec(
@@ -173,7 +169,7 @@ class Coordinator():
       })
     self._send_action_to_simulator(lift_action)
 
-  def _should_periodic_restart(self) -> bool:
+  def _should_periodic_relaunch(self) -> bool:
     """Checks if it is time to restart the simulator.
 
     If a periodic restart time was specified, the Coordinator will re-launch
@@ -190,15 +186,14 @@ class Coordinator():
       logging.info('Simulator has been running for %f mins', sim_alive_time)
       if sim_alive_time > self._periodic_restart_time_min:
         logging.info('Maximum alive time reached. Restarting simulator.')
-        self._stats['restart_count_periodic'] += 1
+        self._stats['relaunch_count_periodic'] += 1
         return True
     return False
 
-  def _restart_simulator(self, max_retries: int = 3):
-    """Restarts the simulation.
+  def _launch_simulator(self, max_retries: int = 3):
+    """Launches the simulator.
 
-    Closes and re-launches the system, restarting the simulator process and
-    reinitializing the task in the newly started simulator.
+    Sets up the simulator and other task-related settings.
 
     Args:
       max_retries: Number of times to attempt a restart before raising an error.
@@ -217,18 +212,18 @@ class Coordinator():
 
       self._task_manager.stop_task()
 
-      # Launch the simulator (will restart if already launched).
-      if self._force_simulator_launch or not self._simulator.is_launched():
-        self._simulator.launch()
-        self._simulator_start_time = time.time()
+      # Launch the simulator.
+      self._simulator.launch()
+      self._simulator_start_time = time.time()
 
+      # From here on, the simulator is assumed to be up and running.
       self._adb_call_parser = self._create_adb_call_parser()
       try:
         self._wait_for_device(self._check_services_max_tries)
         self._update_settings()
       except errors.AdbControllerError as e:
         logging.exception('_wait_for_device() failed.')
-        self._stats['restart_count_wait_for_device'] += 1
+        self._stats['relaunch_count_wait_for_device'] += 1
         self._latest_error = e
         num_tries += 1
         continue
@@ -240,14 +235,14 @@ class Coordinator():
             log_stream=self._simulator.create_log_stream())
       except errors.StepCommandError as error:
         logging.exception('Failed to set up the task. Restarting simulator.')
-        self._stats['restart_count_setup_steps'] += 1
+        self._stats['relaunch_count_setup_steps'] += 1
         latest_error = error
         num_tries += 1
         continue
 
       # Restart was successful.
       self._simulator_healthy = True
-      self._stats['restart_count'] += 1
+      self._stats['relaunch_count'] += 1
       break
 
   def _update_settings(self) -> None:
@@ -317,9 +312,9 @@ class Coordinator():
   def rl_reset(self) -> dm_env.TimeStep:
     """Resets the RL episode."""
 
-    # Restart the simulation if neccessary.
-    if not self._simulator_healthy or self._should_periodic_restart():
-      self._restart_simulator()
+    # Relaunch the simulator if necessary.
+    if not self._simulator_healthy or self._should_periodic_relaunch():
+      self._launch_simulator()
 
     # Reset counters.
     self._latest_observation_time = 0
@@ -358,7 +353,7 @@ class Coordinator():
       simulator_signals = self._gather_simulator_signals()
     except (errors.ReadObservationError, socket.error):
       logging.exception('Unable to fetch observation. Restarting simulator.')
-      self._stats['restart_count_fetch_observation'] += 1
+      self._stats['relaunch_count_fetch_observation'] += 1
       self._simulator_healthy = False
 
     if not self._simulator_healthy:
@@ -407,7 +402,7 @@ class Coordinator():
         self._simulator.send_key(action['keycode'], event_type='keypress')
     except (socket.error, errors.SendActionError):
       logging.exception('Unable to execute action. Restarting simulator.')
-      self._stats['restart_count_execute_action'] += 1
+      self._stats['relaunch_count_execute_action'] += 1
       self._simulator_healthy = False
 
   def _prepare_touch_action(

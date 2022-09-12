@@ -129,9 +129,6 @@ class FakeSimulator(base_simulator.BaseSimulator):
   def create_log_stream(self) -> log_stream.LogStream:
     return FakeLogStream()
 
-  def _restart_impl(self) -> None:
-    pass
-
   def _launch_impl(self) -> None:
     pass
 

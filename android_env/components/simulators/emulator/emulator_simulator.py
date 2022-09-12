@@ -125,9 +125,10 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
           'grpc_port': self._grpc_port,
           'tmp_dir': tmp_dir,
       })
-      logging.info('emulator_launcher_args: %r', emulator_launcher_args)
+      self._emulator_launcher_args = emulator_launcher_args
+      logging.info('emulator_launcher_args: %r', self._emulator_launcher_args)
       self._launcher = emulator_launcher.EmulatorLauncher(
-          **emulator_launcher_args)
+          **self._emulator_launcher_args)
       self._logfile_path = logfile_path or self._launcher.logfile_path()
 
   def get_logs(self) -> str:
@@ -152,22 +153,29 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
         adb_command_prefix=self._adb_controller.command_prefix(),
         verbose=self._verbose_logs)
 
-  def _restart_impl(self) -> None:
-    if self._launcher is not None:
-      logging.info('Restarting the emulator...')
-      self._shutdown_emulator()
-      self._launcher.launch_emulator_process()
-      self._emulator_stub = self._connect_to_emulator(self._grpc_port)
-      self._confirm_booted()
-      logging.info('Done restarting the emulator.')
-
   def _launch_impl(self) -> None:
-    """Establishes a grpc connection to an emulator process."""
+    """Prepares an Android Emulator for RL interaction.
 
-    # If required, launch an emulator process.
+    The behavior depends on `self._num_launch_attempts`'s value:
+      * 1   -> Normal boot behavior.
+      * 2   -> reboot (i.e. process is killed and started again).
+      * >=3 -> reinstall (i.e. process is killed, emulator files are
+        deleted and the process started again).
+    """
+
+    logging.info('Attempt %r at launching the Android Emulator',
+                 self._num_launch_attempts)
+
     if self._launcher is not None:
+      # If not the first time, then shutdown the emulator first.
+      if self._num_launch_attempts > 1:
+        self._shutdown_emulator()
+        # Subsequent attempts cause the emulator files to be reinstalled.
+        if self._num_launch_attempts > 2:
+          self._launcher.close()
+          self._launcher = emulator_launcher.EmulatorLauncher(
+              **self._emulator_launcher_args)
       self._launcher.launch_emulator_process()
-
     # Establish grpc connection to emulator process.
     self._emulator_stub = self._connect_to_emulator(self._grpc_port)
 
@@ -175,9 +183,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     try:
       self._confirm_booted()
     except EmulatorCrashError:
-      logging.exception(
-          'Failed to confirm booted status of emulator. Restarting...')
-      self.restart()
+      logging.exception('Failed to confirm booted status of emulator.')
 
   def _connect_to_emulator(
       self,
