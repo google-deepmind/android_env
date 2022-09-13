@@ -57,6 +57,21 @@ class ErrorsTest(parameterized.TestCase):
       self.assertNotIn(error.ERROR_CODE, error_codes)
       error_codes.add(error.ERROR_CODE)
 
+  @parameterized.parameters([
+      errors.ReadObservationError(),
+      errors.CoordinatorError(),
+      errors.TooManyRestartsError(),
+      errors.AdbControllerError(),
+      errors.AdbControllerDeviceTimeoutError(),
+      errors.SimulatorError(),
+      errors.SendActionError(),
+      errors.StepCommandError(),
+      errors.WaitForAppScreenError(),
+      errors.CheckInstallError(),
+  ])
+  def test_all_errors_are_androidenv_errors(self, error):
+    self.assertIsInstance(error, errors.AndroidEnvError)
+
 
 if __name__ == '__main__':
   absltest.main()
