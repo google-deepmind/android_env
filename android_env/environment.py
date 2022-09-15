@@ -47,7 +47,9 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
     return self._coordinator.action_spec()
 
   def observation_spec(self) -> Dict[str, dm_env.specs.Array]:
-    return self._coordinator.observation_spec()
+    spec = self._coordinator.observation_spec()
+    spec.pop('extras')
+    return spec
 
   def task_extras_spec(self) -> Dict[str, dm_env.specs.Array]:
     return self._coordinator.task_extras_spec()
