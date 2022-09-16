@@ -67,4 +67,4 @@ def convert_int_to_float(data: np.ndarray,
     iinfo = np.iinfo(data_spec.dtype)
     value_min = iinfo.min
     value_max = iinfo.max
-  return float_type(1.0 * (data - value_min) / (value_max - value_min))
+  return float_type(1.0 * (data - value_min) / (value_max - value_min))  # pytype: disable=not-callable  # typed-numpy
