@@ -350,7 +350,9 @@ class CoordinatorTest(parameterized.TestCase):
     self._adb_call_parser.parse.side_effect = _parse_fn
 
     _ = coordinator_lib.Coordinator(
-        simulator=self._simulator, task_manager=self._task_manager)
+        simulator=self._simulator,
+        task_manager=self._task_manager,
+        check_services_max_tries=20)
     self._adb_call_parser.parse.assert_has_calls([
         mock.call(
             adb_pb2.AdbRequest(
@@ -387,7 +389,8 @@ class CoordinatorTest(parameterized.TestCase):
         errors.TooManyRestartsError,
         coordinator_lib.Coordinator,
         simulator=self._simulator,
-        task_manager=self._task_manager)
+        task_manager=self._task_manager,
+        check_services_max_tries=20)
 
   def test_update_task_succeeds(self):
     task = task_pb2.Task(id='my_task')

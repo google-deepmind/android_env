@@ -49,7 +49,7 @@ class Coordinator():
       show_status_bar: bool = False,
       show_navigation_bar: bool = False,
       periodic_restart_time_min: float = 0.0,
-      check_services_max_tries: int = 20,
+      check_services_max_tries: int = 0,
       tmp_dir: Optional[str] = None,
   ):
     """Handles communication between AndroidEnv and its components.
