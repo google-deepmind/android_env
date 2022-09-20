@@ -72,6 +72,41 @@ class ErrorsTest(parameterized.TestCase):
   def test_all_errors_are_androidenv_errors(self, error):
     self.assertIsInstance(error, errors.AndroidEnvError)
 
+  @parameterized.named_parameters([
+      ('less_than_zero', -1),
+      # The largest `ERROR_CODE` is currently `CheckInstallError == 10`.
+      ('greater_than_all_errors', 10 + 1),
+      ('less_than_zero_float', -3.14159265),
+      ('greater_than_all_errors_float', 123.456),
+  ])
+  def test_from_code_unsupported_code(self, code: int):
+    """Unsupported errors should raise `RuntimeError`."""
+
+    self.assertRaises(RuntimeError, errors.from_code, code)
+
+  @parameterized.parameters([
+      (0, errors.AndroidEnvError, 'hello'),
+      (0, errors.AndroidEnvError, ''),
+      (1, errors.ReadObservationError, 'Could not read obs.'),
+      (2, errors.CoordinatorError, 'Some error'),
+      (3, errors.TooManyRestartsError, 'Too many already...'),
+      (4, errors.AdbControllerError, 'Some adb error...'),
+      (5, errors.AdbControllerDeviceTimeoutError, 'That took too long!'),
+      (6, errors.SimulatorError, 'Simulator is not coping.'),
+      (7, errors.SendActionError, 'Could not send action.'),
+      (8, errors.StepCommandError, 'Some issue setting up the task.'),
+      (9, errors.WaitForAppScreenError, 'Waited for too long!'),
+      (10, errors.CheckInstallError, 'App did not install correctly.'),
+  ])
+  def test_from_code(self, code: int, expected_class: errors.AndroidEnvError,
+                     msg: str):
+    """`from_code` should produce consistent outputs for known errors."""
+
+    error = errors.from_code(code, msg)
+    self.assertIsInstance(error, expected_class)
+    self.assertEqual(error.ERROR_CODE, code)
+    self.assertEqual(str(error), msg)
+
 
 if __name__ == '__main__':
   absltest.main()

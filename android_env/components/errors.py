@@ -82,3 +82,26 @@ class CheckInstallError(StepCommandError):
   """Raised when the check_install success check is not met."""
 
   ERROR_CODE = 10
+
+
+def from_code(code: int, msg: str = '') -> AndroidEnvError:
+  """Returns an AndroidEnvError instance from the given arguments."""
+
+  _code_to_error = [
+      AndroidEnvError,
+      ReadObservationError,
+      CoordinatorError,
+      TooManyRestartsError,
+      AdbControllerError,
+      AdbControllerDeviceTimeoutError,
+      SimulatorError,
+      SendActionError,
+      StepCommandError,
+      WaitForAppScreenError,
+      CheckInstallError,
+  ]
+
+  if code < 0 or code >= len(_code_to_error):
+    raise RuntimeError(f'Unsupported error code {code}, msg {msg}')
+
+  return _code_to_error[code](msg)
