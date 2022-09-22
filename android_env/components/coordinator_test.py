@@ -56,8 +56,7 @@ class CoordinatorTest(parameterized.TestCase):
         simulator=self._simulator,
         task_manager=self._task_manager,
         num_fingers=1,
-        periodic_restart_time_min=0,
-        check_services_max_tries=0)
+        periodic_restart_time_min=0)
 
   def test_relaunch_simulator(self):
     relaunch_count = self._coordinator.stats()['relaunch_count']
@@ -73,8 +72,7 @@ class CoordinatorTest(parameterized.TestCase):
         simulator=self._simulator,
         task_manager=self._task_manager,
         num_fingers=3,
-        periodic_restart_time_min=0,
-        check_services_max_tries=0)
+        periodic_restart_time_min=0)
     self._coordinator.rl_reset()
     expected_actions = [
         # (x, y, is_down, identifier).
@@ -161,8 +159,7 @@ class CoordinatorTest(parameterized.TestCase):
         simulator=self._simulator,
         task_manager=self._task_manager,
         num_fingers=3,
-        periodic_restart_time_min=0,
-        check_services_max_tries=0)
+        periodic_restart_time_min=0)
 
     def fake_rl_step(simulator_signals):
       return dm_env.transition(
@@ -256,8 +253,7 @@ class CoordinatorTest(parameterized.TestCase):
         simulator=self._simulator,
         task_manager=self._task_manager,
         periodic_restart_time_min=0,
-        tmp_dir=absltest.get_default_test_tmpdir(),
-        check_services_max_tries=0)
+        tmp_dir=absltest.get_default_test_tmpdir())
     mock_gettempdir.assert_not_called()
 
   @mock.patch.object(tempfile, 'gettempdir', autospec=True)
@@ -266,8 +262,7 @@ class CoordinatorTest(parameterized.TestCase):
     _ = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
-        periodic_restart_time_min=0,
-        check_services_max_tries=0)
+        periodic_restart_time_min=0)
     mock_gettempdir.assert_called_once()
 
   @parameterized.parameters(
@@ -278,7 +273,6 @@ class CoordinatorTest(parameterized.TestCase):
     _ = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
-        check_services_max_tries=0,
         show_touches=show)
     self._adb_call_parser.parse.assert_any_call(
         adb_pb2.AdbRequest(
@@ -295,7 +289,6 @@ class CoordinatorTest(parameterized.TestCase):
     _ = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
-        check_services_max_tries=0,
         show_pointer_location=show)
     self._adb_call_parser.parse.assert_any_call(
         adb_pb2.AdbRequest(
@@ -316,7 +309,6 @@ class CoordinatorTest(parameterized.TestCase):
     _ = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
-        check_services_max_tries=0,
         show_navigation_bar=show_navigation_bar,
         show_status_bar=show_status_bar)
     self._adb_call_parser.parse.assert_any_call(
@@ -325,72 +317,6 @@ class CoordinatorTest(parameterized.TestCase):
                 name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.GLOBAL,
                 put=adb_pb2.AdbRequest.SettingsRequest.Put(
                     key='policy_control', value=expected_value))))
-
-  def test_wait_for_device(self):
-    """Ensures that all required services are up and running."""
-
-    def _parse_fn(adb_call: adb_pb2.AdbRequest):
-      _parse_fn.call_count += 1
-      if adb_call.generic.args:
-        # Initially, return "not found".
-        if _parse_fn.call_count < 3:
-          return adb_pb2.AdbResponse(
-              generic=adb_pb2.AdbResponse.GenericResponse(
-                  output=b'Service window: NOT found'))
-
-        # Return "found" after 2 calls.
-        service = adb_call.generic.args[3]
-        return adb_pb2.AdbResponse(
-            status=adb_pb2.AdbResponse.Status.OK,
-            generic=adb_pb2.AdbResponse.GenericResponse(
-                output=f'Service {service}: found'.encode('utf-8')))
-
-    _parse_fn.call_count = 0
-
-    self._adb_call_parser.parse.side_effect = _parse_fn
-
-    _ = coordinator_lib.Coordinator(
-        simulator=self._simulator,
-        task_manager=self._task_manager,
-        check_services_max_tries=20)
-    self._adb_call_parser.parse.assert_has_calls([
-        mock.call(
-            adb_pb2.AdbRequest(
-                generic=adb_pb2.AdbRequest.GenericRequest(
-                    args=['shell', 'service', 'check', 'window']))),
-        mock.call(
-            adb_pb2.AdbRequest(
-                generic=adb_pb2.AdbRequest.GenericRequest(
-                    args=['shell', 'service', 'check', 'package']))),
-        mock.call(
-            adb_pb2.AdbRequest(
-                generic=adb_pb2.AdbRequest.GenericRequest(
-                    args=['shell', 'service', 'check', 'input']))),
-        mock.call(
-            adb_pb2.AdbRequest(
-                generic=adb_pb2.AdbRequest.GenericRequest(
-                    args=['shell', 'service', 'check', 'display']))),
-    ],
-                                                 any_order=True)
-
-  def test_wait_for_device_exceeded_max_tries(self):
-    """If the required services are not found, it should raise an exception."""
-
-    def _parse_fn(adb_call: adb_pb2.AdbRequest):
-      if adb_call.generic.args:
-        # Return "not found" repeatedly.
-        return adb_pb2.AdbResponse(
-            generic=adb_pb2.AdbResponse.GenericResponse(
-                output=b'Service window: NOT found'))
-
-    self._adb_call_parser.parse.side_effect = _parse_fn
-
-    self.assertRaises(
-        errors.TooManyRestartsError,
-        coordinator_lib.Coordinator,
-        simulator=self._simulator,
-        task_manager=self._task_manager,
-        check_services_max_tries=20)
 
   def test_update_task_succeeds(self):
     task = task_pb2.Task(id='my_task')

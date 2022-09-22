@@ -48,52 +48,45 @@ class AdbControllerError(AndroidEnvError):
   ERROR_CODE = 4
 
 
-class AdbControllerDeviceTimeoutError(AdbControllerError):
-  """Raised when a device takes too long to respond."""
-
-  ERROR_CODE = 5
-
-
 class SimulatorError(AndroidEnvError):
   """Errors that can be raised by a simulator."""
 
-  ERROR_CODE = 6
+  ERROR_CODE = 5
 
 
 class SendActionError(AndroidEnvError):
   """Raised when action couldn't be sent successfully."""
 
-  ERROR_CODE = 7
+  ERROR_CODE = 6
 
 
 class StepCommandError(AndroidEnvError):
   """Raised when setup step interpreter cannot process a command."""
 
-  ERROR_CODE = 8
+  ERROR_CODE = 7
 
 
 class WaitForAppScreenError(StepCommandError):
   """Raised when the wait_for_app_screen success check is not met."""
 
-  ERROR_CODE = 9
+  ERROR_CODE = 8
 
 
 class CheckInstallError(StepCommandError):
   """Raised when the check_install success check is not met."""
 
-  ERROR_CODE = 10
+  ERROR_CODE = 9
 
 
 def from_code(code: int, msg: str = '') -> AndroidEnvError:
   """Returns an AndroidEnvError instance from the given arguments."""
 
-  _code_to_error = [
+  code_to_error = [
       AndroidEnvError,
       ReadObservationError,
       CoordinatorError,
       TooManyRestartsError,
       AdbControllerError,
-      AdbControllerDeviceTimeoutError,
       SimulatorError,
       SendActionError,
       StepCommandError,
@@ -101,7 +94,7 @@ def from_code(code: int, msg: str = '') -> AndroidEnvError:
       CheckInstallError,
   ]
 
-  if code < 0 or code >= len(_code_to_error):
+  if code < 0 or code >= len(code_to_error):
     raise RuntimeError(f'Unsupported error code {code}, msg {msg}')
 
-  return _code_to_error[code](msg)
+  return code_to_error[code](msg)

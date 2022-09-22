@@ -49,7 +49,6 @@ class Coordinator():
       show_status_bar: bool = False,
       show_navigation_bar: bool = False,
       periodic_restart_time_min: float = 0.0,
-      check_services_max_tries: int = 0,
       tmp_dir: Optional[str] = None,
   ):
     """Handles communication between AndroidEnv and its components.
@@ -70,9 +69,6 @@ class Coordinator():
       periodic_restart_time_min: Time between periodic restarts in minutes. If >
         0.0, will trigger a simulator restart at the end of the next episode
         once the time has been reached.
-      check_services_max_tries: The maximum number of tries to check for a few
-        Android services like the display or package management to be up and
-        running at __init__. If <=0, nothing is checked.
       tmp_dir: Temporary directory to write transient data.
     """
     self._simulator = simulator
@@ -85,7 +81,6 @@ class Coordinator():
     self._show_navigation_bar = show_navigation_bar
     self._adb_call_parser: adb_call_parser.AdbCallParser = None
     self._periodic_restart_time_min = periodic_restart_time_min
-    self._check_services_max_tries = check_services_max_tries
     self._tmp_dir = tmp_dir or tempfile.gettempdir()
     self._orientation = np.zeros(4, dtype=np.uint8)
 
@@ -102,7 +97,7 @@ class Coordinator():
         'relaunch_count_simulator_reset': 0,
         'relaunch_count_execute_action': 0,
         'relaunch_count_fetch_observation': 0,
-        'relaunch_count_wait_for_device': 0,
+        'relaunch_count_update_settings': 0,
         'failed_task_updates': 0,
     }
 
@@ -219,11 +214,10 @@ class Coordinator():
       # From here on, the simulator is assumed to be up and running.
       self._adb_call_parser = self._create_adb_call_parser()
       try:
-        self._wait_for_device(self._check_services_max_tries)
         self._update_settings()
       except errors.AdbControllerError as e:
-        logging.exception('_wait_for_device() failed.')
-        self._stats['relaunch_count_wait_for_device'] += 1
+        logging.exception('_update_settings() failed.')
+        self._stats['relaunch_count_update_settings'] += 1
         self._latest_error = e
         num_tries += 1
         continue
@@ -467,56 +461,3 @@ class Coordinator():
       self._task_manager.stop_task()
     if hasattr(self, '_simulator'):
       self._simulator.close()
-
-  def _wait_for_device(self, max_tries: int) -> None:
-    """Waits for the device to be ready.
-
-    Args:
-      max_tries: Maximum number of times to check whether required services are
-        ready. Returns immediately without checking anything if <= 0.
-
-    Raises:
-      errors.AdbControllerDeviceTimeoutError when the device is not ready after
-        `max_tries`.
-    """
-
-    if max_tries <= 0:
-      return
-
-    # Dictionary to hold adb output for each service.
-    service_adb_outputs = {
-        'window': None,
-        'package': None,
-        'input': None,
-        'display': None,
-    }
-
-    def _check_device_is_ready(services: List[str]) -> bool:
-      """Checks if all required services are ready."""
-      for service in services:
-        adb_response = self._adb_call_parser.parse(
-            adb_pb2.AdbRequest(
-                generic=adb_pb2.AdbRequest.GenericRequest(
-                    args=['shell', 'service', 'check', service])))
-        if (adb_response.status != adb_pb2.AdbResponse.Status.OK or
-            not adb_response.generic.output):
-          logging.error('Check for service "%s" failed. error_message: %r',
-                        service, adb_response.error_message)
-          return False
-        output = adb_response.generic.output.decode('utf-8').strip()
-        service_adb_outputs[service] = output
-        if output != f'Service {service}: found':
-          logging.error(output)
-          return False
-      return True
-
-    for _ in range(max_tries):
-      ready = _check_device_is_ready(list(service_adb_outputs.keys()))
-      if ready:
-        logging.info('Device is ready.')
-        return
-      time.sleep(1.0)
-      logging.error('Device is not ready.')
-    raise errors.AdbControllerDeviceTimeoutError(
-        'One or more services are not ready yet. '
-        f'ADB output: {service_adb_outputs}')
