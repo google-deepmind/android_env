@@ -49,6 +49,7 @@ class Coordinator():
       show_status_bar: bool = False,
       show_navigation_bar: bool = False,
       periodic_restart_time_min: float = 0.0,
+      restart_after_every_episode: bool = False,
       tmp_dir: Optional[str] = None,
   ):
     """Handles communication between AndroidEnv and its components.
@@ -69,6 +70,8 @@ class Coordinator():
       periodic_restart_time_min: Time between periodic restarts in minutes. If >
         0.0, will trigger a simulator restart at the end of the next episode
         once the time has been reached.
+      restart_after_every_episode: Whether to restart the simulator after every
+        episode. If set, this overrides the periodic_restat_time_min.
       tmp_dir: Temporary directory to write transient data.
     """
     self._simulator = simulator
@@ -83,6 +86,7 @@ class Coordinator():
     self._periodic_restart_time_min = periodic_restart_time_min
     self._tmp_dir = tmp_dir or tempfile.gettempdir()
     self._orientation = np.zeros(4, dtype=np.uint8)
+    self._restart_after_every_episode = restart_after_every_episode
 
     # The size of the device screen in pixels (H x W).
     self._screen_size = np.array([0, 0], dtype=np.int32)
@@ -307,7 +311,8 @@ class Coordinator():
     """Resets the RL episode."""
 
     # Relaunch the simulator if necessary.
-    if not self._simulator_healthy or self._should_periodic_relaunch():
+    if self._restart_after_every_episode or (
+        not self._simulator_healthy) or self._should_periodic_relaunch():
       self._launch_simulator()
 
     # Reset counters.
