@@ -180,6 +180,31 @@ class EmulatorSimulatorTest(absltest.TestCase):
     self._launcher.close.assert_not_called()
     self._launcher.launch_emulator_process.assert_called_once()
 
+  def test_launch_attempt_reinstall_after_zero_attempts(self):
+    tmp_dir = absltest.get_default_test_tmpdir()
+    simulator = emulator_simulator.EmulatorSimulator(
+        tmp_dir=tmp_dir,
+        emulator_launcher_args={'grpc_port': 1234},
+        adb_controller_args={
+            'adb_path': '/my/adb',
+            'adb_server_port': 5037,
+        },
+        launch_n_times_without_reboot=0,
+        launch_n_times_without_reinstall=0)
+
+    # The simulator should not reboot or reinstall on its very first launch.
+    simulator.launch()
+    self._launcher.launch_emulator_process.assert_called_once()
+    self._launcher.confirm_shutdown.assert_not_called()
+    self._launcher.close.assert_not_called()
+
+    # Every subsequent attempt should reboot and reinstall.
+    self._launcher.reset_mock()
+    simulator.launch()
+    self._launcher.confirm_shutdown.assert_called_once()
+    self._launcher.close.assert_called_once()  # Now this should `close()`.
+    self._launcher.launch_emulator_process.assert_called_once()
+
   def test_launch_attempt_reinstall(self):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(

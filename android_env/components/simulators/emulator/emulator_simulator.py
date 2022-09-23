@@ -187,7 +187,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
     if self._launcher is not None:
       # If not the first time, then shutdown the emulator first.
-      if self._num_launch_attempts > self._launch_n_times_without_reboot:
+      if (self._emulator_stub is not None and
+          self._num_launch_attempts > self._launch_n_times_without_reboot):
         self._shutdown_emulator()
         # Subsequent attempts cause the emulator files to be reinstalled.
         if self._num_launch_attempts > self._launch_n_times_without_reinstall:
