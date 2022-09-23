@@ -37,13 +37,15 @@ from google.protobuf import empty_pb2
 
 def is_existing_emulator_provided(launcher_args: Dict[str, Any]) -> bool:
   """Returns true if all necessary args were provided."""
-  return bool(launcher_args.get('adb_port') and
-              launcher_args.get('emulator_console_port') and
-              launcher_args.get('grpc_port'))
+  return bool(
+      launcher_args.get('adb_port') and
+      launcher_args.get('emulator_console_port') and
+      launcher_args.get('grpc_port'))
 
 
 def _reconnect_on_grpc_error(func):
   """Decorator function for reconnecting to emulator upon grpc errors."""
+
   def wrapper(*args, **kwargs):
     try:
       return func(*args, **kwargs)
@@ -52,6 +54,7 @@ def _reconnect_on_grpc_error(func):
       emu = args[0]  # The first arg of the function is "self"
       emu._emulator_stub = emu._connect_to_emulator(emu._grpc_port)  # pylint: disable=protected-access
       return func(*args, **kwargs)
+
   return wrapper
 
 
@@ -71,6 +74,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
                adb_controller_args: Dict[str, Any],
                tmp_dir: str = '/tmp/android_env/simulator',
                logfile_path: Optional[str] = None,
+               launch_n_times_without_reboot: int = 1,
+               launch_n_times_without_reinstall: int = 2,
                **kwargs):
     """Instantiates an EmulatorSimulator.
 
@@ -78,8 +83,12 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       emulator_launcher_args: Arguments for EmulatorLauncher.
       adb_controller_args: Arguments for AdbController.
       tmp_dir: Temporary directory to hold simulator files.
-      logfile_path: Path to file which holds emulator logs. If not provided,
-        it will be determined by the EmulatorLauncher.
+      logfile_path: Path to file which holds emulator logs. If not provided, it
+        will be determined by the EmulatorLauncher.
+      launch_n_times_without_reboot: The number of times to try launching the
+        emulator before rebooting (reboot on the n+1-st try).
+      launch_n_times_without_reinstall: The number of times to try launching the
+        emulator before reinstalling (reinstall on the n+1-st try).
       **kwargs: keyword arguments for base class.
     """
 
@@ -103,6 +112,15 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     # screenshots will use the device's width and height.
     self._image_format = emulator_controller_pb2.ImageFormat(
         format=emulator_controller_pb2.ImageFormat.ImgFormat.RGBA8888)
+
+    if launch_n_times_without_reboot > launch_n_times_without_reinstall:
+      raise ValueError(
+          f'Number of launch attempts before reboot '
+          f'({launch_n_times_without_reboot}) should not be greater than '
+          f'number of launch attempts before reinstall '
+          f'({launch_n_times_without_reinstall})')
+    self._launch_n_times_without_reboot = launch_n_times_without_reboot
+    self._launch_n_times_without_reinstall = launch_n_times_without_reinstall
 
     super().__init__(**kwargs)
 
@@ -145,8 +163,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   def create_adb_controller(self):
     """Returns an ADB controller which can communicate with this simulator."""
     return adb_controller.AdbController(
-        device_name=self.adb_device_name(),
-        **self._adb_controller_args)
+        device_name=self.adb_device_name(), **self._adb_controller_args)
 
   def create_log_stream(self) -> log_stream.LogStream:
     return adb_log_stream.AdbLogStream(
@@ -157,10 +174,12 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     """Prepares an Android Emulator for RL interaction.
 
     The behavior depends on `self._num_launch_attempts`'s value:
-      * 1   -> Normal boot behavior.
-      * 2   -> reboot (i.e. process is killed and started again).
-      * >=3 -> reinstall (i.e. process is killed, emulator files are
-        deleted and the process started again).
+      * <= self._launch_n_times_without_reboot   -> Normal boot behavior.
+      * > self._launch_n_times_without_reboot but <=
+          self._launch_n_times_without_reinstall -> reboot (i.e. process is
+          killed and started again).
+      * > self._launch_n_times_without_reinstall -> reinstall (i.e. process is
+          killed, emulator files are deleted and the process started again).
     """
 
     logging.info('Attempt %r at launching the Android Emulator',
@@ -168,10 +187,10 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
     if self._launcher is not None:
       # If not the first time, then shutdown the emulator first.
-      if self._num_launch_attempts > 1:
+      if self._num_launch_attempts > self._launch_n_times_without_reboot:
         self._shutdown_emulator()
         # Subsequent attempts cause the emulator files to be reinstalled.
-        if self._num_launch_attempts > 2:
+        if self._num_launch_attempts > self._launch_n_times_without_reinstall:
           self._launcher.close()
           self._launcher = emulator_launcher.EmulatorLauncher(
               **self._emulator_launcher_args)
@@ -275,8 +294,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     self._emulator_stub.sendKey(
         emulator_controller_pb2.KeyboardEvent(
             codeType=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
-            eventType=emulator_controller_pb2.KeyboardEvent
-            .KeyEventType.Value(event_type),
+            eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType.Value(
+                event_type),
             keyCode=np.int32(keycode),
         ))
 

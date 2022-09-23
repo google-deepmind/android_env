@@ -47,21 +47,16 @@ class EmulatorSimulatorTest(absltest.TestCase):
 
     self._grpc_channel = mock.create_autospec(grpc.Channel)
     mock.patch.object(
-        grpc.aio, 'secure_channel',
-        return_value=self._grpc_channel).start()
+        grpc.aio, 'secure_channel', return_value=self._grpc_channel).start()
     mock.patch.object(
-        grpc, 'secure_channel',
-        return_value=self._grpc_channel).start()
+        grpc, 'secure_channel', return_value=self._grpc_channel).start()
     mock.patch.object(
         grpc, 'local_channel_credentials',
         return_value=self._grpc_channel).start()
     self._mock_future = mock.create_autospec(grpc.Future)
     mock.patch.object(
-        grpc, 'channel_ready_future',
-        return_value=self._mock_future).start()
-    mock.patch.object(
-        time, 'time',
-        return_value=12345).start()
+        grpc, 'channel_ready_future', return_value=self._mock_future).start()
+    mock.patch.object(time, 'time', return_value=12345).start()
 
     mock.patch.object(
         adb_controller, 'AdbController',
@@ -146,7 +141,22 @@ class EmulatorSimulatorTest(absltest.TestCase):
     # resources.
     simulator.close()
 
-  def test_launch_attempt_2(self):
+  def test_value_error_if_launch_attempt_params_incorrect(self):
+    tmp_dir = absltest.get_default_test_tmpdir()
+    self.assertRaises(
+        ValueError,
+        emulator_simulator.EmulatorSimulator,
+        tmp_dir=tmp_dir,
+        emulator_launcher_args={'grpc_port': 1234},
+        adb_controller_args={
+            'adb_path': '/my/adb',
+            'adb_server_port': 5037,
+        },
+        launch_n_times_without_reboot=2,
+        launch_n_times_without_reinstall=1,
+    )
+
+  def test_launch_attempt_reboot(self):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
@@ -154,7 +164,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
         adb_controller_args={
             'adb_path': '/my/adb',
             'adb_server_port': 5037,
-        })
+        },
+        launch_n_times_without_reboot=1,
+        launch_n_times_without_reinstall=2)
 
     # The simulator should launch and not crash.
     simulator.launch()
@@ -168,7 +180,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
     self._launcher.close.assert_not_called()
     self._launcher.launch_emulator_process.assert_called_once()
 
-  def test_launch_attempt_3(self):
+  def test_launch_attempt_reinstall(self):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
@@ -176,7 +188,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
         adb_controller_args={
             'adb_path': '/my/adb',
             'adb_server_port': 5037,
-        })
+        },
+        launch_n_times_without_reboot=1,
+        launch_n_times_without_reinstall=2)
 
     # The simulator should launch and not crash.
     simulator.launch()
