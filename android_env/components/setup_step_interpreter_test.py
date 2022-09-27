@@ -57,14 +57,14 @@ class SetupStepInterpreterTest(absltest.TestCase):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
         adb_call_parser=self._parser)
     # Empty setup steps should be ignored.
-    interpreter.interpret([None])
+    interpreter.interpret([])
 
   def test_invalid_setup_step(self):
     interpreter = setup_step_interpreter.SetupStepInterpreter(
         adb_call_parser=self._parser)
     # Empty setup steps should be ignored.
-    with self.assertRaises(AssertionError):
-      interpreter.interpret([_to_proto(task_pb2.SetupStep, '')])
+    self.assertRaises(AssertionError, interpreter.interpret,
+                      [task_pb2.SetupStep()])
 
   def test_adb_install_apk_filesystem(self):
     self._parser.parse.return_value = adb_pb2.AdbResponse(

@@ -17,7 +17,7 @@
 
 import abc
 import threading
-from typing import Generator, List
+from typing import Generator, Sequence
 from absl import logging
 
 
@@ -59,6 +59,6 @@ class LogStream(metaclass=abc.ABCMeta):
     logging.info('Resuming LogStream.')
     self._should_stream.set()
 
-  def set_log_filters(self, log_filters: List[str]):
+  def set_log_filters(self, log_filters: Sequence[str]):
     """Sets the filters for the log stream."""
     self._filters = list(log_filters) + ['*:S']
