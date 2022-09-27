@@ -16,7 +16,7 @@
 """Tests for android_env.components.app_screen_checker."""
 
 import re
-from typing import Sequence
+from typing import List
 from unittest import mock
 
 from absl.testing import absltest
@@ -27,13 +27,13 @@ from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
 
 
-def flatten_tree(tree: app_screen_checker._DumpsysNode,
-                 flat_tree: Sequence[str],
-                 indent: int = 2):
+def _flatten_tree(tree: app_screen_checker._DumpsysNode,
+                  flat_tree: List[str],
+                  indent: int = 2):
   """Appends a list of strings to `flat_tree` from `tree`."""
   flat_tree.append(' ' * indent + tree.data)
   for c in tree.children:
-    flatten_tree(c, flat_tree, indent + 2)
+    _flatten_tree(c, flat_tree, indent + 2)
 
 
 class AppScreenCheckerTest(absltest.TestCase):
@@ -66,7 +66,7 @@ Queen Elizabeth II
 """
     tree = app_screen_checker.build_tree_from_dumpsys_output(dumpsys_output)
     flat_tree = []
-    flatten_tree(tree, flat_tree, indent=2)
+    _flatten_tree(tree, flat_tree, indent=2)
     self.assertEqual(flat_tree, [
         '  ___root___',
         '    Queen Elizabeth II',
@@ -116,7 +116,7 @@ Tree2
 """
     tree = app_screen_checker.build_tree_from_dumpsys_output(dumpsys_output)
     flat_tree = []
-    flatten_tree(tree, flat_tree, indent=2)
+    _flatten_tree(tree, flat_tree, indent=2)
     self.assertEqual(flat_tree, [
         '  ___root___',
         '    Tree1',
