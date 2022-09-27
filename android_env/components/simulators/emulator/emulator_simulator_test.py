@@ -27,6 +27,7 @@ from android_env.components.simulators.emulator import emulator_launcher
 from android_env.components.simulators.emulator import emulator_simulator
 import grpc
 from PIL import Image
+import portpicker
 
 from android_env.proto import emulator_controller_pb2
 from android_env.proto import emulator_controller_pb2_grpc
@@ -98,6 +99,30 @@ class EmulatorSimulatorTest(absltest.TestCase):
     logs = simulator.get_logs()
     mock_open.assert_called_once_with('fake/logfile/path', 'rb')
     self.assertEqual(logs, 'fake_logs')
+
+  @mock.patch.object(portpicker, 'is_port_free', return_value=True)
+  def test_grpc_port(self, unused_mock_portpicker):
+    simulator = emulator_simulator.EmulatorSimulator(
+        tmp_dir=absltest.get_default_test_tmpdir(),
+        emulator_launcher_args={},
+        adb_controller_args={
+            'adb_path': '/my/adb',
+            'adb_server_port': 5037,
+            'prompt_regex': 'awesome>',
+        })
+    self.assertEqual(simulator._grpc_port, 8554)
+
+  @mock.patch.object(portpicker, 'is_port_free', return_value=False)
+  def test_grpc_port_unavailable(self, unused_mock_portpicker):
+    simulator = emulator_simulator.EmulatorSimulator(
+        tmp_dir=absltest.get_default_test_tmpdir(),
+        emulator_launcher_args={},
+        adb_controller_args={
+            'adb_path': '/my/adb',
+            'adb_server_port': 5037,
+            'prompt_regex': 'awesome>',
+        })
+    self.assertNotEqual(simulator._grpc_port, 8554)
 
   def test_launch(self):
 

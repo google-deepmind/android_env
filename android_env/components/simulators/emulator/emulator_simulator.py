@@ -43,6 +43,21 @@ def is_existing_emulator_provided(launcher_args: Dict[str, Any]) -> bool:
       launcher_args.get('grpc_port'))
 
 
+def _pick_emulator_grpc_port() -> int:
+  """Tries to pick the recommended port for grpc.
+
+  If no such port can be found, will return a random unused port. More info:
+  https://android.googlesource.com/platform/external/qemu/+/emu-master-dev/android/android-grpc/docs/.
+
+  Returns:
+    port: an available port for emulator grpc.
+  """
+  if portpicker.is_port_free(8554):
+    return 8554
+  else:
+    return portpicker.pick_unused_port()
+
+
 def _reconnect_on_grpc_error(func):
   """Decorator function for reconnecting to emulator upon grpc errors."""
 
@@ -104,7 +119,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._existing_emulator_provided = False
       self._adb_port = portpicker.pick_unused_port()
       self._console_port = portpicker.pick_unused_port()
-      self._grpc_port = portpicker.pick_unused_port()
+      self._grpc_port = _pick_emulator_grpc_port()
 
     self._channel = None
     self._emulator_stub = None
