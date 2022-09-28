@@ -112,7 +112,7 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
     else:
       return self._env.observation_spec()
 
-  def action_spec(self) -> Union[specs.Array, Dict[str, specs.Array]]:
+  def action_spec(self) -> Union[specs.BoundedArray, Dict[str, specs.Array]]:
     if self._flat_actions:
       return self._env.action_spec()[self._action_name]
     else:
