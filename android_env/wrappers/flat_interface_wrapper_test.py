@@ -15,6 +15,7 @@
 
 """Tests for android_env.wrappers.flat_interface_wrapper."""
 
+from typing import cast, Dict
 from unittest import mock
 
 from absl.testing import absltest
@@ -33,10 +34,6 @@ def _make_array_spec(shape, dtype=np.float32, name=None, maximum=3, minimum=0):
       minimum=np.ones(shape) * minimum)
 
 
-def _make_discrete_array_spec(name, num_values):
-  return specs.DiscreteArray(name=name, num_values=num_values)
-
-
 def _make_timestep(observation):
   return dm_env.TimeStep(
       step_type='fake_step_type',
@@ -51,9 +48,8 @@ class FlatInterfaceWrapperTest(absltest.TestCase):
   def setUp(self):
     super().setUp()
     self.action_shape = (1,)
-    self.base_action_spec = {
-        'action_id': _make_discrete_array_spec(
-            name='action_id', num_values=4)
+    self.base_action_spec: Dict[str, specs.DiscreteArray] = {
+        'action_id': specs.DiscreteArray(name='action_id', num_values=4)
     }
     self.int_obs_shape = (3, 4, 2)
     self.float_obs_shape = (2,)
@@ -148,10 +144,10 @@ class FlatInterfaceWrapperTest(absltest.TestCase):
 
   def test_action_spec(self):
     wrapped_env = flat_interface_wrapper.FlatInterfaceWrapper(self.base_env)
-    action_spec = wrapped_env.action_spec()
-    base_action_spec = self.base_action_spec['action_id']
+    action_spec = cast(specs.BoundedArray, wrapped_env.action_spec())
+    parent_action_spec = self.base_action_spec['action_id']
 
-    self.assertEqual(base_action_spec.name, action_spec.name)
+    self.assertEqual(parent_action_spec.name, action_spec.name)
     self.assertEqual((), action_spec.shape)
     self.assertEqual(np.int32, action_spec.dtype)
     self.assertEqual(0, action_spec.minimum)

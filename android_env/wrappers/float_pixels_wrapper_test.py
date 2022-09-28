@@ -96,7 +96,7 @@ class FloatPixelsWrapperTest(absltest.TestCase):
 
   def test_float_pixels_wrapper_step(self):
     wrapped_env = float_pixels_wrapper.FloatPixelsWrapper(self.base_env)
-    ts = wrapped_env.step('fake_action')
+    ts = wrapped_env.step({'fake_action': np.array([1, 2, 3])})
 
     self.assertEqual(self.base_timestep.step_type, ts.step_type)
     self.assertEqual(self.base_timestep.reward, ts.reward)
@@ -141,7 +141,7 @@ class FloatPixelsWrapperTest(absltest.TestCase):
     # The wrapper should not touch the timestep in this case.
     fake_timestep = ('step_type', 'reward', 'discount', 'obs')
     base_env.step.return_value = fake_timestep
-    ts = wrapped_env.step('fake_action')
+    ts = wrapped_env.step({'fake_action': np.array([1, 2, 3])})
     self.assertEqual(fake_timestep, ts)
 
 
