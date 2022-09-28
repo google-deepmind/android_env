@@ -16,6 +16,7 @@
 """Tests for rate_limit_wrapper."""
 
 import time
+from typing import Any, List, Protocol
 from unittest import mock
 
 from absl.testing import absltest
@@ -44,6 +45,17 @@ def _get_base_env():
               name='touch_position'),
   }
   return env
+
+
+class _FnWithTimestamps(Protocol):
+  """A function with `timestamp` and `timestamps` attributes."""
+
+  timestamp: float
+  timestamps: List[float]
+
+
+def _with_timestamp(fn: Any) -> _FnWithTimestamps:
+  return fn
 
 
 class RateLimitWrapperTest(parameterized.TestCase):
@@ -107,6 +119,7 @@ class RateLimitWrapperTest(parameterized.TestCase):
     _ = wrapper.reset()
     mock_sleep.assert_not_called()  # It should never sleep during reset().
 
+    @_with_timestamp
     def _sleep_fn(sleep_time):
       _sleep_fn.timestamp = time.time()
       self.assertBetween(sleep_time, 0.0, 33.33)
@@ -145,6 +158,7 @@ class RateLimitWrapperTest(parameterized.TestCase):
     _ = wrapper.reset()
     mock_sleep.assert_not_called()  # It should never sleep during reset().
 
+    @_with_timestamp
     def _sleep_fn(sleep_time):
       _sleep_fn.timestamp = time.time()
       self.assertBetween(sleep_time, 0.0, 33.33)
@@ -185,12 +199,14 @@ class RateLimitWrapperTest(parameterized.TestCase):
     _ = wrapper.reset()
     mock_sleep.assert_not_called()  # It should never sleep during reset().
 
+    @_with_timestamp
     def _sleep_fn(sleep_time):
       _sleep_fn.timestamp = time.time()
       self.assertBetween(sleep_time, 0.0, 33.33)
 
     mock_sleep.side_effect = _sleep_fn
 
+    @_with_timestamp
     def _step_fn(action):
       # On even calls the action should be the actual agent action, but on odd
       # calls they should be REPEATs.
