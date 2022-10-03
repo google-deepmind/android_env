@@ -220,10 +220,12 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     except EmulatorCrashError:
       logging.exception('Failed to confirm booted status of emulator.')
 
+    logging.info('Done booting the Android Emulator.')
+
   def _connect_to_emulator(
       self,
       grpc_port: int,
-      timeout_sec: int = 30,
+      timeout_sec: int = 100,
   ) -> emulator_controller_pb2_grpc.EmulatorControllerStub:
     """Connects to an emulator and returns a corresponsing stub."""
 
