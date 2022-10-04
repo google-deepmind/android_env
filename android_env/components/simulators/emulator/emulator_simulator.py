@@ -43,6 +43,21 @@ def is_existing_emulator_provided(launcher_args: Dict[str, Any]) -> bool:
       launcher_args.get('grpc_port'))
 
 
+def _pick_adb_port() -> int:
+  """Tries to pick a port in the recommended range 5555-5585.
+
+  If no such port can be found, will return a random unused port. More info:
+  https://developer.android.com/studio/command-line/adb#howadbworks.
+
+  Returns:
+    port: an available port for adb.
+  """
+  for p in range(5555, 5587, 2):
+    if portpicker.is_port_free(p):
+      return p
+  return portpicker.pick_unused_port()
+
+
 def _pick_emulator_grpc_port() -> int:
   """Tries to pick the recommended port for grpc.
 
@@ -117,7 +132,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       logging.info('Connecting to existing emulator "%r"', self._adb_port)
     else:
       self._existing_emulator_provided = False
-      self._adb_port = portpicker.pick_unused_port()
+      self._adb_port = _pick_adb_port()
       self._console_port = portpicker.pick_unused_port()
       self._grpc_port = _pick_emulator_grpc_port()
 
