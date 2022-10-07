@@ -73,6 +73,27 @@ class AdbController():
     # Make an initial device-independent call to ADB to start the deamon.
     device_name_tmp = self._device_name
     self._device_name = ''
+    cmd_output = self.execute_command(['devices'], timeout=timeout)
+    logging.info('devices output: %r', cmd_output.decode('utf-8'))
+    time.sleep(0.2)
+    # Subsequent calls will use the device name.
+    self._device_name = device_name_tmp
+
+  def _restart_server(self, timeout: Optional[float] = None):
+    """Kills and restarts the adb server.
+
+    Args:
+      timeout: A timeout to use for this operation. If not set the default
+        timeout set on the constructor will be used.
+    """
+    logging.info('Restarting adb server.')
+    device_name_tmp = self._device_name
+    self._device_name = ''
+    self.execute_command(['kill-server'], timeout=timeout)
+    time.sleep(0.2)
+    cmd_output = self.execute_command(['start-server'], timeout=timeout)
+    logging.info('start-server output: %r', cmd_output.decode('utf-8'))
+    time.sleep(0.2)
     self.execute_command(['devices'], timeout=timeout)
     time.sleep(0.2)
     # Subsequent calls will use the device name.
@@ -97,22 +118,28 @@ class AdbController():
     command_str = ' '.join(command)
     logging.info('Executing ADB command: [%s]', command_str)
 
-    try:
-      cmd_output = subprocess.check_output(
-          command, stderr=subprocess.STDOUT, timeout=timeout)
-      logging.info('Done executing ADB command: [%s]', command_str)
-      return cmd_output
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
-      if error.stdout is not None:
-        logging.error('**stdout**:')
-        for line in error.stdout.splitlines():
-          logging.error(line)
-      if error.stderr is not None:
-        logging.error('**stderr**:')
-        for line in error.stderr.splitlines():
-          logging.error(line)
-      raise errors.AdbControllerError(
-          f'Error executing adb command: [{command_str}]\n'
-          f'Caused by: {error}\n'
-          f'adb stdout: [{error.stdout}]\n'
-          f'adb stderr: [{error.stderr}]') from error
+    n_tries = 0
+    latest_error = None
+    while n_tries < 3:
+      try:
+        cmd_output = subprocess.check_output(
+            command, stderr=subprocess.STDOUT, timeout=timeout)
+        logging.info('Done executing ADB command: [%s]', command_str)
+        return cmd_output
+      except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        if e.stdout is not None:
+          logging.error('**stdout**:')
+          for line in e.stdout.splitlines():
+            logging.error(line)
+        if e.stderr is not None:
+          logging.error('**stderr**:')
+          for line in e.stderr.splitlines():
+            logging.error(line)
+        latest_error = e
+        self._restart_server(timeout=timeout)
+
+    raise errors.AdbControllerError(
+        f'Error executing adb command: [{command_str}]\n'
+        f'Caused by: {latest_error}\n'
+        f'adb stdout: [{latest_error.stdout}]\n'
+        f'adb stderr: [{latest_error.stderr}]') from latest_error
