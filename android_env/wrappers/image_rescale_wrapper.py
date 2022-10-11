@@ -50,16 +50,8 @@ class ImageRescaleWrapper(base_wrapper.BaseWrapper):
     # want to zoom the number of channels so we just multiply it by 1.0.
     self._zoom_factors = tuple(zoom_factors) + (1.0,)
 
-    # Save the raw image for making videos, for example.
-    self._raw_pixels = None
-
-  @property
-  def raw_pixels(self):
-    return self._raw_pixels
-
   def _process_timestep(self, timestep: dm_env.TimeStep) -> dm_env.TimeStep:
     observation = timestep.observation
-    self._raw_pixels = observation['pixels'].copy()
     processed_observation = observation.copy()
     processed_observation['pixels'] = self._process_pixels(
         observation['pixels'])
