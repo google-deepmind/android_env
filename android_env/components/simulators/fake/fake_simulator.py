@@ -79,10 +79,11 @@ class FakeAdbController(adb_controller.AdbController):
 
   def execute_command(self,
                       args: List[str],
-                      timeout: Optional[float] = None) -> bytes:
+                      timeout: Optional[float] = None,
+                      include_device_name: bool = True) -> bytes:
     """Returns fake output for adb commands."""
 
-    del timeout
+    del timeout, include_device_name
 
     # Fake "service is ready" output.
     if args[:3] == ['shell', 'service', 'check']:

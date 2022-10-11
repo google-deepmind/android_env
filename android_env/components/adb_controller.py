@@ -53,10 +53,10 @@ class AdbController():
     if 'ANDROID_ADB_SERVER_PORT' in os.environ:
       del os.environ['ANDROID_ADB_SERVER_PORT']
 
-  def command_prefix(self) -> List[str]:
+  def command_prefix(self, include_device_name: bool = True) -> List[str]:
     """The command for instantiating an adb client to this server."""
     command_prefix = [self._adb_path, '-P', self._adb_server_port]
-    if self._device_name:
+    if include_device_name:
       command_prefix.extend(['-s', self._device_name])
     return command_prefix
 
@@ -71,13 +71,8 @@ class AdbController():
         timeout set on the constructor will be used.
     """
     # Make an initial device-independent call to ADB to start the deamon.
-    device_name_tmp = self._device_name
-    self._device_name = ''
-    cmd_output = self.execute_command(['devices'], timeout=timeout)
-    logging.info('devices output: %r', cmd_output.decode('utf-8'))
+    self.execute_command(['devices'], timeout, include_device_name=False)
     time.sleep(0.2)
-    # Subsequent calls will use the device name.
-    self._device_name = device_name_tmp
 
   def _restart_server(self, timeout: Optional[float] = None):
     """Kills and restarts the adb server.
@@ -87,21 +82,21 @@ class AdbController():
         timeout set on the constructor will be used.
     """
     logging.info('Restarting adb server.')
-    device_name_tmp = self._device_name
-    self._device_name = ''
-    self.execute_command(['kill-server'], timeout=timeout)
+    self.execute_command(
+        ['kill-server'], timeout=timeout, include_device_name=False)
     time.sleep(0.2)
-    cmd_output = self.execute_command(['start-server'], timeout=timeout)
+    cmd_output = self.execute_command(
+        ['start-server'], timeout=timeout, include_device_name=False)
     logging.info('start-server output: %r', cmd_output.decode('utf-8'))
     time.sleep(0.2)
-    self.execute_command(['devices'], timeout=timeout)
+    self.execute_command(
+        ['devices'], timeout=timeout, include_device_name=False)
     time.sleep(0.2)
-    # Subsequent calls will use the device name.
-    self._device_name = device_name_tmp
 
   def execute_command(self,
                       args: List[str],
-                      timeout: Optional[float] = None) -> bytes:
+                      timeout: Optional[float] = None,
+                      include_device_name: bool = True) -> bytes:
     """Executes an adb command.
 
     Args:
@@ -109,12 +104,14 @@ class AdbController():
           For example: ['install', '/my/app.apk']
       timeout: A timeout to use for this operation. If not set the default
         timeout set on the constructor will be used.
+      include_device_name: Whether device name has to be included in the
+        adb command prefix.
 
     Returns:
       The output of running such command as a binary string.
     """
     timeout = self._default_timeout if timeout is None else timeout
-    command = self.command_prefix() + args
+    command = self.command_prefix(include_device_name) + args
     command_str = ' '.join(command)
     logging.info('Executing ADB command: [%s]', command_str)
 
