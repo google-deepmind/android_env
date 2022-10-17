@@ -79,9 +79,10 @@ class ErrorsTest(parameterized.TestCase):
   def test_from_code_unsupported_code(self, code: int):
     """Unsupported errors should raise `RuntimeError`."""
 
-    self.assertRaises(RuntimeError, errors.from_code, code)
+    self.assertIsNone(errors.from_code(code))
 
   @parameterized.parameters([
+      (-1, None, 'No such error code.'),
       (0, errors.AndroidEnvError, 'hello'),
       (0, errors.AndroidEnvError, ''),
       (1, errors.ReadObservationError, 'Could not read obs.'),
@@ -99,9 +100,10 @@ class ErrorsTest(parameterized.TestCase):
     """`from_code` should produce consistent outputs for known errors."""
 
     error = errors.from_code(code, msg)
-    self.assertIsInstance(error, expected_class)
-    self.assertEqual(error.ERROR_CODE, code)
-    self.assertEqual(str(error), msg)
+    if error is not None:
+      self.assertIsInstance(error, expected_class)
+      self.assertEqual(error.ERROR_CODE, code)
+      self.assertEqual(str(error), msg)
 
 
 if __name__ == '__main__':
