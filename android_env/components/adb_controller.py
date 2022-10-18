@@ -71,7 +71,7 @@ class AdbController():
         timeout set on the constructor will be used.
     """
     # Make an initial device-independent call to ADB to start the deamon.
-    self.execute_command(['devices'], timeout, include_device_name=False)
+    self.execute_command(['devices'], timeout, device_specific=False)
     time.sleep(0.2)
 
   def _restart_server(self, timeout: Optional[float] = None):
@@ -83,20 +83,20 @@ class AdbController():
     """
     logging.info('Restarting adb server.')
     self.execute_command(
-        ['kill-server'], timeout=timeout, include_device_name=False)
+        ['kill-server'], timeout=timeout, device_specific=False)
     time.sleep(0.2)
     cmd_output = self.execute_command(
-        ['start-server'], timeout=timeout, include_device_name=False)
+        ['start-server'], timeout=timeout, device_specific=False)
     logging.info('start-server output: %r', cmd_output.decode('utf-8'))
     time.sleep(0.2)
     self.execute_command(
-        ['devices'], timeout=timeout, include_device_name=False)
+        ['devices'], timeout=timeout, device_specific=False)
     time.sleep(0.2)
 
   def execute_command(self,
                       args: List[str],
                       timeout: Optional[float] = None,
-                      include_device_name: bool = True) -> bytes:
+                      device_specific: bool = True) -> bytes:
     """Executes an adb command.
 
     Args:
@@ -104,36 +104,40 @@ class AdbController():
           For example: ['install', '/my/app.apk']
       timeout: A timeout to use for this operation. If not set the default
         timeout set on the constructor will be used.
-      include_device_name: Whether device name has to be included in the
-        adb command prefix.
+      device_specific: Whether the call is device-specific or independent.
 
     Returns:
       The output of running such command as a binary string.
     """
     timeout = self._default_timeout if timeout is None else timeout
-    command = self.command_prefix(include_device_name) + args
+    command = self.command_prefix(include_device_name=device_specific) + args
     command_str = ' '.join(command)
-    logging.info('Executing ADB command: [%s]', command_str)
 
-    n_tries = 0
+    n_tries = 1
     latest_error = None
     while n_tries < 3:
       try:
+        logging.info('Executing ADB command: [%s]', command_str)
         cmd_output = subprocess.check_output(
             command, stderr=subprocess.STDOUT, timeout=timeout)
         logging.info('Done executing ADB command: [%s]', command_str)
         return cmd_output
       except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        logging.exception(
+            'Failed to execute ADB command (try %r of 3): [%s]',
+            n_tries, command_str)
         if e.stdout is not None:
           logging.error('**stdout**:')
           for line in e.stdout.splitlines():
-            logging.error(line)
+            logging.error('    %s', line)
         if e.stderr is not None:
           logging.error('**stderr**:')
           for line in e.stderr.splitlines():
-            logging.error(line)
+            logging.error('    %s', line)
+        n_tries += 1
         latest_error = e
-        self._restart_server(timeout=timeout)
+        if device_specific:
+          self._restart_server(timeout=timeout)
 
     raise errors.AdbControllerError(
         f'Error executing adb command: [{command_str}]\n'

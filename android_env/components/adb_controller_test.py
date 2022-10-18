@@ -22,6 +22,7 @@ from unittest import mock
 
 from absl.testing import absltest
 from android_env.components import adb_controller as adb_controller_lib
+from android_env.components import errors
 
 # Timeout to be used by default in tests below. Set to a small value to avoid
 # hanging on a failed test.
@@ -73,6 +74,18 @@ class AdbControllerTest(absltest.TestCase):
             stderr=subprocess.STDOUT, timeout=_TIMEOUT),
     ])
     mock_sleep.assert_has_calls([mock.call(0.2)] * 3)
+
+  @mock.patch.object(subprocess, 'check_output', autospec=True)
+  @mock.patch.object(time, 'sleep', autospec=True)
+  def test_avoid_infinite_recursion(self, mock_sleep, mock_check_output):
+    del mock_sleep
+    mock_check_output.side_effect = subprocess.CalledProcessError(
+        returncode=1, cmd='blah')
+    adb_controller = adb_controller_lib.AdbController(
+        adb_path='my_adb', device_name='awesome_device', adb_server_port=9999)
+    self.assertRaises(
+        errors.AdbControllerError,
+        adb_controller.execute_command, ['my_command'], timeout=_TIMEOUT)
 
 
 class AdbControllerInitTest(absltest.TestCase):
