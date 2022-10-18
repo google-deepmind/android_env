@@ -107,6 +107,7 @@ class SpecsTest(parameterized.TestCase):
       ('name_3', [123, 456, 3], task_pb2.ArraySpec.UINT8, np.uint8),
       ('name_4', [480, 320, 1], task_pb2.ArraySpec.BOOL, np.bool_),
       ('', [480, 320], task_pb2.ArraySpec.STRING_U25, np.dtype(('<U25'))),
+      ('dict_spec', [100, 100], task_pb2.ArraySpec.OBJECT, np.object_),
   )
   def test_convert_spec(self, name, shape, dtype, expected_dtype):
     fake_array_spec = task_pb2.ArraySpec()

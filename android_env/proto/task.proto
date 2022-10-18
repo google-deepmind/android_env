@@ -102,6 +102,7 @@ message ArraySpec {
     STRING_U25 = 14;
     STRING_U250 = 15;
     STRING = 16;  // String without max length
+    OBJECT = 17;
   }
 
   // Data type of elements we expect to see in an array of this spec.

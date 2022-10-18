@@ -41,6 +41,7 @@ _PROTO_DTYPE_TO_NUMPY_DTYPE = {
     task_pb2.ArraySpec.DataType.STRING_U25: np.dtype(('<U25')),
     task_pb2.ArraySpec.DataType.STRING_U250: np.dtype(('<U250')),
     task_pb2.ArraySpec.DataType.STRING: np.dtype(('<U0')),
+    task_pb2.ArraySpec.DataType.OBJECT: np.dtype('O'),
 }
 
 
