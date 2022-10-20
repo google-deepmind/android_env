@@ -30,8 +30,6 @@ class EmulatorLauncherTest(absltest.TestCase):
   def setUp(self):
     super().setUp()
 
-    mock.patch.object(os, 'makedirs').start()
-
     self._emulator_path = 'fake/path/emulator'
     self._adb_port = 5554
     self._adb_server_port = 1234
@@ -72,6 +70,7 @@ class EmulatorLauncherTest(absltest.TestCase):
   def test_launch(self, mock_tmp_dir, os_environ):
     del os_environ
 
+    mock.patch.object(os, 'makedirs').start()
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
     launcher = emulator_launcher.EmulatorLauncher(
@@ -98,6 +97,7 @@ class EmulatorLauncherTest(absltest.TestCase):
   def test_grpc_port(self, mock_tmp_dir, os_environ):
     del os_environ
 
+    mock.patch.object(os, 'makedirs').start()
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
     launcher = emulator_launcher.EmulatorLauncher(
@@ -124,6 +124,8 @@ class EmulatorLauncherTest(absltest.TestCase):
   @mock.patch.object(tempfile, 'TemporaryDirectory', instance=True)
   def test_snapshot(self, mock_tmp_dir, os_environ):
     del os_environ
+
+    mock.patch.object(os, 'makedirs').start()
 
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
@@ -156,7 +158,7 @@ class EmulatorLauncherTest(absltest.TestCase):
   @mock.patch.object(tempfile, 'TemporaryDirectory', instance=True)
   def test_network_restrict(self, mock_tmp_dir, os_environ):
     del os_environ
-
+    mock.patch.object(os, 'makedirs').start()
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
     launcher = emulator_launcher.EmulatorLauncher(

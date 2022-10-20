@@ -15,6 +15,7 @@
 
 """Prepares and launches an emulator process."""
 
+import glob
 import os
 import subprocess
 import tempfile
