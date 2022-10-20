@@ -19,6 +19,7 @@ from typing import Sequence, Tuple
 
 from dm_env import specs
 import numpy as np
+import numpy.typing as np_typing
 
 
 def touch_position_to_pixel_position(
@@ -53,7 +54,7 @@ def orient_pixels(frame: np.ndarray, orientation: int) -> np.ndarray:
 
 def convert_int_to_float(data: np.ndarray,
                          data_spec: specs.Array,
-                         float_type: np.dtype = np.float32):
+                         float_type: np_typing.DTypeLike = np.float32):
   """Converts an array of int values to floats between 0 and 1."""
   if not np.issubdtype(data.dtype, np.integer):
     raise TypeError(f'{data.dtype} is not an integer type')
@@ -67,4 +68,4 @@ def convert_int_to_float(data: np.ndarray,
     iinfo = np.iinfo(data_spec.dtype)
     value_min = iinfo.min
     value_max = iinfo.max
-  return float_type(1.0 * (data - value_min) / (value_max - value_min))  # pytype: disable=not-callable  # typed-numpy
+  return float_type(1.0 * (data - value_min) / (value_max - value_min))
