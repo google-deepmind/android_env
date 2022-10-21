@@ -136,7 +136,8 @@ class AdbController():
             logging.error('    %s', line)
         n_tries += 1
         latest_error = e
-        if device_specific:
+        if device_specific and self._adb_server_port in range(5555, 5587, 2):
+          # Attempt a restart only if adb is in the recommended range.
           self._restart_server(timeout=timeout)
 
     raise errors.AdbControllerError(

@@ -54,7 +54,9 @@ def _pick_adb_port() -> int:
   """
   for p in range(5555, 5587, 2):
     if portpicker.is_port_free(p):
+      logging.info('Picked port %r for adb.', p)
       return p
+  logging.info('No available port found in the recommended range 5555-5585.')
   return portpicker.pick_unused_port()
 
 
