@@ -31,6 +31,7 @@ class EmulatorLauncherTest(absltest.TestCase):
     super().setUp()
 
     self._emulator_path = 'fake/path/emulator'
+    self._adb_path = 'fake/path/adb'
     self._adb_port = 5554
     self._adb_server_port = 1234
     self._emulator_console_port = 5555
@@ -38,6 +39,8 @@ class EmulatorLauncherTest(absltest.TestCase):
 
     self._expected_command = [
         self._emulator_path,
+        '-adb-path',
+        'fake/path/adb',
         '-gpu',
         'swiftshader_indirect',
         '-no-audio',
@@ -74,6 +77,7 @@ class EmulatorLauncherTest(absltest.TestCase):
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
     launcher = emulator_launcher.EmulatorLauncher(
+        adb_path=self._adb_path,
         adb_port=self._adb_port,
         adb_server_port=self._adb_server_port,
         emulator_console_port=self._emulator_console_port,
@@ -101,6 +105,7 @@ class EmulatorLauncherTest(absltest.TestCase):
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
     launcher = emulator_launcher.EmulatorLauncher(
+        adb_path=self._adb_path,
         adb_port=self._adb_port,
         adb_server_port=self._adb_server_port,
         emulator_console_port=self._emulator_console_port,
@@ -130,6 +135,7 @@ class EmulatorLauncherTest(absltest.TestCase):
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
     launcher = emulator_launcher.EmulatorLauncher(
+        adb_path=self._adb_path,
         adb_port=self._adb_port,
         adb_server_port=self._adb_server_port,
         emulator_console_port=self._emulator_console_port,
@@ -162,6 +168,7 @@ class EmulatorLauncherTest(absltest.TestCase):
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
     launcher = emulator_launcher.EmulatorLauncher(
+        adb_path=self._adb_path,
         adb_port=self._adb_port,
         adb_server_port=self._adb_server_port,
         emulator_console_port=self._emulator_console_port,

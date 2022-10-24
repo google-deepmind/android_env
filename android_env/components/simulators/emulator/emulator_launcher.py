@@ -29,6 +29,7 @@ class EmulatorLauncher:
 
   def __init__(
       self,
+      adb_path: str,
       adb_port: Optional[int] = None,
       adb_server_port: Optional[int] = None,
       emulator_console_port: Optional[int] = None,
@@ -46,6 +47,7 @@ class EmulatorLauncher:
     """Launches an emulator.
 
     Args:
+      adb_path: Filesystem path to `adb` executable binary.
       adb_port: ADB port for the Android device.
       adb_server_port: Port of the ADB server deamon.
       emulator_console_port: Port for telnet communication with the emulator.
@@ -63,6 +65,8 @@ class EmulatorLauncher:
       restrict_network: if True, will disable networking on the device. This
         option is only available for emulator version > 31.3.9 (June 2022).
     """
+
+    self._adb_path = adb_path
     self._adb_port = adb_port
     self._adb_server_port = adb_server_port
     self._emulator_console_port = emulator_console_port
@@ -134,6 +138,8 @@ class EmulatorLauncher:
     network_args = restrict_network_args if self._restrict_network else []
     command = [
         self._emulator_path,
+        '-adb-path',
+        self._adb_path,
         '-gpu',
         self._gpu_mode,
         '-no-audio',
