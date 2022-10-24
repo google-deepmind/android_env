@@ -129,7 +129,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._adb_port = emulator_launcher_args['adb_port']
       self._console_port = emulator_launcher_args['emulator_console_port']
       self._grpc_port = emulator_launcher_args['grpc_port']
-      logging.info('Connecting to existing emulator "%r"', self._adb_port)
+      logging.info('Connecting to existing emulator "%r"',
+                   self.adb_device_name())
     else:
       self._existing_emulator_provided = False
       self._adb_port = _pick_adb_port()
@@ -212,8 +213,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
           killed, emulator files are deleted and the process started again).
     """
 
-    logging.info('Attempt %r at launching the Android Emulator',
-                 self._num_launch_attempts)
+    logging.info('Attempt %r at launching the Android Emulator (%r)',
+                 self._num_launch_attempts, self.adb_device_name())
 
     if self._launcher is not None:
       # If not the first time, then shutdown the emulator first.
@@ -222,6 +223,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
         self._shutdown_emulator()
         # Subsequent attempts cause the emulator files to be reinstalled.
         if self._num_launch_attempts > self._launch_n_times_without_reinstall:
+          logging.info('Closing emulator (%r)', self.adb_device_name())
           self._launcher.close()
           self._launcher = emulator_launcher.EmulatorLauncher(
               **self._emulator_launcher_args)
@@ -270,7 +272,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     success = False
     while time.time() < deadline:
       emu_status = self._emulator_stub.getStatus(empty_pb2.Empty())
-      logging.info('Waiting for emulator to start... (%rms)', emu_status.uptime)
+      logging.info('Waiting for emulator (%r) to start... (%rms)',
+                   self.adb_device_name(), emu_status.uptime)
       if emu_status.booted:
         success = True
         break
@@ -346,7 +349,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   @_reconnect_on_grpc_error
   def _shutdown_emulator(self):
     """Sends a signal to trigger emulator shutdown."""
-    logging.info('Shutting down the emulator...')
+    logging.info('Shutting down the emulator (%r)...', self.adb_device_name())
     self._emulator_stub.setVmState(
         emulator_controller_pb2.VmRunState(
             state=emulator_controller_pb2.VmRunState.RunState.SHUTDOWN))
@@ -355,6 +358,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   def close(self):
     if self._launcher is not None:
       self._shutdown_emulator()
+      logging.info('Closing emulator (%r)', self.adb_device_name())
       self._launcher.close()
     if hasattr(self, '_emulator_stub'):
       del self._emulator_stub
