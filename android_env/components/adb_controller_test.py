@@ -73,7 +73,8 @@ class AdbControllerTest(absltest.TestCase):
             ['my_adb', '-P', '9999', '-s', 'awesome_device', 'my_command'],
             stderr=subprocess.STDOUT, timeout=_TIMEOUT),
     ])
-    mock_sleep.assert_has_calls([mock.call(0.2)] * 3)
+    mock_sleep.assert_has_calls(
+        [mock.call(0.2), mock.call(2.0), mock.call(0.2)])
 
   @mock.patch.object(subprocess, 'check_output', autospec=True)
   @mock.patch.object(time, 'sleep', autospec=True)

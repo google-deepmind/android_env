@@ -88,7 +88,7 @@ class AdbController():
     cmd_output = self.execute_command(
         ['start-server'], timeout=timeout, device_specific=False)
     logging.info('start-server output: %r', cmd_output.decode('utf-8'))
-    time.sleep(0.2)
+    time.sleep(2.0)
     self.execute_command(
         ['devices'], timeout=timeout, device_specific=False)
     time.sleep(0.2)
