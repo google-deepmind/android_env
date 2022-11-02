@@ -45,6 +45,7 @@ class AdbController():
     self._adb_path = adb_path
     self._adb_server_port = str(adb_server_port)
     self._default_timeout = default_timeout
+    logging.info('adb_path: %r', self._adb_path)
 
     # Unset problematic environment variables. ADB commands will fail if these
     # are set. They are normally exported by AndroidStudio.
@@ -111,17 +112,15 @@ class AdbController():
     """
     timeout = self._default_timeout if timeout is None else timeout
     command = self.command_prefix(include_device_name=device_specific) + args
-    command_str = ' '.join(command)
+    command_str = 'adb ' + ' '.join(command[1:])
 
     n_tries = 1
     latest_error = None
     while n_tries < 3:
       try:
         logging.info('Executing ADB command: [%s]', command_str)
-        cmd_output = subprocess.check_output(
+        return subprocess.check_output(
             command, stderr=subprocess.STDOUT, timeout=timeout)
-        logging.info('Done executing ADB command: [%s]', command_str)
-        return cmd_output
       except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         logging.exception(
             'Failed to execute ADB command (try %r of 3): [%s]',
