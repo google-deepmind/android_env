@@ -119,8 +119,10 @@ class AdbController():
     while n_tries < 3:
       try:
         logging.info('Executing ADB command: [%s]', command_str)
-        return subprocess.check_output(
+        cmd_output = subprocess.check_output(
             command, stderr=subprocess.STDOUT, timeout=timeout)
+        logging.debug('ADB command output: %s', cmd_output.decode('utf-8'))
+        return cmd_output
       except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         logging.exception(
             'Failed to execute ADB command (try %r of 3): [%s]',
