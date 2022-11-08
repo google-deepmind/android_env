@@ -121,7 +121,7 @@ class AdbController():
         logging.info('Executing ADB command: [%s]', command_str)
         cmd_output = subprocess.check_output(
             command, stderr=subprocess.STDOUT, timeout=timeout)
-        logging.debug('ADB command output: %s', cmd_output.decode('utf-8'))
+        logging.debug('ADB command output: %s', cmd_output)
         return cmd_output
       except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         logging.exception(
