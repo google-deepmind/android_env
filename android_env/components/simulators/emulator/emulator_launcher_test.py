@@ -196,5 +196,6 @@ class EmulatorLauncherTest(absltest.TestCase):
           stdout=f(),
           stderr=f())
 
+
 if __name__ == '__main__':
   absltest.main()
