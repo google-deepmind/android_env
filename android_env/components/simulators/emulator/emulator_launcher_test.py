@@ -66,6 +66,7 @@ class EmulatorLauncherTest(absltest.TestCase):
         'ANDROID_ADB_SERVER_PORT': '1234',
         'LD_LIBRARY_PATH': ld_library_path,
         'QT_XKB_CONFIG_ROOT': str(self._emulator_path[:-8] + 'qt_config/'),
+        'ANDROID_EMU_ENABLE_CRASH_REPORTING': '1',
     }
 
   @mock.patch.object(os, 'environ', autospec=True, return_value=dict())

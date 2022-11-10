@@ -116,6 +116,7 @@ class EmulatorLauncher:
         'ANDROID_ADB_SERVER_PORT': str(self._adb_server_port),
         'LD_LIBRARY_PATH': ld_library_path,
         'QT_XKB_CONFIG_ROOT': str(self._emulator_path[:-8] + 'qt_config/'),
+        'ANDROID_EMU_ENABLE_CRASH_REPORTING': '1',
     }
     logging.info('extra_env_vars: %s',
                  ' '.join(f'{k}={v}' for k, v in extra_env_vars.items()))
