@@ -18,6 +18,7 @@
 import copy
 import socket
 import tempfile
+import threading
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -43,6 +44,7 @@ class Coordinator():
       simulator: base_simulator.BaseSimulator,
       task_manager: task_manager_lib.TaskManager,
       num_fingers: int = 1,
+      interaction_rate_sec: float = 0.0,
       enable_key_events: bool = False,
       show_touches: bool = True,
       show_pointer_location: bool = True,
@@ -57,6 +59,11 @@ class Coordinator():
       simulator: A BaseSimulator instance.
       task_manager: The TaskManager, responsible for coordinating RL tasks.
       num_fingers: Number of virtual fingers of the agent.
+      interaction_rate_sec: How often (in seconds) to fetch the screenshot from
+        the simulator (asynchronously). If <= 0, stepping the environment blocks
+        on fetching the screenshot (the environment is synchronous). If > 0,
+        screenshots are grabbed in a separate thread at this rate; stepping
+        returns the most recently grabbed screenshot.
       enable_key_events: Whether keyboard key events are enabled.
       show_touches: Whether to show circles on the screen indicating the
         position of the current touch.
@@ -83,6 +90,8 @@ class Coordinator():
     self._periodic_restart_time_min = periodic_restart_time_min
     self._tmp_dir = tmp_dir or tempfile.gettempdir()
     self._orientation = np.zeros(4, dtype=np.uint8)
+    self._interaction_rate_sec = interaction_rate_sec
+    self._interaction_thread = None
 
     # The size of the device screen in pixels (H x W).
     self._screen_size = np.array([0, 0], dtype=np.int32)
@@ -196,6 +205,11 @@ class Coordinator():
 
     self._simulator_healthy = False
 
+    # Stop screenshot thread.
+    if self._interaction_thread is not None:
+      self._interaction_thread.stop()
+      self._interaction_thread.join()
+
     # Attempt to restart the system a given number of times.
     num_tries = 1
     latest_error = None
@@ -238,6 +252,10 @@ class Coordinator():
       self._simulator_healthy = True
       self._stats['relaunch_count'] += 1
       break
+    if self._interaction_rate_sec > 0:
+      self._interaction_thread = InteractionThread(self._simulator,
+                                                   self._interaction_rate_sec)
+      self._interaction_thread.start()
 
   def _update_settings(self) -> None:
     """Updates some internal state and preferences given in the constructor."""
@@ -364,11 +382,20 @@ class Coordinator():
                        (now - self._latest_observation_time) * 1e6)
     self._latest_observation_time = now
 
+    # Grab pixels.
+    if self._interaction_rate_sec > 0:
+      pixels = self._interaction_thread.screenshot()  # Async mode.
+    else:
+      pixels = self._simulator.get_screenshot()  # Sync mode.
+
     return {
-        'pixels': self._simulator.get_screenshot(),
+        'pixels': pixels,
         'orientation': self._orientation,
         'timedelta': np.int64(timestamp_delta),
     }
+
+  def __del__(self):
+    self.close()
 
   def _send_action_to_simulator(self, action: Dict[str, np.ndarray]) -> None:
     """Sends the selected action to the simulator.
@@ -456,8 +483,43 @@ class Coordinator():
 
   def close(self):
     """Cleans up the state of this Coordinator."""
+    if self._interaction_thread is not None:
+      self._interaction_thread.stop()
+      self._interaction_thread.join()
 
     if hasattr(self, '_task_manager'):
       self._task_manager.stop_task()
     if hasattr(self, '_simulator'):
       self._simulator.close()
+
+
+class InteractionThread(threading.Thread):
+  """A thread that interacts with a simulator."""
+
+  def __init__(self, simulator: base_simulator.BaseSimulator,
+               interaction_rate_sec: float):
+    super().__init__()
+    self._simulator = simulator
+    self._interaction_rate_sec = interaction_rate_sec
+    self._should_stop = threading.Event()
+    self._screenshot = self._simulator.get_screenshot()
+
+  def run(self):
+    last_read = time.time()
+    while not self._should_stop.is_set():
+      self._screenshot = self._simulator.get_screenshot()
+
+      now = time.time()
+      elapsed = now - last_read
+      last_read = now
+      sleep_time = self._interaction_rate_sec - elapsed
+      if sleep_time > 0.0:
+        time.sleep(sleep_time)
+    logging.info('InteractionThread.run() finished.')
+
+  def stop(self):
+    logging.info('Stopping InteractionThread.')
+    self._should_stop.set()
+
+  def screenshot(self):
+    return self._screenshot
