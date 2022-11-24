@@ -350,6 +350,11 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   @_reconnect_on_grpc_error
   def _shutdown_emulator(self):
     """Sends a signal to trigger emulator shutdown."""
+
+    if self._emulator_stub is None:
+      logging.info('Emulator (%r) is not up.', self.adb_device_name())
+      return
+
     logging.info('Shutting down the emulator (%r)...', self.adb_device_name())
     self._emulator_stub.setVmState(
         emulator_controller_pb2.VmRunState(
@@ -361,8 +366,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._shutdown_emulator()
       logging.info('Closing emulator (%r)', self.adb_device_name())
       self._launcher.close()
-    if hasattr(self, '_emulator_stub'):
-      del self._emulator_stub
+    self._emulator_stub = None
     if self._channel is not None:
       self._channel.close()
     super().close()
