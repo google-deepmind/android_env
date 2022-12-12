@@ -43,7 +43,8 @@ class EmulatorLauncher:
       gpu_mode: str = 'swiftshader_indirect',
       tmp_dir: str = '',
       snapshot_name: str = '',
-      restrict_network: bool = False):
+      restrict_network: bool = False,
+  ):
     """Launches an emulator.
 
     Args:
@@ -150,7 +151,6 @@ class EmulatorLauncher:
         self._avd_name,
     ] + grpc_port + run_headless + ports + snapshot + network_args
     logging.info('Emulator launch command: %s', ' '.join(command))
-
     # Prepare logfile.
     self._emulator_output = open(self._logfile_path, 'wb')
 
