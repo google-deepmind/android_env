@@ -1,0 +1,290 @@
+// Copyright 2022 DeepMind Technologies Limited.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Copyright (C) 2018 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Note that if you add/remove methods in this file you must update
+// the metrics sql as well by running ./android/scripts/gen-grpc-sql.py
+//
+// Please group deleted methods in a block including the date (MM/DD/YY)
+// it was removed. This enables us to easily keep metrics around after removal
+//
+// List of deleted methods
+// rpc iWasDeleted (03/12/12)
+// ...
+syntax = "proto3";
+
+package android.emulation.control;
+
+import "google/protobuf/empty.proto";
+import "third_party/py/android_env/proto/snapshot.proto";
+
+option java_multiple_files = true;
+option java_package = "com.android.emulator.control";
+option objc_class_prefix = "AEC";
+
+// The SnapshotService enables you to list, insert, store, and retrieve
+// snapshots.
+//
+// Currently there are two types of snapshots:
+//
+// - Local (default): These are snapshots that are created locally. They are
+//     stored internally inside qcow2 files and are very efficient. These are
+//     the snapshots usually created by interacting with the UI.
+//
+// - Remote: These are snapshots that have been exported at a certain point.
+//     an exported snapshot is normalized (completely self contained) and
+//     can be imported into an emulator with a similar hardware configuration.
+//
+// Currently the emulator has limited support for importing snapshots:
+// - Once an imported snapshot has been loaded into an emulator it is no longer
+// possible to create new snapshots.
+// - The hardware configuration of the emulator your are pushing a snapshot to
+// must match (or be very similar) to the one you pulled the snapshot from.
+//
+// For example do not expect to be able to restore a snapshot on created on an
+// Intel cpu on an AMD cpu.
+service SnapshotService {
+  // Lists all the snapshots, filtered by the given query, that are stored
+  // locally for the currently running avd. This includes all the snapshots that
+  // were imported (pushed) into this emulator.
+  //
+  // Returns a list of snapshot_id's and associated details that describes
+  // the hardware configuration, logical name, etc of the snapshot.
+  rpc ListSnapshots(SnapshotFilter) returns (SnapshotList) {}
+
+  // Pulls down the snapshot stored inside the AVD as a tar.gz/tar stream
+  // This will normalize the snapshot, all relevant data to push a snapshot
+  // into a similar emulator will be placed inside the tar file.
+  //
+  // Pulling  down a snapshot will pause the emulator until the snapshots
+  // are rebased and ready for exporting. Once the snapshot is rebased
+  // the emulator will continue and downloading should commence.
+  //
+  // Note that pulling .gz stream is slow.
+  //
+  // You must provide the snapshot_id and (desired) format.
+  //
+  // If SnapshotPackage.path is set, the gRPC service will directly write the
+  // exported snapshot to SnapshotPackage.path without streaming, which is
+  // usually significantly faster. It would require emulator to have direct
+  // access to SnapshotPackage.path, which usually means it can only be used
+  // when pulling from a local emulator.
+  rpc PullSnapshot(SnapshotPackage) returns (stream SnapshotPackage) {}
+
+  // Push a tar.gz stream contain the snapshot. The tar file should
+  // be a snapshot that was exported through the PullSnapshot in the past.
+  // The emulator will try to import the snapshot. The hardware configuration
+  // of the current emulator should match the one used for pulling.
+  //
+  // A detailed description of the snapshot (emulator_snapshot.Snapshot)
+  // is stored in the snapshot.pb file inside the tar.
+  //
+  // You must provide the snapshot_id and format in the first message.
+  // Will return success and a possible error message when a failure occurs.
+  //
+  // If SnapshotPackage.path is set, the gRPC service will directly unzip the
+  // exported snapshot from SnapshotPackage.path without streaming, which is
+  // usually significantly faster. It would require emulator to have direct
+  // access to SnapshotPackage.path, which usually means it can only be used
+  // when pushing to a local emulator.
+  rpc PushSnapshot(stream SnapshotPackage) returns (SnapshotPackage) {}
+
+  // Loads the given snapshot inside the emulator and activates it.
+  // The device will be in the state as it was when the snapshot was created.
+  //
+  // You will no longer be able to call Save if this was an imported
+  // snapshot that was pushed into this emulator.
+  //
+  // You must provide the snapshot_id to indicate which snapshot to load
+  // Will return success and a possible error message when a failure occurs.
+  rpc LoadSnapshot(SnapshotPackage) returns (SnapshotPackage) {}
+
+  // Creates as a snapshot of the current state of the emulator.
+  // You can only save a snapshot if you never activated (Load) an imported
+  // snapshot (Push).
+  //
+  // For example:
+  // - PushSnapshot("some_snap.tar.gz");
+  // - LoadSnapshot("some_snap");
+  // - SaveSnapshot("same_newer_snap"); // <--- Will currently fail.
+  //
+  // You can provide the snapshot_id to indicate the name used for storing.
+  // Will return success and a possible error message when a failure occurs.
+  rpc SaveSnapshot(SnapshotPackage) returns (SnapshotPackage) {}
+
+  // Deletes the snapshot with the given snapshot_id from the avd.
+  //
+  // You must provide the snapshot_id to indicate which snapshot to delete.
+  // Will return success and a possible error message when a failure occurs.
+  rpc DeleteSnapshot(SnapshotPackage) returns (SnapshotPackage) {}
+
+  // Tracks the given process for automated snapshot creation in case of
+  // assert failures.
+  //
+  // Will return success and a possible error message when a failure occurs.
+  // The snapshot_id field will contain the name of the snapshot that
+  // will be created. The pid field will contain the process id that is
+  // being tracked.
+  rpc TrackProcess(IceboxTarget) returns (IceboxTarget) {}
+}
+
+// Sets options for SnapshotService. Used for both request and response
+// messages.
+message SnapshotPackage {
+  enum Format {
+    TARGZ = 0;
+    TAR = 1;
+    DIRECTORY = 2;
+  }
+  // The identifier to the snapshot, only required for request messages. For
+  // streaming service, only used in the first stream message of a gRPC call
+  // (would be ignored in consequent stream messages of the same call).
+  string snapshot_id = 1;
+
+  // A stream of bytes. Encoded as a tar (possibly gzipped) file pendinf on the
+  // value of format.
+  bytes payload = 2;
+
+  // [response only] status fields, usually indicates end of transmission.
+  bool success = 3;
+  bytes err = 4;
+
+  // [request only] Format of the payload. Only used in request messages. For
+  // streaming service, only used in the first stream message of a gRPC call
+  // (would be ignored in consequent stream messages of the same call).
+  Format format = 5;
+
+  // [request only] Path to the snapshot package file. Only used in request
+  // messages.
+  //
+  // When set in a request, the PullSnapshot/PushSnapshot operation will
+  // directly write/read the exported snapshot in path without streaming, which
+  // is usually significantly faster. It would require emulator to have direct
+  // access to path, which usually means it can only be used with a local
+  // emulator.
+  string path = 6;
+}
+
+// A snapshot filter can be used to filter the results produced by ListSnapshots
+message SnapshotFilter {
+  enum LoadStatus {
+    // Only return compatible snapshots
+    CompatibleOnly = 0;
+
+    // Return all snapshots.
+    All = 1;
+  }
+
+  // Filter snapshots by load status.
+  LoadStatus statusFilter = 1;
+}
+
+// Provides detailed information regarding the snapshot.
+message SnapshotDetails {
+  enum LoadStatus {
+    // The emulator believes that the snapshot is compatible with the emulator
+    // that provided this information.  The emulator will attempt to load this
+    // snapshot when requested.
+    //
+    // A snapshot is usually compatible when the following statements are true:
+    // - The snapshot was taken by the current emulator version. i.e.
+    //   emulator_build_id in the details field matches the build_id of the
+    //   emulator that provided this information.
+    //
+    // - The snapshot was taken on the current running machine, and no hardware
+    //  changes have taken place between taking and loading the snapshot.
+    //
+    // - The avd configuration has not changed between when this snapshot was
+    //   taken  and when the snapshot was loaded.
+    //
+    // - The system images on which the avd is based have not changed.
+    Compatible = 0;
+
+    // The emulator will not allow loading of the snapshot, as it deems the
+    // snapshot to be incompatible. Loading of snapshots can be forced by
+    // launching the emulator with the feature "AllowSnapshotMigration" enabled.
+    Incompatible = 1;
+
+    // This snapshot was successfully loaded in the emulator, and was used at
+    // the starting point of the current running emulator. The following holds:
+    //
+    // A loaded snapshot is a compatible snapshot
+    // There is at most one snapshot_id that is in the "Loaded" state
+    Loaded = 2;
+  }
+
+  // The id of this snapshot. Use this id to load/delete/pull the
+  // snapshot.
+  string snapshot_id = 1;
+
+  // Detailed information about this snapshot. This contains a detailed
+  // hardware description of the snapshot. These details are the same
+  // as the "snapshot.pb" file found in an exported snapshot.
+  // Look at the import file for a detailed description of the available
+  // fields.
+  emulator_snapshot.Snapshot details = 2;
+
+  // Provides information about the ability to restore this snapshot.
+  LoadStatus status = 3;
+
+  // The size of the folder that stores required information to load a snapshot.
+  uint64 size = 4;
+}
+
+// A List of on snapshot details.
+message SnapshotList {
+  repeated SnapshotDetails snapshots = 1;
+}
+
+message IceboxTarget {
+  // This is the process id to attach to, if this value is not set (0)
+  // The process name will be used instead.
+  int64 pid = 1;
+
+  // The process name to attach to if any, if this is not set the pid will
+  // be used. This is usually the application name of your application under
+  // test, that is passed in to the am instrument command. It is likely
+  // what you will find in your AndroidManifest.xml
+  string package_name = 2;
+
+  // The name of the snapshot that icebox will create if a snapshot is
+  // generated.
+  string snapshot_id = 3;
+
+  // [Output Only] True if icebox failed to track the given target.
+  bool failed = 4;
+
+  // [Output Only] Detailed error message that might provide more information.
+  string err = 5;
+
+  // Maximum number of snapshots the emulator can take during one Icebox run.
+  // Set to -1 for unlimited number of snapshots.
+  int32 max_snapshot_number = 6;
+}
+
+// List of deleted methods:
+//

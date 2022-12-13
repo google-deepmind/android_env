@@ -32,15 +32,20 @@ import portpicker
 
 from android_env.proto import emulator_controller_pb2
 from android_env.proto import emulator_controller_pb2_grpc
+from android_env.proto import snapshot_service_pb2
+from android_env.proto import snapshot_service_pb2_grpc
 from google.protobuf import empty_pb2
+
+_LOCAL_SNAPSHOT_NAME = 'local_snapshot'
 
 
 def is_existing_emulator_provided(launcher_args: Dict[str, Any]) -> bool:
   """Returns true if all necessary args were provided."""
   return bool(
-      launcher_args.get('adb_port') and
-      launcher_args.get('emulator_console_port') and
-      launcher_args.get('grpc_port'))
+      launcher_args.get('adb_port')
+      and launcher_args.get('emulator_console_port')
+      and launcher_args.get('grpc_port')
+  )
 
 
 def _pick_adb_port() -> int:
@@ -82,7 +87,9 @@ def _reconnect_on_grpc_error(func):
     except grpc.RpcError:
       logging.exception('RpcError caught. Reconnecting to emulator...')
       emu = args[0]  # The first arg of the function is "self"
-      emu._emulator_stub = emu._connect_to_emulator(emu._grpc_port)  # pylint: disable=protected-access
+      emu._emulator_stub, emu._snapshot_stub = emu._connect_to_emulator(  # pylint: disable=protected-access
+          emu._grpc_port  # pylint: disable=protected-access
+      )
       return func(*args, **kwargs)
 
   return wrapper
@@ -99,14 +106,16 @@ class EmulatorCrashError(errors.SimulatorError):
 class EmulatorSimulator(base_simulator.BaseSimulator):
   """Controls an Android Emulator."""
 
-  def __init__(self,
-               emulator_launcher_args: Dict[str, Any],
-               adb_controller_args: Dict[str, Any],
-               tmp_dir: str = '/tmp/android_env/simulator',
-               logfile_path: Optional[str] = None,
-               launch_n_times_without_reboot: int = 1,
-               launch_n_times_without_reinstall: int = 2,
-               **kwargs):
+  def __init__(
+      self,
+      emulator_launcher_args: Dict[str, Any],
+      adb_controller_args: Dict[str, Any],
+      tmp_dir: str = '/tmp/android_env/simulator',
+      logfile_path: Optional[str] = None,
+      launch_n_times_without_reboot: int = 1,
+      launch_n_times_without_reinstall: int = 2,
+      **kwargs,
+  ):
     """Instantiates an EmulatorSimulator.
 
     Args:
@@ -129,8 +138,9 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._adb_port = emulator_launcher_args['adb_port']
       self._console_port = emulator_launcher_args['emulator_console_port']
       self._grpc_port = emulator_launcher_args['grpc_port']
-      logging.info('Connecting to existing emulator "%r"',
-                   self.adb_device_name())
+      logging.info(
+          'Connecting to existing emulator "%r"', self.adb_device_name()
+      )
     else:
       self._existing_emulator_provided = False
       self._adb_port = _pick_adb_port()
@@ -139,17 +149,20 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
     self._channel = None
     self._emulator_stub = None
+    self._snapshot_stub = None
     # Set the image format to RGBA. The width and height of the returned
     # screenshots will use the device's width and height.
     self._image_format = emulator_controller_pb2.ImageFormat(
-        format=emulator_controller_pb2.ImageFormat.ImgFormat.RGBA8888)
+        format=emulator_controller_pb2.ImageFormat.ImgFormat.RGBA8888
+    )
 
     if launch_n_times_without_reboot > launch_n_times_without_reinstall:
       raise ValueError(
-          f'Number of launch attempts before reboot '
+          'Number of launch attempts before reboot '
           f'({launch_n_times_without_reboot}) should not be greater than '
-          f'number of launch attempts before reinstall '
-          f'({launch_n_times_without_reinstall})')
+          'number of launch attempts before reinstall '
+          f'({launch_n_times_without_reinstall})'
+      )
     self._launch_n_times_without_reboot = launch_n_times_without_reboot
     self._launch_n_times_without_reinstall = launch_n_times_without_reinstall
 
@@ -159,8 +172,10 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     self._adb_controller_args = adb_controller_args
     self._adb_controller = self.create_adb_controller()
     self._adb_controller.init_server()
-    logging.info('Initialized simulator with ADB server port %r.',
-                 self._adb_controller_args['adb_server_port'])
+    logging.info(
+        'Initialized simulator with ADB server port %r.',
+        self._adb_controller_args['adb_server_port'],
+    )
 
     # If necessary, create EmulatorLauncher.
     if self._existing_emulator_provided:
@@ -178,7 +193,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._emulator_launcher_args = emulator_launcher_args
       logging.info('emulator_launcher_args: %r', self._emulator_launcher_args)
       self._launcher = emulator_launcher.EmulatorLauncher(
-          **self._emulator_launcher_args)
+          **self._emulator_launcher_args
+      )
       self._logfile_path = logfile_path or self._launcher.logfile_path()
 
   def get_logs(self) -> str:
@@ -195,12 +211,14 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   def create_adb_controller(self):
     """Returns an ADB controller which can communicate with this simulator."""
     return adb_controller.AdbController(
-        device_name=self.adb_device_name(), **self._adb_controller_args)
+        device_name=self.adb_device_name(), **self._adb_controller_args
+    )
 
   def create_log_stream(self) -> log_stream.LogStream:
     return adb_log_stream.AdbLogStream(
         adb_command_prefix=self._adb_controller.command_prefix(),
-        verbose=self._verbose_logs)
+        verbose=self._verbose_logs,
+    )
 
   def _launch_impl(self) -> None:
     """Prepares an Android Emulator for RL interaction.
@@ -214,23 +232,31 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
           killed, emulator files are deleted and the process started again).
     """
 
-    logging.info('Attempt %r at launching the Android Emulator (%r)',
-                 self._num_launch_attempts, self.adb_device_name())
+    logging.info(
+        'Attempt %r at launching the Android Emulator (%r)',
+        self._num_launch_attempts,
+        self.adb_device_name(),
+    )
 
     if self._launcher is not None:
       # If not the first time, then shutdown the emulator first.
-      if (self._emulator_stub is not None and
-          self._num_launch_attempts > self._launch_n_times_without_reboot):
+      if (
+          self._emulator_stub is not None
+          and self._num_launch_attempts > self._launch_n_times_without_reboot
+      ):
         self._shutdown_emulator()
         # Subsequent attempts cause the emulator files to be reinstalled.
         if self._num_launch_attempts > self._launch_n_times_without_reinstall:
           logging.info('Closing emulator (%r)', self.adb_device_name())
           self._launcher.close()
           self._launcher = emulator_launcher.EmulatorLauncher(
-              **self._emulator_launcher_args)
+              **self._emulator_launcher_args
+          )
       self._launcher.launch_emulator_process()
     # Establish grpc connection to emulator process.
-    self._emulator_stub = self._connect_to_emulator(self._grpc_port)
+    self._emulator_stub, self._snapshot_stub = self._connect_to_emulator(
+        self._grpc_port
+    )
 
     # Confirm booted status.
     try:
@@ -240,17 +266,44 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
     logging.info('Done booting the Android Emulator.')
 
+  def save_or_load_local_snapshot(self) -> None:
+    snapshot_list = self._snapshot_stub.ListSnapshots(
+        snapshot_service_pb2.SnapshotFilter(
+            statusFilter=snapshot_service_pb2.SnapshotFilter.LoadStatus.All
+        )
+    )
+    if any(
+        snapshot.snapshot_id == _LOCAL_SNAPSHOT_NAME
+        for snapshot in snapshot_list.snapshots
+    ):
+      logging.info('Snapshot %s found; loading', _LOCAL_SNAPSHOT_NAME)
+      snapshot_result = self._snapshot_stub.LoadSnapshot(
+          snapshot_service_pb2.SnapshotPackage(snapshot_id=_LOCAL_SNAPSHOT_NAME)
+      )
+      logging.info(snapshot_result)
+    else:
+      logging.info('Snapshot %s not found; saving', _LOCAL_SNAPSHOT_NAME)
+      snapshot_result = self._snapshot_stub.SaveSnapshot(
+          snapshot_service_pb2.SnapshotPackage(snapshot_id=_LOCAL_SNAPSHOT_NAME)
+      )
+      logging.info(snapshot_result)
+
   def _connect_to_emulator(
       self,
       grpc_port: int,
       timeout_sec: int = 100,
-  ) -> emulator_controller_pb2_grpc.EmulatorControllerStub:
+  ) -> Tuple[
+      emulator_controller_pb2_grpc.EmulatorControllerStub,
+      snapshot_service_pb2_grpc.SnapshotServiceStub,
+  ]:
     """Connects to an emulator and returns a corresponsing stub."""
 
     logging.info('Creating gRPC channel to the emulator on port %r', grpc_port)
     port = f'localhost:{grpc_port}'
-    options = [('grpc.max_send_message_length', -1),
-               ('grpc.max_receive_message_length', -1)]
+    options = [
+        ('grpc.max_send_message_length', -1),
+        ('grpc.max_receive_message_length', -1),
+    ]
     creds = grpc.local_channel_credentials()
 
     try:
@@ -259,10 +312,13 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     except (grpc.RpcError, grpc.FutureTimeoutError) as grpc_error:
       logging.exception('Failed to connect to the emulator.')
       raise EmulatorBootError(
-          'Failed to connect to the emulator.') from grpc_error
+          'Failed to connect to the emulator.'
+      ) from grpc_error
 
     logging.info('Added gRPC channel for the Emulator on port %s', port)
-    return emulator_controller_pb2_grpc.EmulatorControllerStub(self._channel)
+    return emulator_controller_pb2_grpc.EmulatorControllerStub(
+        self._channel
+    ), snapshot_service_pb2_grpc.SnapshotServiceStub(self._channel)
 
   @_reconnect_on_grpc_error
   def _confirm_booted(self, startup_wait_time_sec: int = 300):
@@ -273,8 +329,11 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     success = False
     while time.time() < deadline:
       emu_status = self._emulator_stub.getStatus(empty_pb2.Empty())
-      logging.info('Waiting for emulator (%r) to start... (%rms)',
-                   self.adb_device_name(), emu_status.uptime)
+      logging.info(
+          'Waiting for emulator (%r) to start... (%rms)',
+          self.adb_device_name(),
+          emu_status.uptime,
+      )
       if emu_status.booted:
         success = True
         break
@@ -283,7 +342,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     elapsed_time = time.time() - start_time
     if not success:
       raise EmulatorCrashError(
-          f'The emulator failed to boot after {startup_wait_time_sec} seconds')
+          f'The emulator failed to boot after {startup_wait_time_sec} seconds'
+      )
 
     logging.info('Done booting the emulator (in %f seconds).', elapsed_time)
     logging.info('********** Emulator logs (last 20 lines) **********')
@@ -298,43 +358,47 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
     Args:
       touches: A list of touch events. Each element in the list corresponds to a
-          single touch event. Each touch event tuple should have:
-          0 x: The horizontal coordinate of this event.
-          1 y: The vertical coordinate of this event.
-          2 is_down: Whether the finger is touching or not the screen.
-          3 identifier: Identifies a particular finger in a multitouch event.
+        single touch event. Each touch event tuple should have: 0 x: The
+        horizontal coordinate of this event. 1 y: The vertical coordinate of
+        this event. 2 is_down: Whether the finger is touching or not the screen.
+        3 identifier: Identifies a particular finger in a multitouch event.
     """
 
     assert self._emulator_stub, 'Emulator stub has not been initialized yet.'
     touch_events = [
         emulator_controller_pb2.Touch(
-            x=t[0], y=t[1], pressure=int(t[2]), identifier=t[3])
+            x=t[0], y=t[1], pressure=int(t[2]), identifier=t[3]
+        )
         for t in touches
     ]
     self._emulator_stub.sendTouch(
-        emulator_controller_pb2.TouchEvent(touches=touch_events))
+        emulator_controller_pb2.TouchEvent(touches=touch_events)
+    )
 
   @_reconnect_on_grpc_error
   def send_key(self, keycode: np.int32, event_type: str) -> None:
     """Sends a key event to the emulator.
 
     Args:
-      keycode: Code representing the desired key press in XKB format.
-        See the emulator_controller_pb2 for details.
+      keycode: Code representing the desired key press in XKB format. See the
+        emulator_controller_pb2 for details.
       event_type: Type of key event to be sent.
     """
     event_types = emulator_controller_pb2.KeyboardEvent.KeyEventType.keys()
     if event_type not in event_types:
       raise ValueError(
-          f'Event type must be one of {event_types} but is {event_type}.')
+          f'Event type must be one of {event_types} but is {event_type}.'
+      )
 
     self._emulator_stub.sendKey(
         emulator_controller_pb2.KeyboardEvent(
             codeType=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
             eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType.Value(
-                event_type),
+                event_type
+            ),
             keyCode=np.int32(keycode),
-        ))
+        )
+    )
 
   @_reconnect_on_grpc_error
   def get_screenshot(self) -> np.ndarray:
@@ -358,7 +422,9 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     logging.info('Shutting down the emulator (%r)...', self.adb_device_name())
     self._emulator_stub.setVmState(
         emulator_controller_pb2.VmRunState(
-            state=emulator_controller_pb2.VmRunState.RunState.SHUTDOWN))
+            state=emulator_controller_pb2.VmRunState.RunState.SHUTDOWN
+        )
+    )
     self._launcher.confirm_shutdown()
 
   def close(self):
@@ -367,6 +433,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       logging.info('Closing emulator (%r)', self.adb_device_name())
       self._launcher.close()
     self._emulator_stub = None
+    self._snapshot_stub = None
     if self._channel is not None:
       self._channel.close()
     super().close()

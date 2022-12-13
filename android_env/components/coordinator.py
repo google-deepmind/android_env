@@ -52,6 +52,7 @@ class Coordinator():
       show_navigation_bar: bool = False,
       periodic_restart_time_min: float = 0.0,
       tmp_dir: Optional[str] = None,
+      load_snapshot_on_reset: bool = False,
   ):
     """Handles communication between AndroidEnv and its components.
 
@@ -77,6 +78,8 @@ class Coordinator():
         0.0, will trigger a simulator restart at the end of the next episode
         once the time has been reached.
       tmp_dir: Temporary directory to write transient data.
+      load_snapshot_on_reset: Whether to save a local snapshot and load it on
+        every reset.
     """
     self._simulator = simulator
     self._task_manager = task_manager
@@ -92,6 +95,8 @@ class Coordinator():
     self._orientation = np.zeros(4, dtype=np.uint8)
     self._interaction_rate_sec = interaction_rate_sec
     self._interaction_thread = None
+    self._load_snapshot_on_reset = load_snapshot_on_reset
+    self._needs_reset_steps = False
 
     # The size of the device screen in pixels (H x W).
     self._screen_size = np.array([0, 0], dtype=np.int32)
@@ -251,6 +256,7 @@ class Coordinator():
       # Restart was successful.
       self._simulator_healthy = True
       self._stats['relaunch_count'] += 1
+      self._needs_reset_steps = True
       break
     if self._interaction_rate_sec > 0:
       self._interaction_thread = InteractionThread(self._simulator,
@@ -334,16 +340,20 @@ class Coordinator():
       if key.startswith('episode'):
         self._stats[key] = 0.0
 
-    # Execute a lift action before resetting the task.
-    self._lift_all_fingers()
+    if self._needs_reset_steps or not self._load_snapshot_on_reset:
+      # Execute a lift action before resetting the task.
+      self._lift_all_fingers()
 
-    # Reset the task.
-    self._task_manager.reset_task()
-    self._update_device_orientation()
+      # Reset the task.
+      self._task_manager.reset_task()
+      self._update_device_orientation()
+      self._needs_reset_steps = False
+
+    if self._load_snapshot_on_reset:
+      self._simulator.save_or_load_local_snapshot()
 
     # Get data from the simulator.
     simulator_signals = self._gather_simulator_signals()
-
     return self._task_manager.rl_reset(simulator_signals)
 
   def rl_step(self, agent_action: Dict[str, np.ndarray]) -> dm_env.TimeStep:

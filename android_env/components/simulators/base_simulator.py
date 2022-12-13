@@ -110,6 +110,10 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     """
 
   @abc.abstractmethod
+  def save_or_load_local_snapshot(self) -> None:
+    """Save or load from a snapshot."""
+
+  @abc.abstractmethod
   def get_screenshot(self) -> np.ndarray:
     """Returns pixels representing the current screenshot of the simulator.
 

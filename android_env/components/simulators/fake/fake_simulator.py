@@ -27,7 +27,7 @@ from android_env.components.simulators import base_simulator
 import numpy as np
 
 
-class FakeStream():
+class FakeStream:
   """This class simulates the logs coming from ADB."""
 
   def __init__(self):
@@ -55,7 +55,8 @@ class FakeStream():
       else:
         with self._lock:
           next_value = random.choices(
-              self._values, weights=[0.49, 0.15, 0.15, 0.15, 0.01], k=1)[0]
+              self._values, weights=[0.49, 0.15, 0.15, 0.15, 0.01], k=1
+          )[0]
           time.sleep(0.1)
         yield next_value
 
@@ -77,10 +78,12 @@ class FakeLogStream(log_stream.LogStream):
 class FakeAdbController(adb_controller.AdbController):
   """Fake adb controller for FakeSimulator."""
 
-  def execute_command(self,
-                      args: List[str],
-                      timeout: Optional[float] = None,
-                      device_specific: bool = True) -> bytes:
+  def execute_command(
+      self,
+      args: List[str],
+      timeout: Optional[float] = None,
+      device_specific: bool = True,
+  ) -> bytes:
     """Returns fake output for adb commands."""
 
     del timeout, device_specific
@@ -95,8 +98,10 @@ class FakeAdbController(adb_controller.AdbController):
 
     # app_screen_checker: fake_task expects 'fake_activity'.
     if args[:4] == ['shell', 'am', 'stack', 'list']:
-      return (b'taskId=0 fake_activity visible=true '
-              b'topActivity=ComponentInfo{fake_activity}')
+      return (
+          b'taskId=0 fake_activity visible=true '
+          b'topActivity=ComponentInfo{fake_activity}'
+      )
 
     return b'fake output'
 
@@ -104,9 +109,7 @@ class FakeAdbController(adb_controller.AdbController):
 class FakeSimulator(base_simulator.BaseSimulator):
   """FakeSimulator class."""
 
-  def __init__(self,
-               screen_dimensions: Tuple[int, int] = (480, 320),
-               **kwargs):
+  def __init__(self, screen_dimensions: Tuple[int, int] = (480, 320), **kwargs):
     """FakeSimulator class that can replace EmulatorSimulator in AndroidEnv.
 
     Args:
@@ -133,6 +136,11 @@ class FakeSimulator(base_simulator.BaseSimulator):
   def _launch_impl(self) -> None:
     pass
 
+  def save_or_load_local_snapshot(self) -> None:
+    raise NotImplementedError(
+        'FakeSimulator does not support save_or_load_local_snapshot'
+    )
+
   def send_touch(self, touches: List[Tuple[int, int, bool, int]]) -> None:
     del touches
 
@@ -141,4 +149,5 @@ class FakeSimulator(base_simulator.BaseSimulator):
 
   def get_screenshot(self) -> np.ndarray:
     return np.random.randint(
-        low=0, high=255, size=(*self._screen_dimensions, 3), dtype=np.uint8)
+        low=0, high=255, size=(*self._screen_dimensions, 3), dtype=np.uint8
+    )
