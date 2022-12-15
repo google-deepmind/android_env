@@ -26,13 +26,19 @@ from android_env.components import errors
 from android_env.components import log_stream
 from android_env.components.simulators import base_simulator
 from android_env.components.simulators.emulator import emulator_launcher
+from android_env.proto import state_pb2
 import grpc
 import numpy as np
 import portpicker
 
 from android_env.proto import emulator_controller_pb2
 from android_env.proto import emulator_controller_pb2_grpc
+from android_env.proto import snapshot_service_pb2
+from android_env.proto import snapshot_service_pb2_grpc
 from google.protobuf import empty_pb2
+
+
+_DEFAULT_SNAPSHOT_NAME = 'default_snapshot'
 
 
 def is_existing_emulator_provided(launcher_args: Dict[str, Any]) -> bool:
@@ -82,7 +88,9 @@ def _reconnect_on_grpc_error(func):
     except grpc.RpcError:
       logging.exception('RpcError caught. Reconnecting to emulator...')
       emu = args[0]  # The first arg of the function is "self"
-      emu._emulator_stub = emu._connect_to_emulator(emu._grpc_port)  # pylint: disable=protected-access
+      emu._emulator_stub, emu._snapshot_stub = emu._connect_to_emulator(  # pylint: disable=protected-access
+          emu._grpc_port  # pylint: disable=protected-access
+      )
       return func(*args, **kwargs)
 
   return wrapper
@@ -139,6 +147,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
     self._channel = None
     self._emulator_stub = None
+    self._snapshot_stub = None
     # Set the image format to RGBA. The width and height of the returned
     # screenshots will use the device's width and height.
     self._image_format = emulator_controller_pb2.ImageFormat(
@@ -230,7 +239,9 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
               **self._emulator_launcher_args)
       self._launcher.launch_emulator_process()
     # Establish grpc connection to emulator process.
-    self._emulator_stub = self._connect_to_emulator(self._grpc_port)
+    self._emulator_stub, self._snapshot_stub = self._connect_to_emulator(
+        self._grpc_port
+    )
 
     # Confirm booted status.
     try:
@@ -240,11 +251,92 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
     logging.info('Done booting the Android Emulator.')
 
+  def load_state(
+      self, request: state_pb2.LoadStateRequest
+  ) -> state_pb2.LoadStateResponse:
+    """Loads a state using the emulator's snapshotting mechanism.
+
+    Args:
+      request: The `LoadStateRequest`. In this case, `args` should be a dict
+        containing the key 'snapshot_name', representing the name of the
+        snapshot to load. If `request.args.snapshot_name` is `None`, a default
+        snapshot name is used.
+
+    Returns:
+      A response indicating whether the snapshot was successfully loaded.
+      * If the snapshot was loaded successfully, the status will be `OK`.
+      * If no snapshot of the given name was found, the status will be
+        `NOT_FOUND`.
+      * If an error occurred during the snapshot loading process, the status
+        will be `ERROR` and the `error_message` field will be filled.
+    """
+    snapshot_name = request.args.get('snapshot_name', _DEFAULT_SNAPSHOT_NAME)
+    snapshot_list = self._snapshot_stub.ListSnapshots(
+        snapshot_service_pb2.SnapshotFilter(
+            statusFilter=snapshot_service_pb2.SnapshotFilter.LoadStatus.All
+        )
+    )
+    if any(
+        snapshot.snapshot_id == snapshot_name
+        for snapshot in snapshot_list.snapshots
+    ):
+      snapshot_result = self._snapshot_stub.LoadSnapshot(
+          snapshot_service_pb2.SnapshotPackage(snapshot_id=snapshot_name)
+      )
+      if snapshot_result.success:
+        return state_pb2.LoadStateResponse(
+            status=state_pb2.LoadStateResponse.Status.OK
+        )
+      else:
+        return state_pb2.LoadStateResponse(
+            status=state_pb2.LoadStateResponse.Status.ERROR,
+            error_message=snapshot_result.err.decode('utf-8'),
+        )
+
+    else:
+      return state_pb2.LoadStateResponse(
+          status=state_pb2.LoadStateResponse.Status.NOT_FOUND
+      )
+
+  def save_state(
+      self, request: state_pb2.SaveStateRequest
+  ) -> state_pb2.SaveStateResponse:
+    """Saves a state using the emulator's snapshotting mechanism.
+
+    Args:
+      request: The `SaveStateRequest`. In this case, `args` should be a dict
+        containing the key 'snapshot_name', representing the name of the
+        snapshot to save. If `request.args.snapshot_name` is `None`, a default
+        snapshot name is used.
+
+    Returns:
+      A response indicating whether the snapshot was successfully saved.
+      * If the snapshot was saved successfully, the status will be `OK`.
+      * If an error occurred during the snapshot saving process, the status
+        will be `ERROR` and the `error_message` field will be filled.
+    """
+    snapshot_name = request.args.get('snapshot_name', _DEFAULT_SNAPSHOT_NAME)
+    snapshot_result = self._snapshot_stub.SaveSnapshot(
+        snapshot_service_pb2.SnapshotPackage(snapshot_id=snapshot_name)
+    )
+    if snapshot_result.success:
+      return state_pb2.SaveStateResponse(
+          status=state_pb2.SaveStateResponse.Status.OK
+      )
+    else:
+      return state_pb2.SaveStateResponse(
+          status=state_pb2.SaveStateResponse.Status.ERROR,
+          error_message=snapshot_result.err.decode('utf-8'),
+      )
+
   def _connect_to_emulator(
       self,
       grpc_port: int,
       timeout_sec: int = 100,
-  ) -> emulator_controller_pb2_grpc.EmulatorControllerStub:
+  ) -> Tuple[
+      emulator_controller_pb2_grpc.EmulatorControllerStub,
+      snapshot_service_pb2_grpc.SnapshotServiceStub,
+  ]:
     """Connects to an emulator and returns a corresponsing stub."""
 
     logging.info('Creating gRPC channel to the emulator on port %r', grpc_port)
@@ -262,7 +354,11 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
           'Failed to connect to the emulator.') from grpc_error
 
     logging.info('Added gRPC channel for the Emulator on port %s', port)
-    return emulator_controller_pb2_grpc.EmulatorControllerStub(self._channel)
+    emulator_controller_stub = (
+        emulator_controller_pb2_grpc.EmulatorControllerStub(self._channel)
+    )
+    snapshot_stub = snapshot_service_pb2_grpc.SnapshotServiceStub(self._channel)
+    return emulator_controller_stub, snapshot_stub
 
   @_reconnect_on_grpc_error
   def _confirm_booted(self, startup_wait_time_sec: int = 300):
@@ -367,6 +463,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       logging.info('Closing emulator (%r)', self.adb_device_name())
       self._launcher.close()
     self._emulator_stub = None
+    self._snapshot_stub = None
     if self._channel is not None:
       self._channel.close()
     super().close()

@@ -21,6 +21,7 @@ from absl import logging
 from android_env import env_interface
 from android_env.components import coordinator as coordinator_lib
 from android_env.proto import adb_pb2
+from android_env.proto import state_pb2
 from android_env.proto import task_pb2
 import dm_env
 import numpy as np
@@ -112,6 +113,36 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
       logging.info('************* END OF EPISODE *************')
 
     return timestep
+
+  def load_state(
+      self, request: state_pb2.LoadStateRequest
+  ) -> state_pb2.LoadStateResponse:
+    """Loads a state.
+
+    Args:
+      request: A `LoadStateRequest` containing any parameters necessary to
+        specify how/what state to load.
+
+    Returns:
+      A `LoadStateResponse` containing the status, error message (if
+      applicable), and any other relevant information.
+    """
+    return self._coordinator.load_state(request)
+
+  def save_state(
+      self, request: state_pb2.SaveStateRequest
+  ) -> state_pb2.SaveStateResponse:
+    """Saves a state.
+
+    Args:
+      request: A `SaveStateRequest` containing any parameters necessary to
+        specify how/what state to save.
+
+    Returns:
+      A `SaveStateResponse` containing the status, error message (if
+      applicable), and any other relevant information.
+    """
+    return self._coordinator.save_state(request)
 
   def task_extras(self, latest_only: bool = True) -> Dict[str, np.ndarray]:
     """Returns latest task extras."""

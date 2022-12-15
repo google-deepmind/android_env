@@ -1,0 +1,169 @@
+// Copyright 2022 DeepMind Technologies Limited.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Copyright (C) 2018 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+// This file must be synchronized between
+//    Emulator (branch aosp/emu-master-dev):
+//        external/qemu/android/android-emu/android/snapshot/proto/snapshot.proto
+//
+//    Android Studio (branch goog/studio-master-dev):
+//        tools/adt/idea/android/src/com/android/emulator/snapshot.proto
+//
+// If you modify one, please modify the other.
+
+package emulator_snapshot;
+
+option java_package = "com.android.emulator.snapshot";
+
+message Image {
+    enum Type {
+        IMAGE_TYPE_UNKNOWN = 0;
+        IMAGE_TYPE_KERNEL = 1;
+        IMAGE_TYPE_KERNEL_RANCHU = 2;
+        IMAGE_TYPE_SYSTEM = 3;
+        IMAGE_TYPE_SYSTEM_COPY = 4;
+        IMAGE_TYPE_DATA = 5;
+        IMAGE_TYPE_DATA_COPY = 6;
+        IMAGE_TYPE_RAMDISK = 7;
+        IMAGE_TYPE_SDCARD = 8;
+        IMAGE_TYPE_CACHE = 9;
+        IMAGE_TYPE_VENDOR = 10;
+        IMAGE_TYPE_ENCRYPTION_KEY = 11;
+    }
+
+    optional Type type = 1;
+    optional string path = 2;
+    optional bool present = 3;
+    optional int64 size = 4;
+    optional int64 modification_time = 5;
+}
+
+message Host {
+    optional string gpu_driver = 4;
+    optional int32 hypervisor = 5;
+}
+
+message Config {
+    // Features are int32, not enums here to make sure we don't have to update
+    // one more protobuf definition with every single new feature flag, even
+    // when the code doesn't really care about the actual meaning for them,
+    // only for the values.
+    repeated int32 enabled_features = 1;
+
+    // This holds the renderer; int32 for the same reason as |enabled_features|.
+    optional int32 selected_renderer = 2;
+
+    optional int32 cpu_core_count = 3;
+    optional int64 ram_size_bytes = 4;
+}
+
+message SaveStats {
+    // Type of save
+    // 0: non-incremental
+    // 1: incremental
+    optional uint32 incremental = 1;
+    // Time taken to save.
+    optional uint64 duration = 2;
+    // How many changed bytes in RAM.
+    optional uint64 ram_changed_bytes = 3;
+}
+
+message Snapshot {
+    // Update every time when introducing some breaking changes that make the
+    // previous loading code break when trying to load the new snapshot.
+    // NOTE: if the old code is fine with just skipping the new fields or not
+    //       getting the meaning of new values, |version| should remain
+    //       unchanged.
+    optional int32 version = 1;
+
+    // Purely informative: when this snapshot was created, Unix timestamp.
+    optional int64 creation_time = 2;
+
+    // List of mounted disk images used during the snapshot creation.
+    repeated Image images = 3;
+
+    // Description of the host machine properties needed to load this snapshot.
+    optional Host host = 4;
+
+    // Description of the emulator configuration needed for this snapshot.
+    // NOTE: try not to duplicate the configuration that's already in
+    //       hardware-qemu.ini; only add what's either not there or what
+    //       could've been overridden during process initialization.
+    optional Config config = 5;
+
+    // Set if the snapshot failed to load during the last attempt.
+    // Code is up to the application to define, with 0 meaning 'not failed' just
+    // in case.
+    optional int64 failed_to_load_reason_code = 7;
+
+    // Set if data image is mounted.
+    // User build and userdebug build mount data partition at different time.
+    // But it should be done before boot finished, so this field is very likely
+    // to be true.
+    // We snapshot it here just in case someday we support snapshot during
+    // booting.
+    optional bool guest_data_partition_mounted = 8;
+
+    // Emulator rotation angle, in right angles (e.g. 1 is 90 degrees, 2 is 180
+    // etc).
+    optional int32 rotation = 9;
+
+    // Number of invalid loads / crashes that happened under this snapshot.
+    optional int32 invalid_loads = 10;
+
+    // Number of successful loads.
+    optional int32 successful_loads = 11;
+
+    // The name given to the snapshot by the user. Independent of the
+    // file name.
+    optional string logical_name = 12;
+
+    // The file name of this snapshot's parent. The parent is the
+    // snapshot that was loaded into the AVD prior to this snapshot
+    // being taken
+    optional string parent = 13;
+
+    // Arbitrary description added by the user
+    optional string description = 14;
+
+    // Record of save stats.
+    repeated SaveStats save_stats = 15;
+
+    // Folded state.
+    optional bool folded = 16;
+
+    // Emulator boot parameters
+    repeated string launch_parameters = 17;
+
+    // Emulator build ID
+    optional string emulator_build_id = 18;
+
+    // System image build ID
+    optional string system_image_build_id = 19;
+}

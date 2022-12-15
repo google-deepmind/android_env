@@ -22,6 +22,7 @@ from absl import logging
 from android_env.components import adb_controller
 from android_env.components import errors
 from android_env.components import log_stream
+from android_env.proto import state_pb2
 import numpy as np
 
 
@@ -108,6 +109,36 @@ class BaseSimulator(metaclass=abc.ABCMeta):
         simulator-specific.
       event_type: Type of key event to be sent.
     """
+
+  def load_state(
+      self, request: state_pb2.LoadStateRequest
+  ) -> state_pb2.LoadStateResponse:
+    """Loads a state.
+
+    Args:
+      request: A `LoadStateRequest` containing any parameters necessary to
+        specify how/what state to load.
+
+    Returns:
+      A `LoadStateResponse` containing the status, error message (if
+      applicable), and any other relevant information.
+    """
+    raise NotImplementedError('This simulator does not support load_state()')
+
+  def save_state(
+      self, request: state_pb2.SaveStateRequest
+  ) -> state_pb2.SaveStateResponse:
+    """Saves a state.
+
+    Args:
+      request: A `SaveStateRequest` containing any parameters necessary to
+        specify how/what state to save.
+
+    Returns:
+      A `SaveStateResponse` containing the status, error message (if
+      applicable), and any other relevant information.
+    """
+    raise NotImplementedError('This simulator does not support save_state()')
 
   @abc.abstractmethod
   def get_screenshot(self) -> np.ndarray:

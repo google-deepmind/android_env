@@ -21,6 +21,7 @@ from absl.testing import absltest
 from android_env import environment
 from android_env.components import coordinator as coordinator_lib
 from android_env.proto import adb_pb2
+from android_env.proto import state_pb2
 from android_env.proto import task_pb2
 import dm_env
 import numpy as np
@@ -212,6 +213,30 @@ class AndroidEnvTest(absltest.TestCase):
 
     self.assertEqual(response, expected_response)
     coordinator.execute_adb_call.assert_called_once_with(call)
+
+  def test_load_state(self):
+    coordinator = _create_mock_coordinator()
+    env = environment.AndroidEnv(coordinator)
+    expected_response = state_pb2.LoadStateResponse(
+        status=state_pb2.LoadStateResponse.Status.OK
+    )
+    request = state_pb2.LoadStateRequest(args={'foo': 'bar'})
+    coordinator.load_state.return_value = expected_response
+    response = env.load_state(request)
+    self.assertEqual(response, expected_response)
+    coordinator.load_state.assert_called_once_with(request)
+
+  def test_save_state(self):
+    coordinator = _create_mock_coordinator()
+    env = environment.AndroidEnv(coordinator)
+    expected_response = state_pb2.SaveStateResponse(
+        status=state_pb2.SaveStateResponse.Status.OK
+    )
+    request = state_pb2.SaveStateRequest(args={'foo': 'bar'})
+    coordinator.save_state.return_value = expected_response
+    response = env.save_state(request)
+    self.assertEqual(response, expected_response)
+    coordinator.save_state.assert_called_once_with(request)
 
   def test_update_task(self):
     coordinator = _create_mock_coordinator()

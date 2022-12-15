@@ -25,12 +25,14 @@ from android_env.components import adb_call_parser
 from android_env.components import adb_controller
 from android_env.components.simulators.emulator import emulator_launcher
 from android_env.components.simulators.emulator import emulator_simulator
+from android_env.proto import state_pb2
 import grpc
 from PIL import Image
 import portpicker
 
 from android_env.proto import emulator_controller_pb2
 from android_env.proto import emulator_controller_pb2_grpc
+from android_env.proto import snapshot_service_pb2
 
 
 class EmulatorSimulatorTest(absltest.TestCase):
@@ -283,6 +285,100 @@ class EmulatorSimulatorTest(absltest.TestCase):
     # The screenshot should have the same screen dimensions as reported by ADB
     # and it should have 3 channels (RGB).
     self.assertEqual(screenshot.shape, (1234, 5678, 3))
+
+  def test_load_state(self):
+    tmp_dir = absltest.get_default_test_tmpdir()
+    simulator = emulator_simulator.EmulatorSimulator(
+        tmp_dir=tmp_dir,
+        emulator_launcher_args={'grpc_port': 1234},
+        adb_controller_args={
+            'adb_path': '/my/adb',
+            'adb_server_port': 5037,
+        },
+    )
+
+    # The simulator should launch and not crash.
+    simulator.launch()
+
+    with mock.patch.object(
+        simulator, '_snapshot_stub', create_autospec=True
+    ) as mock_snapshot_stub:
+      snapshot_list = snapshot_service_pb2.SnapshotList()
+      snapshot_list.snapshots.add(snapshot_id='snapshot_name_foo')
+      snapshot_list.snapshots.add(snapshot_id='snapshot_name_bar')
+      mock_snapshot_stub.ListSnapshots.return_value = snapshot_list
+      mock_snapshot_stub.LoadSnapshot.return_value = (
+          snapshot_service_pb2.SnapshotPackage(success=True)
+      )
+      load_response = simulator.load_state(
+          request=state_pb2.LoadStateRequest(
+              args={'snapshot_name': 'snapshot_name_foo'}
+          )
+      )
+      self.assertEqual(
+          load_response.status, state_pb2.LoadStateResponse.Status.OK
+      )
+      load_response = simulator.load_state(
+          request=state_pb2.LoadStateRequest(
+              args={'snapshot_name': 'snapshot_name_baz'}
+          )
+      )
+      self.assertEqual(
+          load_response.status, state_pb2.LoadStateResponse.Status.NOT_FOUND
+      )
+      mock_snapshot_stub.LoadSnapshot.return_value = (
+          snapshot_service_pb2.SnapshotPackage(success=False, err=b'error')
+      )
+      load_response = simulator.load_state(
+          request=state_pb2.LoadStateRequest(
+              args={'snapshot_name': 'snapshot_name_bar'}
+          )
+      )
+      self.assertEqual(
+          load_response.status, state_pb2.LoadStateResponse.Status.ERROR
+      )
+      self.assertEqual(load_response.error_message, 'error')
+
+  def test_save_state(self):
+    tmp_dir = absltest.get_default_test_tmpdir()
+    simulator = emulator_simulator.EmulatorSimulator(
+        tmp_dir=tmp_dir,
+        emulator_launcher_args={'grpc_port': 1234},
+        adb_controller_args={
+            'adb_path': '/my/adb',
+            'adb_server_port': 5037,
+        },
+    )
+
+    # The simulator should launch and not crash.
+    simulator.launch()
+
+    with mock.patch.object(
+        simulator, '_snapshot_stub', create_autospec=True
+    ) as mock_snapshot_stub:
+      mock_snapshot_stub.SaveSnapshot.return_value = (
+          snapshot_service_pb2.SnapshotPackage(success=True)
+      )
+      save_response = simulator.save_state(
+          request=state_pb2.SaveStateRequest(
+              args={'snapshot_name': 'snapshot_name_foo'}
+          )
+      )
+      self.assertEqual(
+          save_response.status, state_pb2.SaveStateResponse.Status.OK
+      )
+      mock_snapshot_stub.SaveSnapshot.return_value = (
+          snapshot_service_pb2.SnapshotPackage(success=False, err=b'error')
+      )
+      save_response = simulator.save_state(
+          request=state_pb2.SaveStateRequest(
+              args={'snapshot_name': 'snapshot_name_bar'}
+          )
+      )
+      self.assertEqual(
+          save_response.status, state_pb2.SaveStateResponse.Status.ERROR
+      )
+      self.assertEqual(save_response.error_message, 'error')
 
   def test_send_touch(self):
     tmp_dir = absltest.get_default_test_tmpdir()

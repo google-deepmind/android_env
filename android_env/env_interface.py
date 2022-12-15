@@ -23,6 +23,7 @@ import abc
 from typing import Any, Dict
 
 from android_env.proto import adb_pb2
+from android_env.proto import state_pb2
 from android_env.proto import task_pb2
 import dm_env
 import numpy as np
@@ -48,6 +49,36 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
   @abc.abstractmethod
   def step(self, action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
     """Executes `action` and returns a `TimeStep`."""
+
+  def load_state(
+      self, request: state_pb2.LoadStateRequest
+  ) -> state_pb2.LoadStateResponse:
+    """Loads a state.
+
+    Args:
+      request: A `LoadStateRequest` containing any parameters necessary to
+        specify how/what state to load.
+
+    Returns:
+      A `LoadStateResponse` containing the status, error message (if
+      applicable), and any other relevant information.
+    """
+    raise NotImplementedError('This environment does not support loading state')
+
+  def save_state(
+      self, request: state_pb2.SaveStateRequest
+  ) -> state_pb2.SaveStateResponse:
+    """Saves a state.
+
+    Args:
+      request: A `SaveStateRequest` containing any parameters necessary to
+        specify how/what state to save.
+
+    Returns:
+      A `SaveStateResponse` containing the status, error message (if
+      applicable), and any other relevant information.
+    """
+    raise NotImplementedError('This environment does not support saving state')
 
   @abc.abstractmethod
   def close(self) -> None:

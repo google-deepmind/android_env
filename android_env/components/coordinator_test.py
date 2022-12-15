@@ -28,6 +28,7 @@ from android_env.components import errors
 from android_env.components import task_manager
 from android_env.components.simulators import base_simulator
 from android_env.proto import adb_pb2
+from android_env.proto import state_pb2
 from android_env.proto import task_pb2
 import dm_env
 import numpy as np
@@ -474,6 +475,26 @@ class CoordinatorTest(parameterized.TestCase):
                 name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.GLOBAL,
                 put=adb_pb2.AdbRequest.SettingsRequest.Put(
                     key='policy_control', value=expected_value))))
+
+  def test_load_state(self):
+    expected_response = state_pb2.LoadStateResponse(
+        status=state_pb2.LoadStateResponse.Status.OK
+    )
+    request = state_pb2.LoadStateRequest(args={'foo': 'bar'})
+    self._simulator.load_state.return_value = expected_response
+    response = self._coordinator.load_state(request)
+    self.assertEqual(response, expected_response)
+    self._simulator.load_state.assert_called_once_with(request)
+
+  def test_save_state(self):
+    expected_response = state_pb2.SaveStateResponse(
+        status=state_pb2.SaveStateResponse.Status.OK
+    )
+    request = state_pb2.SaveStateRequest(args={'foo': 'bar'})
+    self._simulator.save_state.return_value = expected_response
+    response = self._coordinator.save_state(request)
+    self.assertEqual(response, expected_response)
+    self._simulator.save_state.assert_called_once_with(request)
 
   @mock.patch.object(time, 'sleep', autospec=True)
   def test_update_task_succeeds(self, unused_mock_sleep):
