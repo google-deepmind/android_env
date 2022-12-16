@@ -482,9 +482,13 @@ class CoordinatorTest(parameterized.TestCase):
     )
     request = state_pb2.LoadStateRequest(args={'foo': 'bar'})
     self._simulator.load_state.return_value = expected_response
+    stop_call_count = self._task_manager.stop.call_count
+    start_call_count = self._task_manager.start.call_count
     response = self._coordinator.load_state(request)
     self.assertEqual(response, expected_response)
     self._simulator.load_state.assert_called_once_with(request)
+    self.assertEqual(self._task_manager.stop.call_count, stop_call_count + 1)
+    self.assertEqual(self._task_manager.start.call_count, start_call_count + 1)
 
   def test_save_state(self):
     expected_response = state_pb2.SaveStateResponse(
@@ -499,13 +503,15 @@ class CoordinatorTest(parameterized.TestCase):
   @mock.patch.object(time, 'sleep', autospec=True)
   def test_update_task_succeeds(self, unused_mock_sleep):
     task = task_pb2.Task(id='my_task')
-    stop_call_count = self._task_manager.stop_task.call_count
+    stop_call_count = self._task_manager.stop.call_count
+    start_call_count = self._task_manager.start.call_count
     setup_call_count = self._task_manager.setup_task.call_count
     success = self._coordinator.update_task(task)
     self.assertEqual(1,
-                     self._task_manager.stop_task.call_count - stop_call_count)
+                     self._task_manager.stop.call_count - stop_call_count)
     self.assertEqual(
         1, self._task_manager.setup_task.call_count - setup_call_count)
+    self.assertEqual(1, self._task_manager.start.call_count - start_call_count)
     self._task_manager.update_task.assert_called_once_with(task)
     self.assertTrue(success)
     self._task_manager.stats.return_value = {}
@@ -515,13 +521,15 @@ class CoordinatorTest(parameterized.TestCase):
   def test_update_task_fails(self, unused_mock_sleep):
     task = task_pb2.Task(id='my_task')
     self._task_manager.setup_task.side_effect = errors.StepCommandError
-    stop_call_count = self._task_manager.stop_task.call_count
+    stop_call_count = self._task_manager.stop.call_count
+    start_call_count = self._task_manager.start.call_count
     setup_call_count = self._task_manager.setup_task.call_count
     success = self._coordinator.update_task(task)
     self.assertEqual(1,
-                     self._task_manager.stop_task.call_count - stop_call_count)
+                     self._task_manager.stop.call_count - stop_call_count)
     self.assertEqual(
         1, self._task_manager.setup_task.call_count - setup_call_count)
+    self.assertEqual( 1, self._task_manager.start.call_count - start_call_count)
     self._task_manager.update_task.assert_called_once_with(task)
     self.assertFalse(success)
     self._task_manager.stats.return_value = {}

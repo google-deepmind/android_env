@@ -63,7 +63,8 @@ class TaskManagerTest(absltest.TestCase):
     # Setting up the initial task so that the setup_step_interpreter
     # is properly initialized.
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
 
     self.assertEqual(init_task, task_mgr.task())
     self.assertEqual(0, task_mgr.stats()['task_updates'])
@@ -71,17 +72,26 @@ class TaskManagerTest(absltest.TestCase):
     self.assertEqual(new_task, task_mgr.task())
     self.assertEqual(1, task_mgr.stats()['task_updates'])
 
+  def test_start(self):
+    task_mgr = task_manager.TaskManager(task=task_pb2.Task())
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    self.assertIsNotNone(task_mgr._logcat_thread)
+    self.assertIsNotNone(task_mgr._dumpsys_thread)
+    self.assertIsNotNone(task_mgr._setup_step_interpreter)
+
   def test_setup_task(self):
     task_mgr = task_manager.TaskManager(task=task_pb2.Task())
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
-    self.assertIsNotNone(task_mgr._logcat_thread)
-    self.assertIsNotNone(task_mgr._setup_step_interpreter)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
+    self._setup_step_interpreter.interpret.assert_called_once()
 
   def test_step_count(self):
     task_mgr = task_manager.TaskManager(task=task_pb2.Task())
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
     task_mgr.rl_reset(observation={})
     self.assertEqual(task_mgr.stats()['episode_steps'], 0)
     task_mgr.rl_step(observation={})
@@ -109,7 +119,8 @@ class TaskManagerTest(absltest.TestCase):
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
@@ -144,7 +155,8 @@ class TaskManagerTest(absltest.TestCase):
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
@@ -174,7 +186,8 @@ class TaskManagerTest(absltest.TestCase):
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
@@ -207,7 +220,8 @@ class TaskManagerTest(absltest.TestCase):
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
 
     timestep = task_mgr.rl_step(
         observation={
@@ -256,7 +270,8 @@ class TaskManagerTest(absltest.TestCase):
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
 
     timestep = task_mgr.rl_step(
         observation={
@@ -313,7 +328,8 @@ class TaskManagerTest(absltest.TestCase):
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
 
     timestep = task_mgr.rl_step(
         observation={
@@ -347,7 +363,8 @@ class TaskManagerTest(absltest.TestCase):
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
@@ -377,7 +394,8 @@ class TaskManagerTest(absltest.TestCase):
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
@@ -401,7 +419,8 @@ class TaskManagerTest(absltest.TestCase):
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.setup_task(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),

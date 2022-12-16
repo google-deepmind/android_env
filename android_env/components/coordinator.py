@@ -220,7 +220,7 @@ class Coordinator():
             'Maximum number of restart attempts reached.') from latest_error
       logging.info('Simulator launch attempt %d of %d', num_tries, max_retries)
 
-      self._task_manager.stop_task()
+      self._task_manager.stop()
 
       # Launch the simulator.
       self._simulator.launch()
@@ -238,10 +238,12 @@ class Coordinator():
         continue
 
       # Start the task.
+      self._task_manager.start(
+          adb_call_parser_factory=self._create_adb_call_parser,
+          log_stream=self._simulator.create_log_stream(),
+      )
       try:
-        self._task_manager.setup_task(
-            adb_call_parser_factory=self._create_adb_call_parser,
-            log_stream=self._simulator.create_log_stream())
+        self._task_manager.setup_task()
       except errors.StepCommandError as error:
         logging.exception('Failed to set up the task. Restarting simulator.')
         self._stats['relaunch_count_setup_steps'] += 1
@@ -309,13 +311,15 @@ class Coordinator():
     Returns:
       A bool indicating the success of the task setup.
     """
-    self._task_manager.stop_task()
+    self._task_manager.stop()
     self._task_manager.update_task(task)
 
+    self._task_manager.start(
+        adb_call_parser_factory=self._create_adb_call_parser,
+        log_stream=self._simulator.create_log_stream(),
+    )
     try:
-      self._task_manager.setup_task(
-          adb_call_parser_factory=self._create_adb_call_parser,
-          log_stream=self._simulator.create_log_stream())
+      self._task_manager.setup_task()
       return True
     except errors.StepCommandError:
       logging.error('Failed to set up the task.')
@@ -495,7 +499,13 @@ class Coordinator():
       A `LoadStateResponse` containing the status, error message (if
       applicable), and any other relevant information.
     """
-    return self._simulator.load_state(request)
+    self._task_manager.stop()
+    response = self._simulator.load_state(request)
+    self._task_manager.start(
+        adb_call_parser_factory=self._create_adb_call_parser,
+        log_stream=self._simulator.create_log_stream(),
+    )
+    return response
 
   def save_state(
       self, request: state_pb2.SaveStateRequest
@@ -519,7 +529,7 @@ class Coordinator():
       self._interaction_thread.join()
 
     if hasattr(self, '_task_manager'):
-      self._task_manager.stop_task()
+      self._task_manager.stop()
     if hasattr(self, '_simulator'):
       self._simulator.close()
 

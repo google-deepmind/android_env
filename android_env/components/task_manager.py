@@ -109,21 +109,24 @@ class TaskManager():
       output.update(self._setup_step_interpreter.stats())
     return output
 
-  def setup_task(
+  def setup_task(self) -> None:
+    """Performs one-off task setup.."""
+    self._setup_step_interpreter.interpret(self._task.setup_steps)
+
+  def stop(self) -> None:
+    """Suspends task processing."""
+    self._stop_logcat_thread()
+
+  def start(
       self,
       adb_call_parser_factory: Callable[[], adb_call_parser_lib.AdbCallParser],
       log_stream: log_stream_lib.LogStream) -> None:
-    """Performs one-off task setup.."""
+    """Starts task processing."""
 
     self._start_logcat_thread(log_stream=log_stream)
+    self._logcat_thread.resume()
     self._start_dumpsys_thread(adb_call_parser_factory())
     self._start_setup_step_interpreter(adb_call_parser_factory())
-    self._setup_step_interpreter.interpret(self._task.setup_steps)
-
-  def stop_task(self) -> None:
-    """Suspends task processing."""
-
-    self._stop_logcat_thread()
 
   def reset_task(self) -> None:
     """Resets a task for a new run."""
