@@ -103,7 +103,7 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
     timestep = self._env.step(self._process_action(action))
     return self._process_timestep(timestep)
 
-  def observation_spec(self) -> Union[specs.Array, Dict[str, specs.Array]]:
+  def observation_spec(self) -> Union[specs.Array, Dict[str, specs.Array]]:  # pytype: disable=signature-mismatch  # overriding-return-type-checks
     if self._flat_observations:
       pixels_spec = self._env.observation_spec()['pixels']
       if not self._keep_action_layer:
@@ -112,7 +112,7 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
     else:
       return self._env.observation_spec()
 
-  def action_spec(self) -> Union[specs.BoundedArray, Dict[str, specs.Array]]:
+  def action_spec(self) -> Union[specs.BoundedArray, Dict[str, specs.Array]]:  # pytype: disable=signature-mismatch  # overriding-return-type-checks
     if self._flat_actions:
       return self._env.action_spec()[self._action_name]
     else:
