@@ -51,7 +51,6 @@ class AdbCallParser:
         'tap': self._tap,
         'press_button': self._press_button,
         'start_screen_pinning': self._start_screen_pinning,
-        'start_intent': self._start_intent,
         'send_broadcast': self._send_broadcast,
         'uninstall_package': self._handle_uninstall_package,
         'get_current_activity': self._get_current_activity,
@@ -217,36 +216,6 @@ class AdbCallParser:
     response, _ = self._execute_command(
         ['shell', 'am', 'task', 'lock',
          str(current_task_id)], timeout=timeout)
-
-    return response
-
-  def _start_intent(self,
-                    request: adb_pb2.AdbRequest,
-                    timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
-    """Starts an intent.
-
-    Args:
-      request: The request with information on what intent to issue.
-      timeout: Optional time limit in seconds.
-
-    Returns:
-      An AdbResponse.
-    """
-
-    start_intent = request.start_intent
-    response = adb_pb2.AdbResponse(status=adb_pb2.AdbResponse.Status.OK)
-    if (not start_intent.data_uri or not start_intent.action or
-        not start_intent.package_name):
-      response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-      response.error_message = (
-          '`start_intent.{data_uri, action, package_name}` cannot be empty.')
-      return response
-
-    response, _ = self._execute_command([
-        'shell', 'am', 'start', '-a', start_intent.action, '-d',
-        start_intent.data_uri, start_intent.package_name
-    ],
-                                        timeout=timeout)
 
     return response
 

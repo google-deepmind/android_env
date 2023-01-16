@@ -309,59 +309,6 @@ class AdbCallParserTest(parameterized.TestCase):
         mock.call(['shell', 'am', 'task', 'lock', '12345'], None),
     ])
 
-  def test_start_intent_empty_data_uri(self):
-    adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=absltest.get_default_test_tmpdir())
-    request = adb_pb2.AdbRequest()
-    request.start_intent.action = 'BEST_ACTION'
-    request.start_intent.package_name = 'my.project'
-    response = parser.parse(request)
-    self.assertEqual(response.status,
-                     adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)
-    self.assertNotEmpty(response.error_message)
-
-  def test_start_intent_empty_action(self):
-    adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=absltest.get_default_test_tmpdir())
-    request = adb_pb2.AdbRequest()
-    request.start_intent.data_uri = '{"some": 123}'
-    request.start_intent.package_name = 'my.project'
-    response = parser.parse(request)
-    self.assertEqual(response.status,
-                     adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)
-    self.assertNotEmpty(response.error_message)
-
-  def test_start_intent_empty_package_name(self):
-    adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=absltest.get_default_test_tmpdir())
-    request = adb_pb2.AdbRequest()
-    request.start_intent.data_uri = '{"some": 123}'
-    request.start_intent.action = 'BEST_ACTION'
-    response = parser.parse(request)
-    self.assertEqual(response.status,
-                     adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)
-    self.assertNotEmpty(response.error_message)
-
-  def test_start_intent_successful(self):
-    adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=absltest.get_default_test_tmpdir())
-    request = adb_pb2.AdbRequest()
-    request.start_intent.data_uri = '{"some": 123}'
-    request.start_intent.action = 'BEST_ACTION'
-    request.start_intent.package_name = 'my.project'
-    response = parser.parse(request)
-    self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
-    self.assertEmpty(response.error_message)
-    adb.execute_command.assert_called_once_with([
-        'shell', 'am', 'start', '-a', 'BEST_ACTION', '-d', '{"some": 123}',
-        'my.project'
-    ],
-                                                timeout=None)
-
   def test_send_broadcast_empty_action(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(

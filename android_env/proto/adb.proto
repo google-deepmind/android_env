@@ -42,12 +42,6 @@ message AdbRequest {
     bool force_stop = 3;
   }
 
-  message StartIntent {
-    string data_uri = 1;
-    string action = 2;
-    string package_name = 3;
-  }
-
   message SendBroadcast {
     // Action to send during the broadcast event.
     string action = 1;
@@ -287,7 +281,6 @@ message AdbRequest {
     Tap tap = 6;
     PressButton press_button = 7;
     StartScreenPinning start_screen_pinning = 10;
-    StartIntent start_intent = 15;
     UninstallPackage uninstall_package = 16;
     GetCurrentActivity get_current_activity = 17;
     GetOrientationRequest get_orientation = 24;
