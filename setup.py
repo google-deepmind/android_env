@@ -32,8 +32,11 @@ _ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Tuple of proto message definitions to build Python bindings for. Paths must
 # be relative to root directory.
 _ANDROID_ENV_PROTOS = (
-    'android_env/proto/emulator_controller.proto',
     'android_env/proto/adb.proto',
+    'android_env/proto/emulator_controller.proto',
+    'android_env/proto/snapshot.proto',
+    'android_env/proto/snapshot_service.proto',
+    'android_env/proto/state.proto',
     'android_env/proto/task.proto',
 )
 
