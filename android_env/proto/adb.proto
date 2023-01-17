@@ -32,6 +32,7 @@ message AdbRequest {
 
   message StartActivity {
     string full_activity = 1;
+    // See https://developer.android.com/studio/command-line/adb#IntentSpec.
     repeated string extra_args = 2;
     // Whether to stop the current app before starting the activity.
     // Notice that if this option is `true`, the activity probably needs the
@@ -40,11 +41,6 @@ message AdbRequest {
     // info on `android:launchMode` at
     // https://developer.android.com/guide/topics/manifest/activity-element.
     bool force_stop = 3;
-  }
-
-  message SendBroadcast {
-    // Action to send during the broadcast event.
-    string action = 1;
   }
 
   message UninstallPackage {
@@ -291,7 +287,6 @@ message AdbRequest {
     GenericRequest generic = 22;
     PackageManagerRequest package_manager = 23;
     DumpsysRequest dumpsys = 26;
-    SendBroadcast send_broadcast = 25;
   }
 
   // Optional (soft) deadline in seconds for completing this command.
