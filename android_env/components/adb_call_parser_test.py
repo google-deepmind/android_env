@@ -309,6 +309,27 @@ class AdbCallParserTest(parameterized.TestCase):
         mock.call(['shell', 'am', 'task', 'lock', '12345'], None),
     ])
 
+  def test_send_broadcast_empty_action(self):
+    adb = mock.create_autospec(adb_controller.AdbController)
+    parser = adb_call_parser.AdbCallParser(
+        adb, tmp_dir=absltest.get_default_test_tmpdir())
+    request = adb_pb2.AdbRequest(
+        send_broadcast=adb_pb2.AdbRequest.SendBroadcast())
+    response = parser.parse(request)
+    self.assertEqual(response.status,
+                     adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)
+    self.assertNotEmpty(response.error_message)
+
+  def test_send_broadcast_successful(self):
+    adb = mock.create_autospec(adb_controller.AdbController)
+    parser = adb_call_parser.AdbCallParser(
+        adb, tmp_dir=absltest.get_default_test_tmpdir())
+    request = adb_pb2.AdbRequest()
+    request.send_broadcast.action = 'SOME-ACTION'
+    response = parser.parse(request)
+    self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
+    self.assertEmpty(response.error_message)
+
   def test_uninstall_package_empty_package_name(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(
