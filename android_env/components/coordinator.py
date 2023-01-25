@@ -37,7 +37,7 @@ import dm_env
 import numpy as np
 
 
-class Coordinator():
+class Coordinator:
   """Handles interaction between internal components of AndroidEnv."""
 
   def __init__(

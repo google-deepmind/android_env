@@ -25,7 +25,7 @@ from android_env.components import logcat_thread
 from android_env.proto import task_pb2
 
 
-class FakeStream():
+class FakeStream:
   """This class simulates the logs coming from ADB."""
 
   def __init__(self):

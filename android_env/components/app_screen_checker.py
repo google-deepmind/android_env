@@ -28,7 +28,7 @@ from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
 
 
-class _DumpsysNode():
+class _DumpsysNode:
   """A node in a dumpsys tree."""
 
   def __init__(self, data: Optional[str] = None):
@@ -171,7 +171,7 @@ def matches_path(dumpsys_activity_output: str,
   return True
 
 
-class AppScreenChecker():
+class AppScreenChecker:
   """Checks that the current app screen matches an expected screen."""
 
   class Outcome(enum.IntEnum):

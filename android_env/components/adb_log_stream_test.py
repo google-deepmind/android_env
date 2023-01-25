@@ -22,7 +22,7 @@ from absl.testing import absltest
 from android_env.components import adb_log_stream
 
 
-class FakeAdbSubprocess():
+class FakeAdbSubprocess:
 
   @property
   def stdout(self):

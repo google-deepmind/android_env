@@ -24,7 +24,7 @@ from absl import logging
 from android_env.components import errors
 
 
-class AdbController():
+class AdbController:
   """Manages communication with adb."""
 
   def __init__(self,

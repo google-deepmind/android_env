@@ -27,7 +27,7 @@ from android_env.components.simulators import base_simulator
 import numpy as np
 
 
-class FakeStream():
+class FakeStream:
   """This class simulates the logs coming from ADB."""
 
   def __init__(self):

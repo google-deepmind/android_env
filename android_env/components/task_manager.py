@@ -35,7 +35,7 @@ import dm_env
 import numpy as np
 
 
-class TaskManager():
+class TaskManager:
   """Handles all events and information related to the task."""
 
   def __init__(

@@ -27,7 +27,7 @@ from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
 
 
-class SetupStepInterpreter():
+class SetupStepInterpreter:
   """An interpreter for SetupSteps."""
 
   def __init__(self, adb_call_parser: adb_call_parser_lib.AdbCallParser):
