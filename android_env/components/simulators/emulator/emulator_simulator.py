@@ -84,14 +84,14 @@ def _reconnect_on_grpc_error(func):
 
   def wrapper(*args, **kwargs):
     try:
-      return func(*args, **kwargs)
+      return func(*args, **kwargs)  # pytype: disable=missing-parameter  # always-use-return-annotations
     except grpc.RpcError:
       logging.exception('RpcError caught. Reconnecting to emulator...')
       emu = args[0]  # The first arg of the function is "self"
       emu._emulator_stub, emu._snapshot_stub = emu._connect_to_emulator(  # pylint: disable=protected-access
           emu._grpc_port  # pylint: disable=protected-access
       )
-      return func(*args, **kwargs)
+      return func(*args, **kwargs)  # pytype: disable=missing-parameter  # always-use-return-annotations
 
   return wrapper
 
