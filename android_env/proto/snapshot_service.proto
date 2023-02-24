@@ -39,7 +39,6 @@ syntax = "proto3";
 
 package android.emulation.control;
 
-import "google/protobuf/empty.proto";
 import "android_env/proto/snapshot.proto";
 
 option java_multiple_files = true;
