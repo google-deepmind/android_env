@@ -54,6 +54,13 @@ class AdbController:
     if 'ANDROID_ADB_SERVER_PORT' in os.environ:
       del os.environ['ANDROID_ADB_SERVER_PORT']
 
+    # Explicitly expand the $HOME environment variable.
+    self._os_env_vars = dict(os.environ).copy()
+    self._os_env_vars.update(
+        {'HOME': os.path.expandvars(self._os_env_vars.get('HOME'))}
+    )
+    logging.info('self._os_env_vars: %r', self._os_env_vars)
+
   def command_prefix(self, include_device_name: bool = True) -> List[str]:
     """The command for instantiating an adb client to this server."""
     command_prefix = [self._adb_path, '-P', self._adb_server_port]
@@ -120,7 +127,11 @@ class AdbController:
       try:
         logging.info('Executing ADB command: [%s]', command_str)
         cmd_output = subprocess.check_output(
-            command, stderr=subprocess.STDOUT, timeout=timeout)
+            command,
+            stderr=subprocess.STDOUT,
+            timeout=timeout,
+            env=self._os_env_vars,
+        )
         logging.debug('ADB command output: %s', cmd_output)
         return cmd_output
       except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
