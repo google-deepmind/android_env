@@ -67,13 +67,14 @@ class EmulatorLauncher:
         option is only available for emulator version > 31.3.9 (June 2022).
     """
 
-    self._adb_path = adb_path
+    self._adb_path = os.path.expandvars(adb_path)
     self._adb_port = adb_port
     self._adb_server_port = adb_server_port
+    self._avd_package_path = os.path.expandvars(avd_package_path)
     self._emulator_console_port = emulator_console_port
     self._grpc_port = grpc_port
-    self._emulator_path = emulator_path
-    self._android_sdk_root = android_sdk_root
+    self._emulator_path = os.path.expandvars(emulator_path)
+    self._android_sdk_root = os.path.expandvars(android_sdk_root)
     self._avd_name = avd_name
     self._android_avd_home = android_avd_home
     self._run_headless = run_headless

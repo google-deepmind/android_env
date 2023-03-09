@@ -42,7 +42,7 @@ class AdbController:
     """
 
     self._device_name = device_name
-    self._adb_path = adb_path
+    self._adb_path = os.path.expandvars(adb_path)
     self._adb_server_port = str(adb_server_port)
     self._default_timeout = default_timeout
     logging.info('adb_path: %r', self._adb_path)
