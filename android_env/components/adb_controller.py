@@ -57,7 +57,7 @@ class AdbController:
     # Explicitly expand the $HOME environment variable.
     self._os_env_vars = dict(os.environ).copy()
     self._os_env_vars.update(
-        {'HOME': os.path.expandvars(self._os_env_vars.get('HOME'))}
+        {'HOME': os.path.expandvars(self._os_env_vars.get('HOME', ''))}
     )
     logging.info('self._os_env_vars: %r', self._os_env_vars)
 
