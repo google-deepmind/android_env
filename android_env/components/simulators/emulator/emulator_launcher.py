@@ -70,7 +70,6 @@ class EmulatorLauncher:
     self._adb_path = os.path.expandvars(adb_path)
     self._adb_port = adb_port
     self._adb_server_port = adb_server_port
-    self._avd_package_path = os.path.expandvars(avd_package_path)
     self._emulator_console_port = emulator_console_port
     self._grpc_port = grpc_port
     self._emulator_path = os.path.expandvars(emulator_path)
