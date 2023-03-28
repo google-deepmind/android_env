@@ -425,7 +425,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
           f'Event type must be one of {event_types} but is {event_type}.')
 
     self._emulator_stub.sendKey(
-        emulator_controller_pb2.KeyboardEvent(
+        emulator_controller_pb2.KeyboardEvent(  # pytype: disable=wrong-arg-types  # numpy-scalars
             codeType=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
             eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType.Value(
                 event_type),

@@ -89,9 +89,9 @@ class FakeSimulatorTest(absltest.TestCase):
   def test_send_key(self):
     simulator = fake_simulator.FakeSimulator(screen_dimensions=(320, 480))
     simulator.launch()
-    simulator.send_key(123, 'keydown')
-    simulator.send_key(123, 'keyup')
-    simulator.send_key(123, 'keypress')
+    simulator.send_key(123, 'keydown')  # pytype: disable=wrong-arg-types  # numpy-scalars
+    simulator.send_key(123, 'keyup')  # pytype: disable=wrong-arg-types  # numpy-scalars
+    simulator.send_key(123, 'keypress')  # pytype: disable=wrong-arg-types  # numpy-scalars
     # No assertions, we just want to ensure that `send_key()` can be called
     # without crashing anything.
 
