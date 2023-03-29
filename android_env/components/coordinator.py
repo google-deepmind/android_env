@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2022 DeepMind Technologies Limited.
+# Copyright 2023 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -393,10 +393,10 @@ class Coordinator:
     else:
       pixels = self._simulator.get_screenshot()  # Sync mode.
 
-    return {  # pytype: disable=bad-return-type  # numpy-scalars
+    return {
         'pixels': pixels,
         'orientation': self._orientation,
-        'timedelta': np.int64(timestamp_delta),
+        'timedelta': np.array(timestamp_delta, dtype=np.int64),
     }
 
   def __del__(self):
@@ -421,11 +421,13 @@ class Coordinator:
         self._simulator.send_touch(prepared_action)
       # If the action is a key event, send a key event to the simulator.
       elif action['action_type'] == action_type_lib.ActionType.KEYDOWN:
-        self._simulator.send_key(action['keycode'], event_type='keydown')  # pytype: disable=wrong-arg-types  # numpy-scalars
+        self._simulator.send_key(
+            action['keycode'].item(0), event_type='keydown'
+        )
       elif action['action_type'] == action_type_lib.ActionType.KEYUP:
-        self._simulator.send_key(action['keycode'], event_type='keyup')  # pytype: disable=wrong-arg-types  # numpy-scalars
+        self._simulator.send_key(action['keycode'].item(0), event_type='keyup')
       elif action['action_type'] == action_type_lib.ActionType.KEYPRESS:
-        self._simulator.send_key(action['keycode'], event_type='keypress')  # pytype: disable=wrong-arg-types  # numpy-scalars
+        self._simulator.send_key(action['keycode'].item(0), event_type='keypress')
     except (socket.error, errors.SendActionError):
       logging.exception('Unable to execute action. Restarting simulator.')
       self._stats['relaunch_count_execute_action'] += 1

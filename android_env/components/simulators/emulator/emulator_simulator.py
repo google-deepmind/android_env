@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2022 DeepMind Technologies Limited.
+# Copyright 2023 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -425,12 +425,14 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
           f'Event type must be one of {event_types} but is {event_type}.')
 
     self._emulator_stub.sendKey(
-        emulator_controller_pb2.KeyboardEvent(  # pytype: disable=wrong-arg-types  # numpy-scalars
+        emulator_controller_pb2.KeyboardEvent(
             codeType=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
             eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType.Value(
-                event_type),
-            keyCode=np.int32(keycode),
-        ))
+                event_type
+            ),
+            keyCode=int(keycode),
+        )
+    )
 
   @_reconnect_on_grpc_error
   def get_screenshot(self) -> np.ndarray:
