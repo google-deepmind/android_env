@@ -136,21 +136,3 @@ def base_observation_spec(height: int, width: int) -> Dict[str, specs.Array]:
               minimum=0,
               maximum=1),
   }
-
-
-def base_task_extras_spec(task: task_pb2.Task) -> Dict[str, dm_env.specs.Array]:
-  """Task extras spec for AndroidEnv, as read from a task_pb2.Task."""
-
-  return {
-      spec.name: _convert_spec(spec)
-      for spec in task.extras_spec
-  }
-
-
-def _convert_spec(array_spec: task_pb2.ArraySpec) -> specs.Array:
-  """Converts ArraySpec proto to dm_env specs.Array."""
-
-  return specs.Array(
-      shape=array_spec.shape,
-      dtype=_PROTO_DTYPE_TO_NUMPY_DTYPE[array_spec.dtype],
-      name=array_spec.name)

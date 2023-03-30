@@ -42,16 +42,12 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
 
     logging.info('Action spec: %s', self.action_spec())
     logging.info('Observation spec: %s', self.observation_spec())
-    logging.info('Task extras spec: %s', self.task_extras_spec())
 
   def action_spec(self) -> Dict[str, dm_env.specs.Array]:
     return self._coordinator.action_spec()
 
   def observation_spec(self) -> Dict[str, dm_env.specs.Array]:
     return self._coordinator.observation_spec()
-
-  def task_extras_spec(self) -> Dict[str, dm_env.specs.Array]:
-    return self._coordinator.task_extras_spec()
 
   @property
   def raw_action(self):
@@ -147,11 +143,10 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
   def task_extras(self, latest_only: bool = True) -> Dict[str, np.ndarray]:
     """Returns latest task extras."""
 
-    task_extras = {}
-    for key, spec in self.task_extras_spec().items():
-      if key in self._latest_extras:
-        extra_values = self._latest_extras[key].astype(spec.dtype)
-        task_extras[key] = extra_values[-1] if latest_only else extra_values
+    task_extras = {}  # Build a copy to avoid reusing objects.
+    for k, spec in self._latest_extras.items():
+      extra_values = spec.astype(spec.dtype)
+      task_extras[k] = extra_values[-1] if latest_only else extra_values
     return task_extras
 
   def execute_adb_call(self, call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:

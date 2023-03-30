@@ -128,9 +128,6 @@ class Coordinator:
     return specs.base_observation_spec(
         height=self._screen_size[0], width=self._screen_size[1])
 
-  def task_extras_spec(self) -> Dict[str, dm_env.specs.Array]:
-    return specs.base_task_extras_spec(task=self._task_manager.task())
-
   def _update_screen_size(self) -> None:
     """Sets the screen size from a screenshot ignoring the color channel."""
     screenshot = self._simulator.get_screenshot()

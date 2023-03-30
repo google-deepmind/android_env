@@ -41,9 +41,6 @@ def _create_mock_coordinator() -> coordinator_lib.Coordinator:
       'timedelta': dm_env.specs.Array(shape=(), dtype=np.int64),
       'orientation': dm_env.specs.Array(shape=(4,), dtype=np.uint8),
   }
-  coordinator.task_extras_spec.return_value = {
-      'click': dm_env.specs.Array(shape=(), dtype=np.int64),
-  }
   return coordinator
 
 
@@ -79,12 +76,6 @@ class AndroidEnvTest(absltest.TestCase):
                           dm_env.specs.Array)
     self.assertEqual(env.observation_spec()['orientation'].shape, (4,))
 
-    # Check extras spec.
-    self.assertNotEmpty(env.task_extras_spec())
-    self.assertIn('click', env.task_extras_spec())
-    self.assertEqual(env.task_extras_spec()['click'].shape, ())
-    self.assertEqual(env.task_extras_spec()['click'].dtype, np.int64)
-
   def test_reset_and_step(self):
     coordinator = mock.create_autospec(coordinator_lib.Coordinator)
     coordinator.action_spec.return_value = {
@@ -98,9 +89,6 @@ class AndroidEnvTest(absltest.TestCase):
         'pixels': dm_env.specs.Array(shape=(123, 456, 3), dtype=np.uint8),
         'timedelta': dm_env.specs.Array(shape=(), dtype=np.int64),
         'orientation': dm_env.specs.Array(shape=(4,), dtype=np.uint8),
-    }
-    coordinator.task_extras_spec.return_value = {
-        'click': dm_env.specs.Array(shape=(1,), dtype=np.int64),
     }
     env = environment.AndroidEnv(coordinator)
     coordinator.rl_reset.return_value = dm_env.TimeStep(
