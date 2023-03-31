@@ -67,9 +67,6 @@ class BaseWrapper(env_interface.AndroidEnvInterface):
   def discount_spec(self) -> specs.Array:
     return self._env.discount_spec()
 
-  def task_extras_spec(self) -> Dict[str, specs.Array]:
-    return self._env.task_extras_spec()
-
   def _wrapper_stats(self) -> Dict[str, Any]:
     """Add wrapper specific logging here."""
     return {}

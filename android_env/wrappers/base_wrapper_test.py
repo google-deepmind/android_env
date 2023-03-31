@@ -59,11 +59,6 @@ class BaseWrapperTest(absltest.TestCase):
     self.assertEqual(fake_action_spec, wrapped_env.action_spec())
     base_env.action_spec.assert_called_once()
 
-    fake_task_extras_spec = 'fake_task_extras_spec'
-    base_env.task_extras_spec.return_value = fake_task_extras_spec
-    self.assertEqual(fake_task_extras_spec, wrapped_env.task_extras_spec())
-    base_env.task_extras_spec.assert_called_once()
-
     fake_raw_action = 'fake_raw_action'
     type(base_env).raw_action = mock.PropertyMock(return_value=fake_raw_action)
     self.assertEqual(fake_raw_action, wrapped_env.raw_action)
