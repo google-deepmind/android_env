@@ -90,11 +90,6 @@ information such as:
 
 Note that these are entirely optional and may not be available at all.
 
-Analogously to `env.observation_spec()` and `env.action_spec()`, AndroidEnv
-exposes `env.task_extras_spec()`, which will return a dictionary of
-`dm_env.specs.Arrays`, capturing the specs of different extra information
-provided by the given task.
-
 To request extras from the environment, you can call `env.task_extras()` after
 each `env.step()`, which will return a dictionary of all the extra observations
 observed during the previous step (or an empty dict is there's none available).

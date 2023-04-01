@@ -86,11 +86,6 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
 
   # Extensions provided by AndroidEnv.
 
-  def task_extras_spec(self) -> Dict[str, dm_env.specs.Array]:
-    """Returns the specification for extra info provided by tasks."""
-
-    return {}
-
   def task_extras(self, latest_only: bool = True) -> Dict[str, np.ndarray]:
     """Returns extra info provided by tasks."""
 
