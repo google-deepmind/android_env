@@ -20,7 +20,7 @@ extra methods that clients may use for extended functionality.
 """
 
 import abc
-from typing import Any, Dict
+from typing import Any
 
 from android_env.proto import adb_pb2
 from android_env.proto import state_pb2
@@ -35,11 +35,11 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
   # Methods required by dm_env.Environment.
 
   @abc.abstractmethod
-  def action_spec(self) -> Dict[str, dm_env.specs.Array]:
+  def action_spec(self) -> dict[str, dm_env.specs.Array]:
     """Returns the action specification."""
 
   @abc.abstractmethod
-  def observation_spec(self) -> Dict[str, dm_env.specs.Array]:
+  def observation_spec(self) -> dict[str, dm_env.specs.Array]:
     """Returns the observation specification."""
 
   @abc.abstractmethod
@@ -47,7 +47,7 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
     """Resets the current episode."""
 
   @abc.abstractmethod
-  def step(self, action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
+  def step(self, action: dict[str, np.ndarray]) -> dm_env.TimeStep:
     """Executes `action` and returns a `TimeStep`."""
 
   @abc.abstractmethod
@@ -56,7 +56,7 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
 
   # Extensions provided by AndroidEnv.
 
-  def task_extras(self, latest_only: bool = True) -> Dict[str, np.ndarray]:
+  def task_extras(self, latest_only: bool = True) -> dict[str, np.ndarray]:
     """Returns extra info provided by tasks."""
 
     return {}
@@ -69,7 +69,7 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
   def raw_observation(self):
     """Returns the latest observation."""
 
-  def stats(self) -> Dict[str, Any]:
+  def stats(self) -> dict[str, Any]:
     """Returns information generated inside the implementation."""
 
     return {}
