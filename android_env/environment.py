@@ -15,7 +15,7 @@
 
 """Android environment implementation."""
 
-from typing import Any, Dict
+from typing import Any
 
 from absl import logging
 from android_env import env_interface
@@ -43,22 +43,16 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
     logging.info('Action spec: %s', self.action_spec())
     logging.info('Observation spec: %s', self.observation_spec())
 
-  def action_spec(self) -> Dict[str, dm_env.specs.Array]:
+  def __del__(self) -> None:
+    self.close()
+
+  # Methods required by dm_env.Environment.
+
+  def action_spec(self) -> dict[str, dm_env.specs.Array]:
     return self._coordinator.action_spec()
 
-  def observation_spec(self) -> Dict[str, dm_env.specs.Array]:
+  def observation_spec(self) -> dict[str, dm_env.specs.Array]:
     return self._coordinator.observation_spec()
-
-  @property
-  def raw_action(self):
-    return self._latest_action.copy()
-
-  @property
-  def raw_observation(self):
-    return self._latest_observation.copy()
-
-  def stats(self) -> Dict[str, Any]:
-    return self._coordinator.stats()
 
   def reset(self) -> dm_env.TimeStep:
     """Resets the environment for a new RL episode."""
@@ -84,7 +78,7 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
 
     return timestep
 
-  def step(self, action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
+  def step(self, action: dict[str, np.ndarray]) -> dm_env.TimeStep:
     """Takes a step in the environment."""
 
     # Check if it's time to reset the episode.
@@ -109,6 +103,51 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
       logging.info('************* END OF EPISODE *************')
 
     return timestep
+
+  def close(self) -> None:
+    """Cleans up running processes, threads and local files."""
+    if not self._is_closed:
+      logging.info('Cleaning up AndroidEnv...')
+      if hasattr(self, '_coordinator'):
+        self._coordinator.close()
+      logging.info('Done cleaning up AndroidEnv.')
+      self._is_closed = True
+
+  # Extensions provided by AndroidEnv.
+
+  def task_extras(self, latest_only: bool = True) -> dict[str, np.ndarray]:
+    """Returns latest task extras."""
+
+    task_extras = {}  # Build a copy to avoid reusing objects.
+    for k, spec in self._latest_extras.items():
+      extra_values = spec.astype(spec.dtype)
+      task_extras[k] = extra_values[-1] if latest_only else extra_values
+    return task_extras
+
+  @property
+  def raw_action(self):
+    return self._latest_action.copy()
+
+  @property
+  def raw_observation(self):
+    return self._latest_observation.copy()
+
+  def stats(self) -> dict[str, Any]:
+    return self._coordinator.stats()
+
+  def execute_adb_call(self, call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
+    return self._coordinator.execute_adb_call(call)
+
+  def update_task(self, task: task_pb2.Task) -> bool:
+    """Replaces the current task with a new task.
+
+    Args:
+      task: A new task to replace the current one.
+
+    Returns:
+      A bool indicating the success of the task setup.
+    """
+    return self._coordinator.update_task(task)
 
   def load_state(
       self, request: state_pb2.LoadStateRequest
@@ -139,38 +178,3 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
       applicable), and any other relevant information.
     """
     return self._coordinator.save_state(request)
-
-  def task_extras(self, latest_only: bool = True) -> Dict[str, np.ndarray]:
-    """Returns latest task extras."""
-
-    task_extras = {}  # Build a copy to avoid reusing objects.
-    for k, spec in self._latest_extras.items():
-      extra_values = spec.astype(spec.dtype)
-      task_extras[k] = extra_values[-1] if latest_only else extra_values
-    return task_extras
-
-  def execute_adb_call(self, call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
-    return self._coordinator.execute_adb_call(call)
-
-  def update_task(self, task: task_pb2.Task) -> bool:
-    """Replaces the current task with a new task.
-
-    Args:
-      task: A new task to replace the current one.
-
-    Returns:
-      A bool indicating the success of the task setup.
-    """
-    return self._coordinator.update_task(task)
-
-  def close(self) -> None:
-    """Cleans up running processes, threads and local files."""
-    if not self._is_closed:
-      logging.info('Cleaning up AndroidEnv...')
-      if hasattr(self, '_coordinator'):
-        self._coordinator.close()
-      logging.info('Done cleaning up AndroidEnv.')
-      self._is_closed = True
-
-  def __del__(self) -> None:
-    self.close()
