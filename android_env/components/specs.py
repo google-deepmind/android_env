@@ -19,7 +19,6 @@ from typing import Dict
 
 from android_env.components import action_type
 from android_env.proto import task_pb2
-import dm_env
 from dm_env import specs
 import numpy as np
 
@@ -59,6 +58,8 @@ def base_action_spec(num_fingers: int = 1,
     touch_position: Position [x, y] of the touch action, where x, y are float
       values between 0.0 and 1.0 corresponding to the relative position on the
       screen. IGNORED when (action_type != ActionType.TOUCH).
+    keycode: code representing the desired key press in XKB format. See the
+      emulator_controller_pb2 for details.
     action_type_i: Action type for additional fingers (i>1).
     touch_position_i: Touch position for additional fingers (i>1).
   """
