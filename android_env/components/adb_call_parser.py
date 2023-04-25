@@ -20,7 +20,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Optional, Tuple
+from typing import Optional
 
 from absl import logging
 from android_env.components import adb_controller as adb_control
@@ -66,7 +66,7 @@ class AdbCallParser:
 
   def _execute_command(
       self, command_args: list[str], timeout: Optional[float]
-  ) -> Tuple[adb_pb2.AdbResponse, bytes]:
+  ) -> tuple[adb_pb2.AdbResponse, bytes]:
     """Executes the command, catches errors and populates the response status.
 
     Args:
@@ -74,7 +74,7 @@ class AdbCallParser:
       timeout: Timeout in seconds.
 
     Returns:
-      A Tuple of the AdbResponse with the status populated, and the output
+      A tuple of the AdbResponse with the status populated, and the output
       bytes from the command.
     """
     response = adb_pb2.AdbResponse(status=adb_pb2.AdbResponse.Status.OK)

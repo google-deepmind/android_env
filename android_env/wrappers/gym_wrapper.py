@@ -15,7 +15,7 @@
 
 """Wraps the AndroidEnv to expose an OpenAI Gym interface."""
 
-from typing import Any, Tuple
+from typing import Any
 
 from android_env.wrappers import base_wrapper
 import dm_env
@@ -87,7 +87,7 @@ class GymInterfaceWrapper(gym.Env):
     timestep = self._env.reset()
     return timestep.observation
 
-  def step(self, action: dict[str, int]) -> Tuple[Any, ...]:
+  def step(self, action: dict[str, int]) -> tuple[Any, ...]:
     """Take a step in the base environment."""
     timestep = self._env.step(action)
     observation = timestep.observation

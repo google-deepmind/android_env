@@ -18,7 +18,7 @@
 import random
 import threading
 import time
-from typing import Optional, Tuple
+from typing import Optional
 
 from absl import logging
 from android_env.components import adb_controller
@@ -107,7 +107,7 @@ class FakeSimulator(base_simulator.BaseSimulator):
   """FakeSimulator class."""
 
   def __init__(self,
-               screen_dimensions: Tuple[int, int] = (480, 320),
+               screen_dimensions: tuple[int, int] = (480, 320),
                **kwargs):
     """FakeSimulator class that can replace EmulatorSimulator in AndroidEnv.
 
@@ -135,7 +135,7 @@ class FakeSimulator(base_simulator.BaseSimulator):
   def _launch_impl(self) -> None:
     pass
 
-  def send_touch(self, touches: list[Tuple[int, int, bool, int]]) -> None:
+  def send_touch(self, touches: list[tuple[int, int, bool, int]]) -> None:
     del touches
 
   def send_key(self, keycode: np.int32, event_type: str) -> None:

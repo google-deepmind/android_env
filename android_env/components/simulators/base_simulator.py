@@ -16,7 +16,6 @@
 """A base class for talking to different types of Android simulators."""
 
 import abc
-from typing import Tuple
 
 from absl import logging
 from android_env.components import adb_controller
@@ -88,7 +87,7 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     """Platform specific launch implementation."""
 
   @abc.abstractmethod
-  def send_touch(self, touches: list[Tuple[int, int, bool, int]]) -> None:
+  def send_touch(self, touches: list[tuple[int, int, bool, int]]) -> None:
     """Sends a touch event to be executed on the simulator.
 
     Args:
