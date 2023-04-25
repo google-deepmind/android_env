@@ -15,7 +15,7 @@
 
 """Base class for AndroidEnv wrappers."""
 
-from typing import Any, Dict
+from typing import Any
 
 from absl import logging
 from android_env import env_interface
@@ -43,7 +43,7 @@ class BaseWrapper(env_interface.AndroidEnvInterface):
     action = self._process_action(action)
     return self._process_timestep(self._env.step(action))
 
-  def task_extras(self, latest_only: bool = True) -> Dict[str, np.ndarray]:
+  def task_extras(self, latest_only: bool = True) -> dict[str, np.ndarray]:
     return self._env.task_extras(latest_only=latest_only)
 
   def _reset_state(self):
@@ -55,10 +55,10 @@ class BaseWrapper(env_interface.AndroidEnvInterface):
   def _process_timestep(self, timestep: dm_env.TimeStep) -> dm_env.TimeStep:
     return timestep
 
-  def observation_spec(self) -> Dict[str, specs.Array]:
+  def observation_spec(self) -> dict[str, specs.Array]:
     return self._env.observation_spec()
 
-  def action_spec(self) -> Dict[str, specs.Array]:
+  def action_spec(self) -> dict[str, specs.Array]:
     return self._env.action_spec()
 
   def reward_spec(self) -> specs.Array:
@@ -67,11 +67,11 @@ class BaseWrapper(env_interface.AndroidEnvInterface):
   def discount_spec(self) -> specs.Array:
     return self._env.discount_spec()
 
-  def _wrapper_stats(self) -> Dict[str, Any]:
+  def _wrapper_stats(self) -> dict[str, Any]:
     """Add wrapper specific logging here."""
     return {}
 
-  def stats(self) -> Dict[str, Any]:
+  def stats(self) -> dict[str, Any]:
     info = self._env.stats()
     info.update(self._wrapper_stats())
     return info

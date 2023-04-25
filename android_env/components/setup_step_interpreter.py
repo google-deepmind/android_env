@@ -17,7 +17,7 @@
 
 import copy
 import time
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Optional, Sequence
 
 from absl import logging
 from android_env.components import adb_call_parser as adb_call_parser_lib
@@ -45,7 +45,7 @@ class SetupStepInterpreter:
         'total_time_waiting_for_app_screen': 0
     }
 
-  def stats(self) -> Dict[str, Any]:
+  def stats(self) -> dict[str, Any]:
     return copy.deepcopy(self._stats)
 
   def interpret(self, setup_steps: Sequence[task_pb2.SetupStep]) -> None:

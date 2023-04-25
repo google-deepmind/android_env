@@ -16,7 +16,7 @@
 """Loads an interactive session where a human acts on behalf of an agent."""
 
 import time
-from typing import Any, Dict
+from typing import Any
 
 from absl import app
 from absl import flags
@@ -48,8 +48,9 @@ flags.DEFINE_float('frame_rate', 1.0/30.0, 'Frame rate in seconds.')
 FLAGS = flags.FLAGS
 
 
-def _get_action_from_event(event: pygame.event.Event, screen: pygame.Surface,
-                           orientation: int) -> Dict[str, Any]:
+def _get_action_from_event(
+    event: pygame.event.Event, screen: pygame.Surface, orientation: int
+) -> dict[str, Any]:
   """Returns the current action by reading data from a pygame Event object."""
 
   act_type = action_type.ActionType.LIFT
@@ -64,8 +65,9 @@ def _get_action_from_event(event: pygame.event.Event, screen: pygame.Surface,
   }
 
 
-def _get_action_from_mouse(screen: pygame.Surface,
-                           orientation: int) -> Dict[str, Any]:
+def _get_action_from_mouse(
+    screen: pygame.Surface, orientation: int
+) -> dict[str, Any]:
   """Returns the current action by reading data from the mouse."""
 
   act_type = action_type.ActionType.LIFT

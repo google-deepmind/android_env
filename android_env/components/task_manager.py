@@ -21,7 +21,7 @@ import datetime
 import json
 import re
 import threading
-from typing import Any, Callable, Dict
+from typing import Any, Callable
 
 from absl import logging
 from android_env.components import adb_call_parser as adb_call_parser_lib
@@ -99,7 +99,7 @@ class TaskManager:
     self._stats['task_updates'] += 1
     self._task = task
 
-  def stats(self) -> Dict[str, Any]:
+  def stats(self) -> dict[str, Any]:
     """Returns a dictionary of stats.
 
     This method is expected to be called after setup_task() has been called.
@@ -149,7 +149,7 @@ class TaskManager:
           'episode_end': False,
       }
 
-  def rl_reset(self, observation: Dict[str, Any]) -> dm_env.TimeStep:
+  def rl_reset(self, observation: dict[str, Any]) -> dm_env.TimeStep:
     """Performs one RL step."""
 
     self._stats['episode_steps'] = 0
@@ -166,7 +166,7 @@ class TaskManager:
         discount=0.0,
         observation=observation)
 
-  def rl_step(self, observation: Dict[str, Any]) -> dm_env.TimeStep:
+  def rl_step(self, observation: dict[str, Any]) -> dm_env.TimeStep:
     """Performs one RL step."""
 
     self._stats['episode_steps'] += 1
@@ -187,7 +187,7 @@ class TaskManager:
     self._latest_values['reward'] = 0.0
     return reward
 
-  def _get_current_extras(self) -> Dict[str, Any]:
+  def _get_current_extras(self) -> dict[str, Any]:
     """Returns task extras accumulated since the last step."""
     extras = {}
     for name, values in self._latest_values['extra'].items():

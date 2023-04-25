@@ -17,7 +17,7 @@
 
 import os
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from absl import logging
 from android_env.components import adb_controller
@@ -41,7 +41,7 @@ from google.protobuf import empty_pb2
 _DEFAULT_SNAPSHOT_NAME = 'default_snapshot'
 
 
-def is_existing_emulator_provided(launcher_args: Dict[str, Any]) -> bool:
+def is_existing_emulator_provided(launcher_args: dict[str, Any]) -> bool:
   """Returns true if all necessary args were provided."""
   return bool(
       launcher_args.get('adb_port') and
@@ -107,14 +107,16 @@ class EmulatorCrashError(errors.SimulatorError):
 class EmulatorSimulator(base_simulator.BaseSimulator):
   """Controls an Android Emulator."""
 
-  def __init__(self,
-               emulator_launcher_args: Dict[str, Any],
-               adb_controller_args: Dict[str, Any],
-               tmp_dir: str = '/tmp/android_env/simulator',
-               logfile_path: Optional[str] = None,
-               launch_n_times_without_reboot: int = 1,
-               launch_n_times_without_reinstall: int = 2,
-               **kwargs):
+  def __init__(
+      self,
+      emulator_launcher_args: dict[str, Any],
+      adb_controller_args: dict[str, Any],
+      tmp_dir: str = '/tmp/android_env/simulator',
+      logfile_path: Optional[str] = None,
+      launch_n_times_without_reboot: int = 1,
+      launch_n_times_without_reinstall: int = 2,
+      **kwargs,
+  ):
     """Instantiates an EmulatorSimulator.
 
     Args:

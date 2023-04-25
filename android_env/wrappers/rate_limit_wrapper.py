@@ -17,7 +17,6 @@
 
 import enum
 import time
-from typing import Dict
 
 from android_env import env_interface
 from android_env.components import action_type
@@ -78,7 +77,7 @@ class RateLimitWrapper(base_wrapper.BaseWrapper):
     self._last_step_time = time.time()
     return timestep
 
-  def step(self, action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
+  def step(self, action: dict[str, np.ndarray]) -> dm_env.TimeStep:
     """Takes a step while maintaining a steady interaction rate."""
 
     # If max_wait is non-positive, the wrapper has no effect.

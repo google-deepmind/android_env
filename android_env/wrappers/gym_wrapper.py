@@ -15,7 +15,7 @@
 
 """Wraps the AndroidEnv to expose an OpenAI Gym interface."""
 
-from typing import Any, Dict, Tuple
+from typing import Any, Tuple
 
 from android_env.wrappers import base_wrapper
 import dm_env
@@ -44,7 +44,8 @@ class GymInterfaceWrapper(gym.Env):
 
     if isinstance(spec, dict):
       return spaces.Dict(
-          {name: self._spec_to_space(s) for name, s in spec.items()})
+          {name: self._spec_to_space(s) for name, s in spec.items()}
+      )
 
     if isinstance(spec, specs.DiscreteArray):
       return spaces.Box(
@@ -86,7 +87,7 @@ class GymInterfaceWrapper(gym.Env):
     timestep = self._env.reset()
     return timestep.observation
 
-  def step(self, action: Dict[str, int]) -> Tuple[Any, ...]:
+  def step(self, action: dict[str, int]) -> Tuple[Any, ...]:
     """Take a step in the base environment."""
     timestep = self._env.step(action)
     observation = timestep.observation

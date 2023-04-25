@@ -15,7 +15,7 @@
 
 """Wraps the AndroidEnv environment to provide tap actions of a given duration."""
 
-from typing import Dict, Sequence
+from typing import Sequence
 
 from android_env.components import action_type
 from android_env.wrappers import base_wrapper
@@ -46,9 +46,8 @@ class TapActionWrapper(base_wrapper.BaseWrapper):
     return logs
 
   def _process_action(
-      self, action: Dict[str, np.ndarray]
-  ) -> Sequence[Dict[str, np.ndarray]]:
-
+      self, action: dict[str, np.ndarray]
+  ) -> Sequence[dict[str, np.ndarray]]:
     if self._touch_only:
       assert action['action_type'] == 0
       touch_action = action.copy()
@@ -72,7 +71,7 @@ class TapActionWrapper(base_wrapper.BaseWrapper):
 
     return actions
 
-  def step(self, action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
+  def step(self, action: dict[str, np.ndarray]) -> dm_env.TimeStep:
     """Takes a step in the environment."""
     self._env_steps += self._num_frames + 1
     actions = self._process_action(action)
@@ -93,7 +92,7 @@ class TapActionWrapper(base_wrapper.BaseWrapper):
         discount=discount,
         observation=observation)
 
-  def action_spec(self) -> Dict[str, dm_env.specs.Array]:
+  def action_spec(self) -> dict[str, dm_env.specs.Array]:
     if self._touch_only:
       return {
           'action_type':

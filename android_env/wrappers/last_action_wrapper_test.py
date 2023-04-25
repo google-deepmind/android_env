@@ -15,7 +15,7 @@
 
 """Tests for android_env.wrappers.last_action_wrapper."""
 
-from typing import Any, Dict
+from typing import Any
 from unittest import mock
 
 from absl.testing import absltest

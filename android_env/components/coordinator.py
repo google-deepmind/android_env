@@ -20,7 +20,7 @@ import socket
 import tempfile
 import threading
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from absl import logging
 from android_env.components import action_type as action_type_lib
@@ -119,12 +119,12 @@ class Coordinator:
     logging.info('Starting the simulator...')
     self._launch_simulator()
 
-  def action_spec(self) -> Dict[str, dm_env.specs.Array]:
+  def action_spec(self) -> dict[str, dm_env.specs.Array]:
     return specs.base_action_spec(
         num_fingers=self._num_fingers,
         enable_key_events=self._enable_key_events)
 
-  def observation_spec(self) -> Dict[str, dm_env.specs.Array]:
+  def observation_spec(self) -> dict[str, dm_env.specs.Array]:
     return specs.base_observation_spec(
         height=self._screen_size[0], width=self._screen_size[1])
 
@@ -348,7 +348,7 @@ class Coordinator:
 
     return self._task_manager.rl_reset(simulator_signals)
 
-  def rl_step(self, agent_action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
+  def rl_step(self, agent_action: dict[str, np.ndarray]) -> dm_env.TimeStep:
     """Executes the selected action and returns a timestep.
 
     Args:
@@ -375,7 +375,7 @@ class Coordinator:
 
     return self._task_manager.rl_step(simulator_signals)
 
-  def _gather_simulator_signals(self) -> Dict[str, np.ndarray]:
+  def _gather_simulator_signals(self) -> dict[str, np.ndarray]:
     """Gathers data from various sources to assemble the RL observation."""
 
     # Get current timestamp and update the delta.
@@ -399,7 +399,7 @@ class Coordinator:
   def __del__(self):
     self.close()
 
-  def _send_action_to_simulator(self, action: Dict[str, np.ndarray]) -> None:
+  def _send_action_to_simulator(self, action: dict[str, np.ndarray]) -> None:
     """Sends the selected action to the simulator.
 
     The simulator will interpret the action as a touchscreen event and perform
@@ -431,7 +431,8 @@ class Coordinator:
       self._simulator_healthy = False
 
   def _prepare_touch_action(
-      self, action: Dict[str, np.ndarray]) -> List[Tuple[int, int, bool, int]]:
+      self, action: dict[str, np.ndarray]
+  ) -> List[Tuple[int, int, bool, int]]:
     """Turns an AndroidEnv action into values that the simulator can interpret.
 
     Converts float-valued 'touch_position' to integer coordinates corresponding
@@ -459,7 +460,8 @@ class Coordinator:
     return touch_events
 
   def _split_touch_action(
-      self, action: Dict[str, np.ndarray]) -> List[Dict[str, np.ndarray]]:
+      self, action: dict[str, np.ndarray]
+  ) -> List[dict[str, np.ndarray]]:
     """Splits a multitouch action into a list of single-touch actions."""
 
     single_touch_actions = [{
@@ -478,7 +480,7 @@ class Coordinator:
 
     return time.time() - self._latest_observation_time
 
-  def stats(self) -> Dict[str, Any]:
+  def stats(self) -> dict[str, Any]:
     """Returns various statistics."""
 
     output = copy.deepcopy(self._stats)

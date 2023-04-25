@@ -15,7 +15,7 @@
 
 """Wraps the AndroidEnv environment to rescale the observations."""
 
-from typing import Optional, Sequence, Dict
+from typing import Optional, Sequence
 
 from android_env.wrappers import base_wrapper
 import dm_env
@@ -90,7 +90,7 @@ class ImageRescaleWrapper(base_wrapper.BaseWrapper):
     timestep = self._env.step(action)
     return self._process_timestep(timestep)
 
-  def observation_spec(self) -> Dict[str, specs.Array]:
+  def observation_spec(self) -> dict[str, specs.Array]:
     parent_spec = self._env.observation_spec().copy()
     out_shape = np.multiply(parent_spec['pixels'].shape,
                             self._zoom_factors).astype(np.int32)

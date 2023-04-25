@@ -15,8 +15,6 @@
 
 """Base specs for AndroidEnv."""
 
-from typing import Dict
-
 from android_env.components import action_type
 from android_env.proto import task_pb2
 from dm_env import specs
@@ -44,8 +42,9 @@ _PROTO_DTYPE_TO_NUMPY_DTYPE = {
 }
 
 
-def base_action_spec(num_fingers: int = 1,
-                     enable_key_events: bool = False) -> Dict[str, specs.Array]:
+def base_action_spec(
+    num_fingers: int = 1, enable_key_events: bool = False
+) -> dict[str, specs.Array]:
   """Default action spec for AndroidEnv.
 
   Args:
@@ -100,7 +99,7 @@ def base_action_spec(num_fingers: int = 1,
   return action_spec
 
 
-def base_observation_spec(height: int, width: int) -> Dict[str, specs.Array]:
+def base_observation_spec(height: int, width: int) -> dict[str, specs.Array]:
   """Default observation spec for AndroidEnv.
 
   Args:

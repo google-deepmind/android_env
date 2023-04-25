@@ -15,8 +15,6 @@
 
 """Extends Android observation with the latest action taken."""
 
-from typing import Dict
-
 from android_env.components import action_type
 from android_env.components import utils
 from android_env.wrappers import base_wrapper
@@ -56,8 +54,8 @@ class LastActionWrapper(base_wrapper.BaseWrapper):
     return timestep._replace(observation=processed_observation)
 
   def _process_observation(
-      self, observation: Dict[str, np.ndarray]
-  ) -> Dict[str, np.ndarray]:
+      self, observation: dict[str, np.ndarray]
+  ) -> dict[str, np.ndarray]:
     """Extends observation with last_action data."""
     processed_observation = observation.copy()
     last_action_layer = self._get_last_action_layer(observation['pixels'])
@@ -92,7 +90,7 @@ class LastActionWrapper(base_wrapper.BaseWrapper):
     timestep = self._env.step(action)
     return self._process_timestep(timestep)
 
-  def observation_spec(self) -> Dict[str, specs.Array]:
+  def observation_spec(self) -> dict[str, specs.Array]:
     parent_spec = self._env.observation_spec().copy()
     shape = parent_spec['pixels'].shape
     if self._concat_to_pixels:

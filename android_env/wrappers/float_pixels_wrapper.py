@@ -15,8 +15,6 @@
 
 """Converts pixel observation to from int to float32 between 0.0 and 1.0."""
 
-from typing import Dict
-
 from android_env.components import utils
 from android_env.wrappers import base_wrapper
 import dm_env
@@ -34,8 +32,8 @@ class FloatPixelsWrapper(base_wrapper.BaseWrapper):
                                                       np.integer)
 
   def _process_observation(
-      self, observation: Dict[str, np.ndarray]
-  ) -> Dict[str, np.ndarray]:
+      self, observation: dict[str, np.ndarray]
+  ) -> dict[str, np.ndarray]:
     if self._should_convert_int_to_float:
       float_pixels = utils.convert_int_to_float(observation['pixels'],
                                                 self._input_spec, np.float32)
@@ -53,10 +51,10 @@ class FloatPixelsWrapper(base_wrapper.BaseWrapper):
   def reset(self) -> dm_env.TimeStep:
     return self._process_timestep(self._env.reset())
 
-  def step(self, action: Dict[str, np.ndarray]) -> dm_env.TimeStep:
+  def step(self, action: dict[str, np.ndarray]) -> dm_env.TimeStep:
     return self._process_timestep(self._env.step(action))
 
-  def observation_spec(self) -> Dict[str, specs.Array]:
+  def observation_spec(self) -> dict[str, specs.Array]:
     if self._should_convert_int_to_float:
       observation_spec = self._env.observation_spec()
       observation_spec['pixels'] = specs.BoundedArray(

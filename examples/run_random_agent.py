@@ -15,7 +15,6 @@
 
 """Example script demonstrating usage of AndroidEnv."""
 
-from typing import Dict
 from absl import app
 from absl import flags
 from absl import logging
@@ -57,7 +56,7 @@ def main(_):
 
     action_spec = env.action_spec()
 
-    def get_random_action() -> Dict[str, np.ndarray]:
+    def get_random_action() -> dict[str, np.ndarray]:
       """Returns a random AndroidEnv action."""
       action = {}
       for k, v in action_spec.items():

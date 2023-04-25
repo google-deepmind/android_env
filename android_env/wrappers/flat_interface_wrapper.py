@@ -15,7 +15,7 @@
 
 """Wraps the AndroidEnv environment to make its interface flat."""
 
-from typing import Union, Dict, Any
+from typing import Any, Union
 
 from android_env.wrappers import base_wrapper
 import dm_env
@@ -74,7 +74,7 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
     assert isinstance(base_action_spec, dict)
     assert isinstance(base_action_spec[self._action_name], specs.BoundedArray)
 
-  def _process_action(self, action: Union[int, np.ndarray, Dict[str, Any]]):
+  def _process_action(self, action: Union[int, np.ndarray, dict[str, Any]]):
     if self._flat_actions:
       return {self._action_name: action}
     else:
@@ -103,7 +103,7 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
     timestep = self._env.step(self._process_action(action))
     return self._process_timestep(timestep)
 
-  def observation_spec(self) -> Union[specs.Array, Dict[str, specs.Array]]:  # pytype: disable=signature-mismatch  # overriding-return-type-checks
+  def observation_spec(self) -> Union[specs.Array, dict[str, specs.Array]]:  # pytype: disable=signature-mismatch  # overriding-return-type-checks
     if self._flat_observations:
       pixels_spec = self._env.observation_spec()['pixels']
       if not self._keep_action_layer:
@@ -112,7 +112,7 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
     else:
       return self._env.observation_spec()
 
-  def action_spec(self) -> Union[specs.BoundedArray, Dict[str, specs.Array]]:  # pytype: disable=signature-mismatch  # overriding-return-type-checks
+  def action_spec(self) -> Union[specs.BoundedArray, dict[str, specs.Array]]:  # pytype: disable=signature-mismatch  # overriding-return-type-checks
     if self._flat_actions:
       return self._env.action_spec()[self._action_name]
     else:

@@ -15,7 +15,7 @@
 
 """Wraps the AndroidEnv environment to provide discrete actions."""
 
-from typing import Optional, Sequence, Dict
+from typing import Optional, Sequence
 
 from android_env.components import action_type
 from android_env.wrappers import base_wrapper
@@ -61,12 +61,12 @@ class DiscreteActionWrapper(base_wrapper.BaseWrapper):
     else:
       return np.product(self._action_grid) + self._num_action_types - 1
 
-  def step(self, action: Dict[str, int]) -> dm_env.TimeStep:
+  def step(self, action: dict[str, int]) -> dm_env.TimeStep:
     """Take a step in the base environment."""
 
     return self._env.step(self._process_action(action))
 
-  def _process_action(self, action: Dict[str, int]) -> Dict[str, np.ndarray]:
+  def _process_action(self, action: dict[str, int]) -> dict[str, np.ndarray]:
     """Transforms action so that it agrees with AndroidEnv's action spec."""
 
     return {
@@ -149,7 +149,7 @@ class DiscreteActionWrapper(base_wrapper.BaseWrapper):
 
     return [x_pos, y_pos]
 
-  def action_spec(self) -> Dict[str, specs.Array]:
+  def action_spec(self) -> dict[str, specs.Array]:
     """Action spec of the wrapped environment."""
 
     return {

@@ -15,7 +15,7 @@
 
 """Tests for android_env.wrappers.flat_interface_wrapper."""
 
-from typing import cast, Dict
+from typing import cast
 from unittest import mock
 
 from absl.testing import absltest
@@ -48,7 +48,7 @@ class FlatInterfaceWrapperTest(absltest.TestCase):
   def setUp(self):
     super().setUp()
     self.action_shape = (1,)
-    self.base_action_spec: Dict[str, specs.DiscreteArray] = {
+    self.base_action_spec: dict[str, specs.DiscreteArray] = {
         'action_id': specs.DiscreteArray(name='action_id', num_values=4)
     }
     self.int_obs_shape = (3, 4, 2)
