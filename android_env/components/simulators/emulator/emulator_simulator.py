@@ -384,8 +384,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
           f'The emulator failed to boot after {startup_wait_time_sec} seconds')
 
     logging.info('Done booting the emulator (in %f seconds).', elapsed_time)
-    logging.info('********** Emulator logs (last 20 lines) **********')
-    for line in self.get_logs().splitlines()[-20:]:
+    logging.info('********** Emulator logs **********')
+    for line in self.get_logs().splitlines():
       logging.info(line)
     logging.info('******* End of emulator logs *******')
     logging.info('See the full emulator logs at %r', self._logfile_path)
