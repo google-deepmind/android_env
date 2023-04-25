@@ -17,7 +17,7 @@
 
 import os
 import time
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from absl import logging
 from android_env.components import adb_controller
@@ -391,7 +391,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     logging.info('See the full emulator logs at %r', self._logfile_path)
 
   @_reconnect_on_grpc_error
-  def send_touch(self, touches: List[Tuple[int, int, bool, int]]) -> None:
+  def send_touch(self, touches: list[Tuple[int, int, bool, int]]) -> None:
     """Sends a touch event to be executed on the simulator.
 
     Args:

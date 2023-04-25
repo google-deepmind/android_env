@@ -32,7 +32,7 @@
 // Please group deleted methods in a block including the date (MM/DD/YY)
 // it was removed. This enables us to easily keep metrics around after removal
 //
-// List of deleted methods
+// list of deleted methods
 // rpc iWasDeleted (03/12/12)
 // ...
 
@@ -40,12 +40,13 @@
 
 syntax = "proto3";
 
+package android.emulation.control;
+
+import "google/protobuf/empty.proto";
+
 option java_multiple_files = true;
 option java_package = "com.android.emulator.control";
 option objc_class_prefix = "AEC";
-
-package android.emulation.control;
-import "google/protobuf/empty.proto";
 
 // An EmulatorController service lets you control the emulator.
 // Note that this is currently an experimental feature, and that the
@@ -61,7 +62,6 @@ import "google/protobuf/empty.proto";
 // sendXXX   --> send a single event XXX, possibly returning state information.
 //               android usually responds to these events.
 service EmulatorController {
-
   // Set the sensor data
   rpc streamSensor(SensorValue) returns (stream SensorValue) {}
   // Get the sensor data
@@ -170,7 +170,6 @@ service EmulatorController {
   // produce any audio whatsoever!
   rpc streamAudio(AudioFormat) returns (stream AudioPacket) {}
 
-
   // Injects a series of audio packets to the android microphone.
   // A new frame will be delivered whenever the emulated device
   // requests a new audio frame. Audio is usually delivered at a rate
@@ -181,7 +180,8 @@ service EmulatorController {
   //
   // -  INVALID_ARGUMENT (code 3) The sampling rate was too high
   // -  INVALID_ARGUMENT (code 3) The audio packet was too large to handle.
-  // -  FAILED_PRECONDITION (code 9) If there was a microphone registered already.
+  // -  FAILED_PRECONDITION (code 9) If there was a microphone registered
+  // already.
   rpc injectAudio(stream AudioPacket) returns (google.protobuf.Empty) {}
 
   // Returns the last 128Kb of logcat output from the emulator
@@ -207,8 +207,8 @@ service EmulatorController {
   // After this call the given display configurations will be activated. You
   // can only update secondary displays. Displays with id 0 will be ignored.
   //
-  // This call can result in the removal or addition of secondary displays, the final
-  // display state can be observed by the returned configuration.
+  // This call can result in the removal or addition of secondary displays, the
+  // final display state can be observed by the returned configuration.
   //
   // The following gRPC error codes can be returned:
   // -  FAILED_PRECONDITION (code 9) if the AVD does not support a configurable
@@ -231,18 +231,18 @@ service EmulatorController {
   //
   // - Virtual scene camera status change.
   // - Display configuration changes from extended ui. This will only be fired
-  //   if the user makes modifications the extended displays through the extended
-  //   control tab.
+  //   if the user makes modifications the extended displays through the
+  //   extended control tab.
   //
-  // Note that this method will send the initial virtual scene state immediately.
+  // Note that this method will send the initial virtual scene state
+  // immediately.
   rpc streamNotification(google.protobuf.Empty) returns (stream Notification) {}
 
   // RotationRadian is relative to the camera's current orientation.
   rpc rotateVirtualSceneCamera(RotationRadian) returns (google.protobuf.Empty) {
   }
   // Velocity is absolute
-  rpc setVirtualSceneCameraVelocity(Velocity)
-          returns (google.protobuf.Empty) {}
+  rpc setVirtualSceneCameraVelocity(Velocity) returns (google.protobuf.Empty) {}
   // Set foldable posture
   rpc setPosture(Posture) returns (google.protobuf.Empty) {}
 }
@@ -281,19 +281,22 @@ message VmRunState {
   RunState state = 1;
 }
 
-message ParameterValue { repeated float data = 1 [ packed = true ]; }
+message ParameterValue {
+  repeated float data = 1 [packed = true];
+}
 
 message PhysicalModelValue {
   enum State {
     OK = 0;
-    NO_SERVICE = -3; // qemud service is not available/initiated.
-    DISABLED = -2;   // Sensor is disabled.
-    UNKNOWN = -1;    // Unknown sensor (should not happen)
+    NO_SERVICE = -3;  // qemud service is not available/initiated.
+    DISABLED = -2;    // Sensor is disabled.
+    UNKNOWN = -1;     // Unknown sensor (should not happen)
   }
 
   // Details on the sensors documentation can be found here:
   // https://developer.android.com/reference/android/hardware/Sensor.html#TYPE_
-  // The types must follow the order defined in "external/qemu/android/hw-sensors.h"
+  // The types must follow the order defined in
+  // "external/qemu/android/hw-sensors.h"
   enum PhysicalType {
     POSITION = 0;
 
@@ -343,9 +346,9 @@ message PhysicalModelValue {
 message SensorValue {
   enum State {
     OK = 0;
-    NO_SERVICE = -3; // qemud service is not available/initiated.
-    DISABLED = -2;   // Sensor is disabled.
-    UNKNOWN = -1;    // Unknown sensor (should not happen)
+    NO_SERVICE = -3;  // qemud service is not available/initiated.
+    DISABLED = -2;    // Sensor is disabled.
+    UNKNOWN = -1;     // Unknown sensor (should not happen)
   }
 
   // These are the various sensors that can be available in an emulated
@@ -432,7 +435,7 @@ message LogcatEntry {
     ERR = 6;
     FATAL = 7;
     SILENT = 8;
-  };
+  }
 
   // A Unix timestamps in  milliseconds (The number of milliseconds that
   // have elapsed since January 1, 1970 (midnight UTC/GMT), not counting
@@ -477,7 +480,7 @@ message VmConfiguration {
     WHPX = 5;
 
     GVM = 6;
-  };
+  }
 
   VmHypervisorType hypervisorType = 1;
   int32 numberOfCpuCores = 2;
@@ -613,7 +616,7 @@ message KeyboardEvent {
     XKB = 2;
     Win = 3;
     Mac = 4;
-  };
+  }
 
   enum KeyEventType {
     // Indicates that this keyevent should be send to the emulator
@@ -631,7 +634,7 @@ message KeyboardEvent {
     // Indicates that the keyevent will be send to the emulator
     // as e key down event and immediately followed by a keyup event.
     keypress = 2;
-  };
+  }
 
   // Type of keycode contained in the keyCode field.
   KeyCodeType codeType = 1;
@@ -736,14 +739,14 @@ message BatteryState {
     DISCHARGING = 2;
     NOT_CHARGING = 3;
     FULL = 4;
-  };
+  }
 
   enum BatteryCharger {
     NONE = 0;
     AC = 1;
     USB = 2;
     WIRELESS = 3;
-  };
+  }
 
   enum BatteryHealth {
     GOOD = 0;
@@ -751,7 +754,7 @@ message BatteryState {
     DEAD = 2;
     OVERVOLTAGE = 3;
     OVERHEATED = 4;
-  };
+  }
 
   bool hasBattery = 1;
   bool isPresent = 2;
@@ -787,13 +790,14 @@ message ImageTransport {
 // The aspect ratio (width/height) will be different from the one
 // where the device is unfolded.
 message FoldedDisplay {
-    uint32 width = 1;
-    uint32 height = 2;
-    // It is possible for the screen to be folded in different ways depending
-    // on which surface is shown to the user. So xOffset and yOffset indicate
-    // the top left corner of the folded screen within the original unfolded screen.
-    uint32 xOffset = 3;
-    uint32 yOffset = 4;
+  uint32 width = 1;
+  uint32 height = 2;
+  // It is possible for the screen to be folded in different ways depending
+  // on which surface is shown to the user. So xOffset and yOffset indicate
+  // the top left corner of the folded screen within the original unfolded
+  // screen.
+  uint32 xOffset = 3;
+  uint32 yOffset = 4;
 }
 
 message ImageFormat {
@@ -850,8 +854,8 @@ message ImageFormat {
 message Image {
   ImageFormat format = 1;
 
-  uint32 width = 2 [ deprecated = true ];  // width is contained in format.
-  uint32 height = 3 [ deprecated = true ]; // height is contained in format.
+  uint32 width = 2 [deprecated = true];   // width is contained in format.
+  uint32 height = 3 [deprecated = true];  // height is contained in format.
 
   // The organization of the pixels in the image buffer is from left to
   // right and bottom up. This will be empty if an alternative image transport
@@ -875,10 +879,10 @@ message Image {
 
 message Rotation {
   enum SkinRotation {
-    PORTRAIT = 0;          // 0 degrees
-    LANDSCAPE = 1;         // 90 degrees
-    REVERSE_PORTRAIT = 2;  // -180 degrees
-    REVERSE_LANDSCAPE = 3; // -90 degrees
+    PORTRAIT = 0;           // 0 degrees
+    LANDSCAPE = 1;          // 90 degrees
+    REVERSE_PORTRAIT = 2;   // -180 degrees
+    REVERSE_LANDSCAPE = 3;  // -90 degrees
   }
 
   // The rotation of the device, derived from the sensor state
@@ -909,11 +913,11 @@ message PhoneCall {
 message PhoneResponse {
   enum Response {
     OK = 0;
-    BadOperation = 1;  // Enum out of range
-    BadNumber = 2;     // Mal-formed telephone number
-    InvalidAction = 3; // E.g., disconnect when no call is in progress
-    ActionFailed = 4;  // Internal error
-    RadioOff = 5;      // Radio power off
+    BadOperation = 1;   // Enum out of range
+    BadNumber = 2;      // Mal-formed telephone number
+    InvalidAction = 3;  // E.g., disconnect when no call is in progress
+    ActionFailed = 4;   // Internal error
+    RadioOff = 5;       // Radio power off
   }
   Response response = 1;
 }
@@ -923,7 +927,9 @@ message Entry {
   string value = 2;
 }
 
-message EntryList { repeated Entry entry = 1; }
+message EntryList {
+  repeated Entry entry = 1;
+}
 
 message EmulatorStatus {
   // The emulator version string.
@@ -943,18 +949,18 @@ message EmulatorStatus {
   // The hardware configuration of the running emulator as
   // key valure pairs.
   EntryList hardwareConfig = 5;
-};
+}
 
 message AudioFormat {
   enum SampleFormat {
-    AUD_FMT_U8 = 0;  // Unsigned 8 bit
-    AUD_FMT_S16 = 1; // Signed 16 bit (little endian)
-  };
+    AUD_FMT_U8 = 0;   // Unsigned 8 bit
+    AUD_FMT_S16 = 1;  // Signed 16 bit (little endian)
+  }
 
   enum Channels {
     Mono = 0;
     Stereo = 1;
-  };
+  }
 
   // Sampling rate to use, defaulting to 44100 if this is not set.
   // Note, that android devices typically will not use a sampling
@@ -962,7 +968,7 @@ message AudioFormat {
   uint64 samplingRate = 1;
   Channels channels = 2;
   SampleFormat format = 3;
-};
+}
 
 message AudioPacket {
   AudioFormat format = 1;
@@ -1003,7 +1009,6 @@ message SmsMessage {
 // this method. By default, virtual displays are created to be private,
 // non-presentation and unsecure.
 message DisplayConfiguration {
-
   // These are the set of known android flags and their respective values.
   // you can combine the int values to (de)construct the flags field below.
   enum DisplayFlags {
@@ -1100,16 +1105,16 @@ message Notification {
 }
 
 message RotationRadian {
-    float x = 1;  // x axis is horizontal and orthogonal to the view direction.
-    float y = 2;  // y axis points up and is perpendicular to the floor.
-    float z = 3;  // z axis is the view direction and is set to 0.0 in
-                  // rotateVirtualSceneCamera call.
+  float x = 1;  // x axis is horizontal and orthogonal to the view direction.
+  float y = 2;  // y axis points up and is perpendicular to the floor.
+  float z = 3;  // z axis is the view direction and is set to 0.0 in
+                // rotateVirtualSceneCamera call.
 }
 
 message Velocity {
-    float x = 1;  // x axis is horizontal and orthogonal to the view direction.
-    float y = 2;  // y axis points up and is perpendicular to the floor.
-    float z = 3;  // z axis is the view direction
+  float x = 1;  // x axis is horizontal and orthogonal to the view direction.
+  float y = 2;  // y axis points up and is perpendicular to the floor.
+  float z = 3;  // z axis is the view direction
 }
 
 // must follow the definition in "external/qemu/android/hw-sensors.h"

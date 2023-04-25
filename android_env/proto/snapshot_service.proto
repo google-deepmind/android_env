@@ -32,7 +32,7 @@
 // Please group deleted methods in a block including the date (MM/DD/YY)
 // it was removed. This enables us to easily keep metrics around after removal
 //
-// List of deleted methods
+// list of deleted methods
 // rpc iWasDeleted (03/12/12)
 // ...
 syntax = "proto3";
@@ -151,7 +151,8 @@ service SnapshotService {
   rpc TrackProcess(IceboxTarget) returns (IceboxTarget) {}
 }
 
-// Sets options for SnapshotService. Used for both request and response messages.
+// Sets options for SnapshotService. Used for both request and response
+// messages.
 message SnapshotPackage {
   enum Format {
     TARGZ = 0;
@@ -179,10 +180,11 @@ message SnapshotPackage {
   // [request only] Path to the snapshot package file. Only used in request
   // messages.
   //
-  // When set in a request, the PullSnapshot/PushSnapshot operation will directly
-  // write/read the exported snapshot in path without streaming, which is usually
-  // significantly faster. It would require emulator to have direct access to
-  // path, which usually means it can only be used with a local emulator.
+  // When set in a request, the PullSnapshot/PushSnapshot operation will
+  // directly write/read the exported snapshot in path without streaming, which
+  // is usually significantly faster. It would require emulator to have direct
+  // access to path, which usually means it can only be used with a local
+  // emulator.
   string path = 6;
 }
 
@@ -202,7 +204,6 @@ message SnapshotFilter {
 
 // Provides detailed information regarding the snapshot.
 message SnapshotDetails {
-
   enum LoadStatus {
     // The emulator believes that the snapshot is compatible with the emulator
     // that provided this information.  The emulator will attempt to load this
@@ -253,8 +254,10 @@ message SnapshotDetails {
   uint64 size = 4;
 }
 
-// A List of on snapshot details.
-message SnapshotList { repeated SnapshotDetails snapshots = 1; }
+// A list of on snapshot details.
+message SnapshotList {
+  repeated SnapshotDetails snapshots = 1;
+}
 
 message IceboxTarget {
   // This is the process id to attach to, if this value is not set (0)
@@ -282,5 +285,5 @@ message IceboxTarget {
   int32 max_snapshot_number = 6;
 }
 
-// List of deleted methods:
+// list of deleted methods:
 //

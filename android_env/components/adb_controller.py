@@ -18,7 +18,7 @@
 import os
 import subprocess
 import time
-from typing import List, Optional
+from typing import Optional
 
 from absl import logging
 from android_env.components import errors
@@ -61,7 +61,7 @@ class AdbController:
     )
     logging.info('self._os_env_vars: %r', self._os_env_vars)
 
-  def command_prefix(self, include_device_name: bool = True) -> List[str]:
+  def command_prefix(self, include_device_name: bool = True) -> list[str]:
     """The command for instantiating an adb client to this server."""
     command_prefix = [self._adb_path, '-P', self._adb_server_port]
     if include_device_name:
@@ -101,10 +101,12 @@ class AdbController:
         ['devices'], timeout=timeout, device_specific=False)
     time.sleep(0.2)
 
-  def execute_command(self,
-                      args: List[str],
-                      timeout: Optional[float] = None,
-                      device_specific: bool = True) -> bytes:
+  def execute_command(
+      self,
+      args: list[str],
+      timeout: Optional[float] = None,
+      device_specific: bool = True,
+  ) -> bytes:
     """Executes an adb command.
 
     Args:

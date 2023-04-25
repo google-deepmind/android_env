@@ -18,7 +18,7 @@
 import random
 import threading
 import time
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from absl import logging
 from android_env.components import adb_controller
@@ -77,10 +77,12 @@ class FakeLogStream(log_stream.LogStream):
 class FakeAdbController(adb_controller.AdbController):
   """Fake adb controller for FakeSimulator."""
 
-  def execute_command(self,
-                      args: List[str],
-                      timeout: Optional[float] = None,
-                      device_specific: bool = True) -> bytes:
+  def execute_command(
+      self,
+      args: list[str],
+      timeout: Optional[float] = None,
+      device_specific: bool = True,
+  ) -> bytes:
     """Returns fake output for adb commands."""
 
     del timeout, device_specific
@@ -133,7 +135,7 @@ class FakeSimulator(base_simulator.BaseSimulator):
   def _launch_impl(self) -> None:
     pass
 
-  def send_touch(self, touches: List[Tuple[int, int, bool, int]]) -> None:
+  def send_touch(self, touches: list[Tuple[int, int, bool, int]]) -> None:
     del touches
 
   def send_key(self, keycode: np.int32, event_type: str) -> None:

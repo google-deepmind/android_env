@@ -20,7 +20,7 @@ import socket
 import tempfile
 import threading
 import time
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from absl import logging
 from android_env.components import action_type as action_type_lib
@@ -432,7 +432,7 @@ class Coordinator:
 
   def _prepare_touch_action(
       self, action: dict[str, np.ndarray]
-  ) -> List[Tuple[int, int, bool, int]]:
+  ) -> list[Tuple[int, int, bool, int]]:
     """Turns an AndroidEnv action into values that the simulator can interpret.
 
     Converts float-valued 'touch_position' to integer coordinates corresponding
@@ -461,7 +461,7 @@ class Coordinator:
 
   def _split_touch_action(
       self, action: dict[str, np.ndarray]
-  ) -> List[dict[str, np.ndarray]]:
+  ) -> list[dict[str, np.ndarray]]:
     """Splits a multitouch action into a list of single-touch actions."""
 
     single_touch_actions = [{

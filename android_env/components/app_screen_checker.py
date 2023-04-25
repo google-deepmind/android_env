@@ -18,7 +18,7 @@
 import enum
 import re
 import time
-from typing import Callable, List, Optional, Sequence, Pattern
+from typing import Callable, Optional, Sequence, Pattern
 
 from absl import logging
 
@@ -40,7 +40,7 @@ class _DumpsysNode:
     return self._data
 
   @property
-  def children(self) -> List['_DumpsysNode']:
+  def children(self) -> list['_DumpsysNode']:
     return self._children
 
   def find_child(self,
