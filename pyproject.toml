@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "android-env"
-version = "1.2.1"
+version = "1.2.2"
 description = "AndroidEnv environment and library for training agents."
 authors = [{name = "DeepMind"}]
 license = {file = "LICENSE"}
@@ -25,12 +25,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+testing = [
+    "attrs==20.3.0",  # temporary pin to fix pytype issue.
+    "gym",
+    "pillow",
+    "pytype",
+    "pytest-xdist",
+]
 acme = ["dm-acme"]
 gym = ["gym"]
-attrs = ["attrs==20.3.0"]  # temporary pin to fix pytype issue.
-pillow = ["pillow"]
-pytype = ["pytype"]
-pytest = ["pytest-xdist"]
 
 [project.urls]
 repository = "https://github.com/deepmind/android_env"
