@@ -94,7 +94,6 @@ class _BuildPy(build_py):
     build_py.run(self)
 
 setup(
-    url='https://github.com/deepmind/android_env',
     packages=find_packages(exclude=['examples']),
     package_data={'': ['proto/*.proto']},  # Copy protobuf files.
     include_package_data=True,
