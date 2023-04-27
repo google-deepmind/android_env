@@ -23,10 +23,6 @@ from setuptools import setup
 from setuptools.command.build_ext import build_ext
 from setuptools.command.build_py import build_py
 
-description = """AndroidEnv
-Read the README at https://github.com/deepmind/android_env for more information.
-"""
-
 _ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Tuple of proto message definitions to build Python bindings for. Paths must
@@ -98,32 +94,11 @@ class _BuildPy(build_py):
     build_py.run(self)
 
 setup(
-    name='android_env',
-    version='1.1.0',
-    description='AndroidEnv environment and library for training agents.',
-    long_description=description,
-    author='DeepMind',
-    license='Apache License, Version 2.0',
-    keywords='Android OS reinforcement-learning',
     url='https://github.com/deepmind/android_env',
     packages=find_packages(exclude=['examples']),
-    setup_requires=[
-        'grpcio-tools',
-    ],
-    install_requires=[
-        'absl-py>=0.1.0',
-        'dm_env',
-        'grpcio',
-        'numpy>=1.21',
-        'portpicker>=1.2.0',
-        'protobuf>=2.6',
-        'pygame',
-    ],
-    extras_require={
-        'acme': ['dm-acme'],
-        'gym': ['gym'],
-        'testing': testing_requirements,
-    },
+    package_data={'': ['proto/*.proto']},  # Copy protobuf files.
+    include_package_data=True,
+    setup_requires=['grpcio-tools'],
     cmdclass={
         'build_ext': _BuildExt,
         'build_py': _BuildPy,

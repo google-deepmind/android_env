@@ -1,0 +1,38 @@
+[build-system]
+requires = [
+    "setuptools",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "android-env"
+version = "1.2.1"
+description = "AndroidEnv environment and library for training agents."
+authors = [{name = "DeepMind"}]
+license = {file = "LICENSE"}
+readme = {text = "Read the README at https://github.com/deepmind/android_env for more information.", content-type = "text/plain"}
+keywords = ["Android", "OS", "reinforcement-learning"]
+requires-python = ">=3.10"
+dependencies = [
+    "absl-py>=0.1.0",
+    "dm_env",
+    "grpcio",
+    "numpy>=1.21",
+    "portpicker>=1.2.0",
+    "protobuf>=2.6",
+    "pygame",
+]
+
+[project.optional-dependencies]
+acme = ["dm-acme"]
+gym = ["gym"]
+attrs = ["attrs==20.3.0"]  # temporary pin to fix pytype issue.
+pillow = ["pillow"]
+pytype = ["pytype"]
+pytest = ["pytest-xdist"]
+
+[project.urls]
+repository = "https://github.com/deepmind/android_env"
+deepmind = "https://www.deepmind.com/publications/androidenv-the-android-learning-environment"
+arxiv = "https://arxiv.org/abs/2105.13231"
