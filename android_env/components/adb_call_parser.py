@@ -20,7 +20,6 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Optional
 
 from absl import logging
 from android_env.components import adb_controller as adb_control
@@ -65,7 +64,7 @@ class AdbCallParser:
     }
 
   def _execute_command(
-      self, command_args: list[str], timeout: Optional[float]
+      self, command_args: list[str], timeout: float | None
   ) -> tuple[adb_pb2.AdbResponse, bytes]:
     """Executes the command, catches errors and populates the response status.
 
@@ -109,12 +108,12 @@ class AdbCallParser:
                                 f'Got: {request.timeout_sec}')
       return response
 
-    timeout: Optional[float] = request.timeout_sec or None
+    timeout: float | None = request.timeout_sec or None
     return self._handlers[command_type](request, timeout)
 
-  def _force_stop(self,
-                  request: adb_pb2.AdbRequest,
-                  timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _force_stop(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Stops an application.
 
     Args:
@@ -137,9 +136,9 @@ class AdbCallParser:
 
     return response
 
-  def _fetch_current_task_id(self,
-                             full_activity_name: str,
-                             timeout: Optional[float] = None) -> int:
+  def _fetch_current_task_id(
+      self, full_activity_name: str, timeout: float | None = None
+  ) -> int:
     """Returns the task ID of the given `full_activity_name`.
 
     Args:
@@ -185,9 +184,8 @@ class AdbCallParser:
     return -1
 
   def _start_screen_pinning(
-      self,
-      request: adb_pb2.AdbRequest,
-      timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Pins an application.
 
     Args:
@@ -219,9 +217,9 @@ class AdbCallParser:
 
     return response
 
-  def _send_broadcast(self,
-                      request: adb_pb2.AdbRequest,
-                      timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _send_broadcast(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Sends a broadcast.
 
     Args:
@@ -244,9 +242,9 @@ class AdbCallParser:
         timeout=timeout)
     return response
 
-  def _install_apk(self,
-                   request: adb_pb2.AdbRequest,
-                   timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _install_apk(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Installs an app given its local path in the filesystem.
 
     Args:
@@ -278,9 +276,9 @@ class AdbCallParser:
                                         timeout=timeout)
     return response
 
-  def _start_activity(self,
-                      request: adb_pb2.AdbRequest,
-                      timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _start_activity(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Starts a given activity.
 
     Options for `start_activity`:
@@ -326,9 +324,9 @@ class AdbCallParser:
     response.start_activity.output = command_output
     return response
 
-  def _press_button(self,
-                    request: adb_pb2.AdbRequest,
-                    timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _press_button(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Presses a keyboard key.
 
     Args:
@@ -354,9 +352,8 @@ class AdbCallParser:
     return response
 
   def _handle_uninstall_package(
-      self,
-      request: adb_pb2.AdbRequest,
-      timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Handles UninstallPackage messages.
 
     Args:
@@ -394,9 +391,8 @@ class AdbCallParser:
     return response
 
   def _get_current_activity(
-      self,
-      request: adb_pb2.AdbRequest,
-      timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Fetches current activity.
 
     Args:
@@ -448,9 +444,9 @@ class AdbCallParser:
     response.get_current_activity.full_activity = matches.group(1)
     return response
 
-  def _get_orientation(self,
-                       request: adb_pb2.AdbRequest,
-                       timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _get_orientation(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Fetches current device orientation.
 
     Args:
@@ -500,9 +496,9 @@ class AdbCallParser:
                               'output')
     return response
 
-  def _push(self,
-            request: adb_pb2.AdbRequest,
-            timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _push(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Uploads contents to the device.
 
     Args:
@@ -531,9 +527,9 @@ class AdbCallParser:
 
     return response
 
-  def _pull(self,
-            request: adb_pb2.AdbRequest,
-            timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _pull(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Downloads file content from the device.
 
     Args:
@@ -564,9 +560,9 @@ class AdbCallParser:
 
     return response
 
-  def _input_text(self,
-                  request: adb_pb2.AdbRequest,
-                  timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _input_text(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Inserts text as keyboard events.
 
     Args:
@@ -587,9 +583,9 @@ class AdbCallParser:
                                         timeout=timeout)
     return response
 
-  def _tap(self,
-           request: adb_pb2.AdbRequest,
-           timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _tap(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Taps the device screen.
 
     Args:
@@ -617,9 +613,9 @@ class AdbCallParser:
 
     return response
 
-  def _handle_settings(self,
-                       request: adb_pb2.AdbRequest,
-                       timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _handle_settings(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Handles SettingsRequest messages.
 
     Args:
@@ -703,9 +699,9 @@ class AdbCallParser:
 
     return response
 
-  def _handle_generic(self,
-                      request: adb_pb2.AdbRequest,
-                      timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _handle_generic(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Handles GenericRequest messages.
 
     Args:
@@ -723,9 +719,8 @@ class AdbCallParser:
     return response
 
   def _handle_package_manager(
-      self,
-      request: adb_pb2.AdbRequest,
-      timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Handles PackageManagerRequest messages.
 
     Args:
@@ -791,9 +786,9 @@ class AdbCallParser:
 
     return response
 
-  def _handle_dumpsys(self,
-                      request: adb_pb2.AdbRequest,
-                      timeout: Optional[float] = None) -> adb_pb2.AdbResponse:
+  def _handle_dumpsys(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
     """Handles DumpsysRequest messages.
 
     Args:

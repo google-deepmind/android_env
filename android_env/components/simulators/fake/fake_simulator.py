@@ -18,7 +18,6 @@
 import random
 import threading
 import time
-from typing import Optional
 
 from absl import logging
 from android_env.components import adb_controller
@@ -80,7 +79,7 @@ class FakeAdbController(adb_controller.AdbController):
   def execute_command(
       self,
       args: list[str],
-      timeout: Optional[float] = None,
+      timeout: float | None = None,
       device_specific: bool = True,
   ) -> bytes:
     """Returns fake output for adb commands."""

@@ -15,7 +15,7 @@
 
 """Wraps the AndroidEnv environment to rescale the observations."""
 
-from typing import Optional, Sequence
+from typing import Sequence
 
 from android_env.wrappers import base_wrapper
 import dm_env
@@ -37,8 +37,9 @@ class ImageRescaleWrapper(base_wrapper.BaseWrapper):
   def __init__(
       self,
       env: dm_env.Environment,
-      zoom_factors: Optional[Sequence[float]] = (0.5, 0.5),
-      grayscale: bool = False):
+      zoom_factors: Sequence[float] | None = (0.5, 0.5),
+      grayscale: bool = False,
+  ):
     super().__init__(env)
     assert 'pixels' in self._env.observation_spec()
     assert self._env.observation_spec()['pixels'].shape[-1] in [1, 3], (

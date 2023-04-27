@@ -31,7 +31,7 @@ from android_env.proto import task_pb2
 class _DumpsysNode:
   """A node in a dumpsys tree."""
 
-  def __init__(self, data: Optional[str] = None):
+  def __init__(self, data: str | None = None):
     self._children = []
     self._data = data
 
@@ -43,9 +43,9 @@ class _DumpsysNode:
   def children(self) -> list['_DumpsysNode']:
     return self._children
 
-  def find_child(self,
-                 predicate: Callable[['_DumpsysNode'], bool],
-                 max_levels: int = 0) -> Optional['_DumpsysNode']:
+  def find_child(
+      self, predicate: Callable[['_DumpsysNode'], bool], max_levels: int = 0
+  ) -> Optional['_DumpsysNode']:
     """Returns the first direct child that matches `predicate`, None otherwise.
 
     Args:

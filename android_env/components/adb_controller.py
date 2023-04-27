@@ -18,7 +18,6 @@
 import os
 import subprocess
 import time
-from typing import Optional
 
 from absl import logging
 from android_env.components import errors
@@ -68,7 +67,7 @@ class AdbController:
       command_prefix.extend(['-s', self._device_name])
     return command_prefix
 
-  def init_server(self, timeout: Optional[float] = None):
+  def init_server(self, timeout: float | None = None):
     """Initialize the ADB server deamon on the given port.
 
     This function should be called immediately after initializing the first
@@ -82,7 +81,7 @@ class AdbController:
     self.execute_command(['devices'], timeout, device_specific=False)
     time.sleep(0.2)
 
-  def _restart_server(self, timeout: Optional[float] = None):
+  def _restart_server(self, timeout: float | None = None):
     """Kills and restarts the adb server.
 
     Args:
@@ -104,7 +103,7 @@ class AdbController:
   def execute_command(
       self,
       args: list[str],
-      timeout: Optional[float] = None,
+      timeout: float | None = None,
       device_specific: bool = True,
   ) -> bytes:
     """Executes an adb command.

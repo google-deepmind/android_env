@@ -17,7 +17,7 @@
 
 import os
 import time
-from typing import Any, Optional
+from typing import Any
 
 from absl import logging
 from android_env.components import adb_controller
@@ -112,7 +112,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       emulator_launcher_args: dict[str, Any],
       adb_controller_args: dict[str, Any],
       tmp_dir: str = '/tmp/android_env/simulator',
-      logfile_path: Optional[str] = None,
+      logfile_path: str | None = None,
       launch_n_times_without_reboot: int = 1,
       launch_n_times_without_reinstall: int = 2,
       **kwargs,

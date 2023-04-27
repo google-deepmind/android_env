@@ -20,7 +20,7 @@ import socket
 import tempfile
 import threading
 import time
-from typing import Any, Optional
+from typing import Any
 
 from absl import logging
 from android_env.components import action_type as action_type_lib
@@ -52,7 +52,7 @@ class Coordinator:
       show_status_bar: bool = False,
       show_navigation_bar: bool = False,
       periodic_restart_time_min: float = 0.0,
-      tmp_dir: Optional[str] = None,
+      tmp_dir: str | None = None,
   ):
     """Handles communication between AndroidEnv and its components.
 

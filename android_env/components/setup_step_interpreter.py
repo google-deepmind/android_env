@@ -17,7 +17,7 @@
 
 import copy
 import time
-from typing import Any, Optional, Sequence
+from typing import Any, Sequence
 
 from absl import logging
 from android_env.components import adb_call_parser as adb_call_parser_lib
@@ -110,8 +110,8 @@ class SetupStepInterpreter:
         f'Step failed: [{step_cmd}]') from latest_error
 
   def _execute_step_cmd(
-      self, step_cmd: task_pb2.SetupStep,
-      step_type: Optional[str]) -> Optional[adb_pb2.AdbResponse]:
+      self, step_cmd: task_pb2.SetupStep, step_type: str | None
+  ) -> adb_pb2.AdbResponse | None:
     """Executes a step command of given type."""
     if not step_type:
       return
@@ -129,9 +129,11 @@ class SetupStepInterpreter:
     else:
       raise NotImplementedError('No step command of type [%s].' % step_type)
 
-  def _check_success(self,
-                     success_check: Optional[str],
-                     success_condition: task_pb2.SuccessCondition) -> None:
+  def _check_success(
+      self,
+      success_check: str | None,
+      success_condition: task_pb2.SuccessCondition,
+  ) -> None:
     """Checks whether the given success condition was met."""
 
     if not success_check:

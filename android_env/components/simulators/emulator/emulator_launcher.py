@@ -19,7 +19,6 @@ import glob
 import os
 import subprocess
 import tempfile
-from typing import Optional
 
 from absl import logging
 
@@ -30,9 +29,9 @@ class EmulatorLauncher:
   def __init__(
       self,
       adb_path: str,
-      adb_port: Optional[int] = None,
-      adb_server_port: Optional[int] = None,
-      emulator_console_port: Optional[int] = None,
+      adb_port: int | None = None,
+      adb_server_port: int | None = None,
+      emulator_console_port: int | None = None,
       grpc_port: int = -1,
       emulator_path: str = '',
       android_sdk_root: str = '',

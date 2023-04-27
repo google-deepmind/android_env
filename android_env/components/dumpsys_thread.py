@@ -16,7 +16,6 @@
 """A ThreadFunction that runs and parses adb dumpsys."""
 
 import concurrent.futures
-from typing import Optional
 
 from absl import logging
 from android_env.components import app_screen_checker as app_screen_checker_lib
@@ -56,9 +55,9 @@ class DumpsysThread:
     self._check_frequency = check_frequency
     self._max_failed_activity_extraction = max_failed_current_activity
     self._num_failed_activity_extraction = 0
-    self._latest_check: Optional[concurrent.futures.Future] = None
+    self._latest_check: concurrent.futures.Future | None = None
 
-  def check_user_exited(self, timeout: Optional[float] = None) -> bool:
+  def check_user_exited(self, timeout: float | None = None) -> bool:
     """Returns True if the user is not in the expected screen.
 
     Args:

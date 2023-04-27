@@ -15,7 +15,7 @@
 
 """Wraps the AndroidEnv environment to provide discrete actions."""
 
-from typing import Optional, Sequence
+from typing import Sequence
 
 from android_env.components import action_type
 from android_env.wrappers import base_wrapper
@@ -30,12 +30,13 @@ NOISE_CLIP_VALUE = 0.4999
 class DiscreteActionWrapper(base_wrapper.BaseWrapper):
   """AndroidEnv with discrete actions."""
 
-  def __init__(self,
-               env: dm_env.Environment,
-               action_grid: Optional[Sequence[int]] = (10, 10),
-               redundant_actions: bool = True,
-               noise: float = 0.1):
-
+  def __init__(
+      self,
+      env: dm_env.Environment,
+      action_grid: Sequence[int] | None = (10, 10),
+      redundant_actions: bool = True,
+      noise: float = 0.1,
+  ):
     super().__init__(env)
     self._parent_action_spec = self._env.action_spec()
     self._assert_base_env()
