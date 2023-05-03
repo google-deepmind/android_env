@@ -44,6 +44,7 @@ class TaskManager:
       max_bad_states: int = 3,
       dumpsys_check_frequency: int = 150,
       max_failed_current_activity: int = 10,
+      extras_max_buffer_size: int = 100,
   ):
     """Controls task-relevant events and information.
 
@@ -55,6 +56,9 @@ class TaskManager:
         current_activity and view hierarchy
       max_failed_current_activity: The maximum number of tries for extracting
         the current activity before forcing the episode to restart.
+      extras_max_buffer_size: The maximum number of extras elements to store. If
+        this number is exceeded, elements are dropped in the order they were
+        received.
     """
     self._task = task
     self._max_bad_states = max_bad_states
@@ -62,7 +66,7 @@ class TaskManager:
     self._max_failed_current_activity = max_failed_current_activity
 
     self._lock = threading.Lock()
-    self._extras_max_buffer_size = 100
+    self._extras_max_buffer_size = extras_max_buffer_size
     self._logcat_thread = None
     self._dumpsys_thread = None
     self._setup_step_interpreter = None
