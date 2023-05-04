@@ -19,6 +19,7 @@ import builtins
 import os
 import subprocess
 import sys
+import tempfile
 from unittest import mock
 
 from absl.testing import absltest
@@ -79,6 +80,32 @@ class AdbCallParserTest(parameterized.TestCase):
     self.assertEmpty(response.error_message)
     adb.execute_command.assert_called_once_with(
         ['install', '-r', '-t', '-g', '/my/home/game.apk'], None)
+
+  @mock.patch.object(tempfile, 'NamedTemporaryFile', autospec=True)
+  def test_install_apk_from_blob(self, mock_tempfile):
+    adb = mock.create_autospec(adb_controller.AdbController)
+    tmp_dir = absltest.get_default_test_tmpdir()
+    parser = adb_call_parser.AdbCallParser(adb, tmp_dir=tmp_dir)
+    request = adb_pb2.AdbRequest()
+    blob_content = b'A fake blob content'
+    request.install_apk.blob.contents = blob_content
+    mock_tempfile.return_value.__enter__.return_value.name = '/my/home/test.apk'
+    mock_tempfile.return_value.__enter__.return_value.write.return_value = None
+
+    response = parser.parse(request)
+    self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
+    self.assertEmpty(response.error_message)
+    adb.execute_command.assert_called_once_with(
+        ['install', '-r', '-t', '-g', '/my/home/test.apk'], None
+    )
+    # pytype: disable=attribute-error
+    mock_tempfile.assert_has_calls([
+        mock.call(dir=tmp_dir, delete=False),  # Constructor
+        mock.call().__enter__(),  # Enter context
+        mock.call().__enter__().write(blob_content),  # Call write function
+        mock.call().__exit__(None, None, None),  # Exit context
+    ])
+    # pytype: enable=attribute-error
 
   def test_start_activity_empty_full_activity(self):
     adb = mock.create_autospec(adb_controller.AdbController)

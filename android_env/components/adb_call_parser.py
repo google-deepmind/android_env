@@ -260,16 +260,21 @@ class AdbCallParser:
     response = adb_pb2.AdbResponse()
     location_type = install_apk.WhichOneof('location')
     logging.info('location_type: %s', location_type)
-    if location_type != 'filesystem':
+
+    if location_type == 'filesystem':
+      fpath = install_apk.filesystem.path
+      if not os.path.exists(fpath):
+        response.status = adb_pb2.AdbResponse.Status.INTERNAL_ERROR
+        response.error_message = f'Could not find local_apk_path: {fpath}'
+        return response
+    elif location_type == 'blob':
+      with tempfile.NamedTemporaryFile(dir=self._tmp_dir, delete=False) as f:
+        fpath = f.name
+        f.write(install_apk.blob.contents)
+    else:
       response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
       response.error_message = (
           f'Unsupported `install_apk.location` type: {location_type}')
-      return response
-
-    fpath = install_apk.filesystem.path
-    if not os.path.exists(fpath):
-      response.status = adb_pb2.AdbResponse.Status.INTERNAL_ERROR
-      response.error_message = f'Could not find local_apk_path: {fpath}'
       return response
 
     response, _ = self._execute_command(['install', '-r', '-t', '-g', fpath],

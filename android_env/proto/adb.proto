@@ -27,6 +27,7 @@ message AdbRequest {
 
     oneof location {
       Filesystem filesystem = 2;
+      Blob blob = 6;
     }
   }
 
