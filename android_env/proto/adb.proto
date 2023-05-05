@@ -25,6 +25,12 @@ message AdbRequest {
       string path = 1;
     }
 
+    // A byte sequence of a single APK file.
+    message Blob {
+      // The serialized file as bytes.
+      bytes contents = 1;
+    }
+
     oneof location {
       Filesystem filesystem = 2;
       Blob blob = 6;
