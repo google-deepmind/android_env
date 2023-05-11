@@ -82,6 +82,8 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
   def update_task(self, task: task_pb2.Task) -> bool:
     """Replaces the current task with a new task.
 
+    NOTE: This is deprecated and will be removed very soon. Do not use it.
+
     It is the caller's responsibility to call `reset()` after the task update.
 
     Args:
@@ -122,4 +124,3 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
       applicable), and any other relevant information.
     """
     raise NotImplementedError('This environment does not support saving state')
-

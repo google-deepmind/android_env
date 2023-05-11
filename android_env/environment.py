@@ -138,17 +138,6 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
   def execute_adb_call(self, call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
     return self._coordinator.execute_adb_call(call)
 
-  def update_task(self, task: task_pb2.Task) -> bool:
-    """Replaces the current task with a new task.
-
-    Args:
-      task: A new task to replace the current one.
-
-    Returns:
-      A bool indicating the success of the task setup.
-    """
-    return self._coordinator.update_task(task)
-
   def load_state(
       self, request: state_pb2.LoadStateRequest
   ) -> state_pb2.LoadStateResponse:

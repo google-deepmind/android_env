@@ -99,10 +99,6 @@ class TaskManager:
   def task(self) -> task_pb2.Task:
     return self._task
 
-  def update_task(self, task: task_pb2.Task) -> None:
-    self._stats['task_updates'] += 1
-    self._task = task
-
   def stats(self) -> dict[str, Any]:
     """Returns a dictionary of stats.
 

@@ -55,23 +55,6 @@ class TaskManagerTest(absltest.TestCase):
         log_stream, 'LogStream',
         return_value=self._log_stream).start()
 
-  def test_update_task(self):
-    init_task = task_pb2.Task(id='initial_task')
-    new_task = task_pb2.Task(id='updated_task')
-    task_mgr = task_manager.TaskManager(task=init_task)
-
-    # Setting up the initial task so that the setup_step_interpreter
-    # is properly initialized.
-    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
-    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
-    task_mgr.setup_task()
-
-    self.assertEqual(init_task, task_mgr.task())
-    self.assertEqual(0, task_mgr.stats()['task_updates'])
-    task_mgr.update_task(new_task)
-    self.assertEqual(new_task, task_mgr.task())
-    self.assertEqual(1, task_mgr.stats()['task_updates'])
-
   def test_start(self):
     task_mgr = task_manager.TaskManager(task=task_pb2.Task())
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)

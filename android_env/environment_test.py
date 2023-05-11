@@ -226,15 +226,6 @@ class AndroidEnvTest(absltest.TestCase):
     self.assertEqual(response, expected_response)
     coordinator.save_state.assert_called_once_with(request)
 
-  def test_update_task(self):
-    coordinator = _create_mock_coordinator()
-    env = environment.AndroidEnv(coordinator)
-    task = task_pb2.Task()
-    coordinator.update_task.return_value = True
-    response = env.update_task(task)
-    self.assertEqual(response, True)
-    coordinator.update_task.assert_called_once_with(task)
-
   def test_double_close(self):
     coordinator = _create_mock_coordinator()
     env = environment.AndroidEnv(coordinator)

@@ -500,41 +500,6 @@ class CoordinatorTest(parameterized.TestCase):
     self.assertEqual(response, expected_response)
     self._simulator.save_state.assert_called_once_with(request)
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  def test_update_task_succeeds(self, unused_mock_sleep):
-    task = task_pb2.Task(id='my_task')
-    stop_call_count = self._task_manager.stop.call_count
-    start_call_count = self._task_manager.start.call_count
-    setup_call_count = self._task_manager.setup_task.call_count
-    success = self._coordinator.update_task(task)
-    self.assertEqual(1,
-                     self._task_manager.stop.call_count - stop_call_count)
-    self.assertEqual(
-        1, self._task_manager.setup_task.call_count - setup_call_count)
-    self.assertEqual(1, self._task_manager.start.call_count - start_call_count)
-    self._task_manager.update_task.assert_called_once_with(task)
-    self.assertTrue(success)
-    self._task_manager.stats.return_value = {}
-    self.assertEqual(0, self._coordinator.stats()['failed_task_updates'])
-
-  @mock.patch.object(time, 'sleep', autospec=True)
-  def test_update_task_fails(self, unused_mock_sleep):
-    task = task_pb2.Task(id='my_task')
-    self._task_manager.setup_task.side_effect = errors.StepCommandError
-    stop_call_count = self._task_manager.stop.call_count
-    start_call_count = self._task_manager.start.call_count
-    setup_call_count = self._task_manager.setup_task.call_count
-    success = self._coordinator.update_task(task)
-    self.assertEqual(1,
-                     self._task_manager.stop.call_count - stop_call_count)
-    self.assertEqual(
-        1, self._task_manager.setup_task.call_count - setup_call_count)
-    self.assertEqual( 1, self._task_manager.start.call_count - start_call_count)
-    self._task_manager.update_task.assert_called_once_with(task)
-    self.assertFalse(success)
-    self._task_manager.stats.return_value = {}
-    self.assertEqual(1, self._coordinator.stats()['failed_task_updates'])
-
 
 if __name__ == '__main__':
   absltest.main()

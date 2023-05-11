@@ -299,30 +299,6 @@ class Coordinator:
   def execute_adb_call(self, call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
     return self._adb_call_parser.parse(call)
 
-  def update_task(self, task: task_pb2.Task) -> bool:
-    """Replaces the current task with a new task.
-
-    Args:
-      task: A new task to replace the current one.
-
-    Returns:
-      A bool indicating the success of the task setup.
-    """
-    self._task_manager.stop()
-    self._task_manager.update_task(task)
-
-    self._task_manager.start(
-        adb_call_parser_factory=self._create_adb_call_parser,
-        log_stream=self._simulator.create_log_stream(),
-    )
-    try:
-      self._task_manager.setup_task()
-      return True
-    except errors.StepCommandError:
-      logging.error('Failed to set up the task.')
-      self._stats['failed_task_updates'] += 1
-      return False
-
   def rl_reset(self) -> dm_env.TimeStep:
     """Resets the RL episode."""
 
