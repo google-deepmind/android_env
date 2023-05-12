@@ -96,9 +96,6 @@ class TaskManager:
 
     logging.info('Task config: %s', self._task)
 
-  def task(self) -> task_pb2.Task:
-    return self._task
-
   def stats(self) -> dict[str, Any]:
     """Returns a dictionary of stats.
 
