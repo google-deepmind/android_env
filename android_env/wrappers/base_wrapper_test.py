@@ -21,7 +21,6 @@ from absl import logging
 from absl.testing import absltest
 from android_env import env_interface
 from android_env.proto import state_pb2
-from android_env.proto import task_pb2
 from android_env.wrappers import base_wrapper
 
 
@@ -83,11 +82,6 @@ class BaseWrapperTest(absltest.TestCase):
     base_env.save_state.return_value = expected_response
     self.assertEqual(wrapped_env.save_state(save_request), expected_response)
     base_env.save_state.assert_called_once_with(save_request)
-
-    task = task_pb2.Task(id='my_task')
-    base_env.update_task.return_value = False
-    self.assertFalse(wrapped_env.update_task(task))
-    base_env.update_task.assert_called_once_with(task)
 
     wrapped_env.close()
     base_env.close.assert_called_once()

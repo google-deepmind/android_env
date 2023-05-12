@@ -21,7 +21,6 @@ from absl import logging
 from android_env import env_interface
 from android_env.proto import adb_pb2
 from android_env.proto import state_pb2
-from android_env.proto import task_pb2
 import dm_env
 from dm_env import specs
 import numpy as np
@@ -100,9 +99,6 @@ class BaseWrapper(env_interface.AndroidEnvInterface):
   def execute_adb_call(self,
                        adb_call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
     return self._env.execute_adb_call(adb_call)
-
-  def update_task(self, task: task_pb2.Task) -> bool:
-    return self._env.update_task(task)
 
   @property
   def raw_action(self):

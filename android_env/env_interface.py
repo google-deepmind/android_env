@@ -24,7 +24,6 @@ from typing import Any
 
 from android_env.proto import adb_pb2
 from android_env.proto import state_pb2
-from android_env.proto import task_pb2
 import dm_env
 import numpy as np
 
@@ -78,22 +77,6 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
     """Executes `call` and returns its response."""
 
     return adb_pb2.AdbResponse()
-
-  def update_task(self, task: task_pb2.Task) -> bool:
-    """Replaces the current task with a new task.
-
-    NOTE: This is deprecated and will be removed very soon. Do not use it.
-
-    It is the caller's responsibility to call `reset()` after the task update.
-
-    Args:
-      task: A new task to replace the current one.
-
-    Returns:
-      A bool indicating the success of the task setup.
-    """
-
-    return True
 
   def load_state(
       self, request: state_pb2.LoadStateRequest
