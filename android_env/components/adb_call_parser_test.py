@@ -100,7 +100,7 @@ class AdbCallParserTest(parameterized.TestCase):
     )
     # pytype: disable=attribute-error
     mock_tempfile.assert_has_calls([
-        mock.call(dir=tmp_dir, delete=False),  # Constructor
+        mock.call(dir=tmp_dir, suffix='.apk', delete=False),  # Constructor
         mock.call().__enter__(),  # Enter context
         mock.call().__enter__().write(blob_content),  # Call write function
         mock.call().__exit__(None, None, None),  # Exit context

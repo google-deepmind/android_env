@@ -268,17 +268,21 @@ class AdbCallParser:
         response.error_message = f'Could not find local_apk_path: {fpath}'
         return response
     elif location_type == 'blob':
-      with tempfile.NamedTemporaryFile(dir=self._tmp_dir, delete=False) as f:
+      with tempfile.NamedTemporaryFile(
+          dir=self._tmp_dir, suffix='.apk', delete=False
+      ) as f:
         fpath = f.name
         f.write(install_apk.blob.contents)
     else:
       response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
       response.error_message = (
-          f'Unsupported `install_apk.location` type: {location_type}')
+          f'Unsupported `install_apk.location` type: {location_type}'
+      )
       return response
 
-    response, _ = self._execute_command(['install', '-r', '-t', '-g', fpath],
-                                        timeout=timeout)
+    response, _ = self._execute_command(
+        ['install', '-r', '-t', '-g', fpath], timeout=timeout
+    )
     return response
 
   def _start_activity(
