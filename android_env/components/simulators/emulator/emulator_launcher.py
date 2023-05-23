@@ -43,6 +43,7 @@ class EmulatorLauncher:
       tmp_dir: str = '',
       snapshot_name: str = '',
       restrict_network: bool = False,
+      show_perf_stats: bool = False,
   ):
     """Launches an emulator.
 
@@ -64,6 +65,8 @@ class EmulatorLauncher:
       snapshot_name: Name of the snapshot to load.
       restrict_network: if True, will disable networking on the device. This
         option is only available for emulator version > 31.3.9 (June 2022).
+      show_perf_stats: Whether to set `SHOW_PERF_STATS=1` when launching the
+        emulator to display performance and memory statistics.
     """
 
     self._adb_path = os.path.expandvars(adb_path)
@@ -80,6 +83,7 @@ class EmulatorLauncher:
     self._gpu_mode = gpu_mode
     self._snapshot_name = snapshot_name
     self._restrict_network = restrict_network
+    self._show_perf_stats = show_perf_stats
 
     self._emulator = None
     self._emulator_output = None
@@ -117,6 +121,7 @@ class EmulatorLauncher:
         'LD_LIBRARY_PATH': ld_library_path,
         'QT_XKB_CONFIG_ROOT': str(self._emulator_path[:-8] + 'qt_config/'),
         'ANDROID_EMU_ENABLE_CRASH_REPORTING': '1',
+        'SHOW_PERF_STATS': str(1 if self._show_perf_stats else 0),
     }
     logging.info('extra_env_vars: %s',
                  ' '.join(f'{k}={v}' for k, v in extra_env_vars.items()))

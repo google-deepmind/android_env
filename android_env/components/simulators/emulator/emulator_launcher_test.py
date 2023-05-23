@@ -22,10 +22,11 @@ import tempfile
 from unittest import mock
 
 from absl.testing import absltest
+from absl.testing import parameterized
 from android_env.components.simulators.emulator import emulator_launcher
 
 
-class EmulatorLauncherTest(absltest.TestCase):
+class EmulatorLauncherTest(parameterized.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -69,81 +70,20 @@ class EmulatorLauncherTest(absltest.TestCase):
         'ANDROID_EMU_ENABLE_CRASH_REPORTING': '1',
     }
 
+  @parameterized.named_parameters([
+      ('hide_perf_stats', False),
+      ('show_perf_stats', True),
+  ])
   @mock.patch.object(os, 'makedirs')
   @mock.patch.object(os, 'environ', autospec=True, return_value=dict())
   @mock.patch.object(tempfile, 'TemporaryDirectory', instance=True)
   def test_launch(
       self,
+      show_perf_stats: bool,
       mock_tmp_dir,
       unused_os_environ,
       unused_os_makedirs,
   ):
-
-    mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
-
-    launcher = emulator_launcher.EmulatorLauncher(
-        adb_path=self._adb_path,
-        adb_port=self._adb_port,
-        adb_server_port=self._adb_server_port,
-        emulator_console_port=self._emulator_console_port,
-        emulator_path=self._emulator_path,
-        avd_name=self._avd_name,
-        grpc_port=-1)
-
-    with mock.patch.object(
-        subprocess, 'Popen', autospec=True) as emulator_init, \
-        mock.patch.object(builtins, 'open', autospec=True) as f:
-      f.return_value.__enter__ = f()
-      launcher.launch_emulator_process()
-      emulator_init.assert_called_once_with(
-          args=self._expected_command + self._ports + self._snapshot,
-          env=self._expected_env_vars,
-          stdout=f(),
-          stderr=f())
-
-  @mock.patch.object(os, 'makedirs')
-  @mock.patch.object(os, 'environ', autospec=True, return_value=dict())
-  @mock.patch.object(tempfile, 'TemporaryDirectory', instance=True)
-  def test_grpc_port(
-      self,
-      mock_tmp_dir,
-      unused_os_environ,
-      unused_os_makedirs,
-  ):
-
-    mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
-
-    launcher = emulator_launcher.EmulatorLauncher(
-        adb_path=self._adb_path,
-        adb_port=self._adb_port,
-        adb_server_port=self._adb_server_port,
-        emulator_console_port=self._emulator_console_port,
-        emulator_path=self._emulator_path,
-        avd_name=self._avd_name,
-        grpc_port=8554)
-
-    with mock.patch.object(
-        subprocess, 'Popen', autospec=True) as emulator_init, \
-        mock.patch.object(builtins, 'open', autospec=True) as f:
-      f.return_value.__enter__ = f()
-      launcher.launch_emulator_process()
-      emulator_init.assert_called_once_with(
-          args=self._expected_command + ['-grpc', '8554'] + self._ports +
-          self._snapshot,
-          env=self._expected_env_vars,
-          stdout=f(),
-          stderr=f())
-
-  @mock.patch.object(os, 'makedirs')
-  @mock.patch.object(os, 'environ', autospec=True, return_value=dict())
-  @mock.patch.object(tempfile, 'TemporaryDirectory', instance=True)
-  def test_snapshot(
-      self,
-      mock_tmp_dir,
-      unused_os_environ,
-      unused_os_makedirs,
-  ):
-
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
     launcher = emulator_launcher.EmulatorLauncher(
@@ -154,12 +94,104 @@ class EmulatorLauncherTest(absltest.TestCase):
         emulator_path=self._emulator_path,
         avd_name=self._avd_name,
         grpc_port=-1,
-        snapshot_name='my_snapshot')
+        show_perf_stats=show_perf_stats,
+    )
+
+    expected_env_vars = self._expected_env_vars
+    expected_env_vars['SHOW_PERF_STATS'] = '1' if show_perf_stats else '0'
+
+    with mock.patch.object(
+        subprocess, 'Popen', autospec=True
+    ) as emulator_init, mock.patch.object(builtins, 'open', autospec=True) as f:
+      f.return_value.__enter__ = f()
+      launcher.launch_emulator_process()
+      emulator_init.assert_called_once_with(
+          args=self._expected_command + self._ports + self._snapshot,
+          env=expected_env_vars,
+          stdout=f(),
+          stderr=f(),
+      )
+
+  @parameterized.named_parameters([
+      ('hide_perf_stats', False),
+      ('show_perf_stats', True),
+  ])
+  @mock.patch.object(os, 'makedirs')
+  @mock.patch.object(os, 'environ', autospec=True, return_value=dict())
+  @mock.patch.object(tempfile, 'TemporaryDirectory', instance=True)
+  def test_grpc_port(
+      self,
+      show_perf_stats: bool,
+      mock_tmp_dir,
+      unused_os_environ,
+      unused_os_makedirs,
+  ):
+    mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
+
+    launcher = emulator_launcher.EmulatorLauncher(
+        adb_path=self._adb_path,
+        adb_port=self._adb_port,
+        adb_server_port=self._adb_server_port,
+        emulator_console_port=self._emulator_console_port,
+        emulator_path=self._emulator_path,
+        avd_name=self._avd_name,
+        grpc_port=8554,
+        show_perf_stats=show_perf_stats,
+    )
+
+    expected_env_vars = self._expected_env_vars
+    expected_env_vars['SHOW_PERF_STATS'] = '1' if show_perf_stats else '0'
+
+    with mock.patch.object(
+        subprocess, 'Popen', autospec=True
+    ) as emulator_init, mock.patch.object(builtins, 'open', autospec=True) as f:
+      f.return_value.__enter__ = f()
+      launcher.launch_emulator_process()
+      emulator_init.assert_called_once_with(
+          args=self._expected_command
+          + ['-grpc', '8554']
+          + self._ports
+          + self._snapshot,
+          env=expected_env_vars,
+          stdout=f(),
+          stderr=f(),
+      )
+
+  @parameterized.named_parameters([
+      ('hide_perf_stats', False),
+      ('show_perf_stats', True),
+  ])
+  @mock.patch.object(os, 'makedirs')
+  @mock.patch.object(os, 'environ', autospec=True, return_value=dict())
+  @mock.patch.object(tempfile, 'TemporaryDirectory', instance=True)
+  def test_snapshot(
+      self,
+      show_perf_stats: bool,
+      mock_tmp_dir,
+      unused_os_environ,
+      unused_os_makedirs,
+  ):
+    mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
+
+    launcher = emulator_launcher.EmulatorLauncher(
+        adb_path=self._adb_path,
+        adb_port=self._adb_port,
+        adb_server_port=self._adb_server_port,
+        emulator_console_port=self._emulator_console_port,
+        emulator_path=self._emulator_path,
+        avd_name=self._avd_name,
+        grpc_port=-1,
+        snapshot_name='my_snapshot',
+        show_perf_stats=show_perf_stats,
+    )
 
     expected_snapshot = [
         '-snapshot', 'my_snapshot', '-feature',
         'AllowSnapshotMigration,MigratableSnapshotSave'
     ]
+
+    expected_env_vars = self._expected_env_vars
+    expected_env_vars['SHOW_PERF_STATS'] = '1' if show_perf_stats else '0'
 
     with mock.patch.object(
         subprocess, 'Popen', autospec=True) as emulator_init, \
@@ -168,20 +200,25 @@ class EmulatorLauncherTest(absltest.TestCase):
       launcher.launch_emulator_process()
       emulator_init.assert_called_once_with(
           args=self._expected_command + self._ports + expected_snapshot,
-          env=self._expected_env_vars,
+          env=expected_env_vars,
           stdout=f(),
-          stderr=f())
+          stderr=f(),
+      )
 
+  @parameterized.named_parameters([
+      ('hide_perf_stats', False),
+      ('show_perf_stats', True),
+  ])
   @mock.patch.object(os, 'makedirs')
   @mock.patch.object(os, 'environ', autospec=True, return_value=dict())
   @mock.patch.object(tempfile, 'TemporaryDirectory', instance=True)
   def test_network_restrict(
       self,
+      show_perf_stats: bool,
       mock_tmp_dir,
       unused_os_environ,
       unused_os_makedirs,
   ):
-
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
     launcher = emulator_launcher.EmulatorLauncher(
@@ -192,7 +229,9 @@ class EmulatorLauncherTest(absltest.TestCase):
         emulator_path=self._emulator_path,
         avd_name=self._avd_name,
         grpc_port=-1,
-        restrict_network=True)
+        restrict_network=True,
+        show_perf_stats=show_perf_stats,
+    )
 
     expected_snapshot = ['-no-snapshot']
     expected_network_restrict = [
@@ -200,17 +239,23 @@ class EmulatorLauncherTest(absltest.TestCase):
         'restrict=y'
     ]
 
+    expected_env_vars = self._expected_env_vars
+    expected_env_vars['SHOW_PERF_STATS'] = '1' if show_perf_stats else '0'
+
     with mock.patch.object(
         subprocess, 'Popen', autospec=True) as emulator_init, \
         mock.patch.object(builtins, 'open', autospec=True) as f:
       f.return_value.__enter__ = f()
       launcher.launch_emulator_process()
       emulator_init.assert_called_once_with(
-          self._expected_command + self._ports + expected_snapshot +
-          expected_network_restrict,
-          env=self._expected_env_vars,
+          self._expected_command
+          + self._ports
+          + expected_snapshot
+          + expected_network_restrict,
+          env=expected_env_vars,
           stdout=f(),
-          stderr=f())
+          stderr=f(),
+      )
 
 
 if __name__ == '__main__':
