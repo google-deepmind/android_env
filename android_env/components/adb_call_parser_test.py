@@ -34,29 +34,34 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_unknown_command(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=absltest.get_default_test_tmpdir())
+        adb, tmp_dir=absltest.get_default_test_tmpdir()
+    )
     request = adb_pb2.AdbRequest()
     response = parser.parse(request)
-    self.assertEqual(response.status,
-                     adb_pb2.AdbResponse.Status.UNKNOWN_COMMAND)
+    self.assertEqual(
+        response.status, adb_pb2.AdbResponse.Status.UNKNOWN_COMMAND
+    )
 
   def test_invalid_timeout(self):
     """AdbRequest.timeout_sec must be positive."""
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=absltest.get_default_test_tmpdir())
+        adb, tmp_dir=absltest.get_default_test_tmpdir()
+    )
     request = adb_pb2.AdbRequest()
     request.tap.x = 123
     request.timeout_sec = -5
     response = parser.parse(request)
-    self.assertEqual(response.status,
-                     adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)
+    self.assertEqual(
+        response.status, adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
+    )
 
   @mock.patch.object(os.path, 'exists', autospec=True)
   def test_install_apk_file_not_found(self, mock_exists):
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=absltest.get_default_test_tmpdir())
+        adb, tmp_dir=absltest.get_default_test_tmpdir()
+    )
     request = adb_pb2.AdbRequest()
     request.install_apk.filesystem.path = '/my/home/game.apk'
     mock_exists.return_value = False
