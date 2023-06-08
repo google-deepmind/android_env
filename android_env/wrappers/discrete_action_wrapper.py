@@ -41,7 +41,7 @@ class DiscreteActionWrapper(base_wrapper.BaseWrapper):
     self._parent_action_spec = self._env.action_spec()
     self._assert_base_env()
     self._action_grid = action_grid  # [height, width]
-    self._grid_size = np.product(self._action_grid)
+    self._grid_size = np.prod(self._action_grid)
     self._num_action_types = self._parent_action_spec['action_type'].num_values
     self._redundant_actions = redundant_actions
     self._noise = noise
@@ -58,9 +58,9 @@ class DiscreteActionWrapper(base_wrapper.BaseWrapper):
     """Number of discrete actions."""
 
     if self._redundant_actions:
-      return np.product(self._action_grid) * self._num_action_types
+      return np.prod(self._action_grid) * self._num_action_types
     else:
-      return np.product(self._action_grid) + self._num_action_types - 1
+      return np.prod(self._action_grid) + self._num_action_types - 1
 
   def step(self, action: dict[str, int]) -> dm_env.TimeStep:
     """Take a step in the base environment."""
