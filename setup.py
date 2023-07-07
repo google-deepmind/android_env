@@ -14,10 +14,10 @@
 
 """Simple package definition for using with `pip`."""
 
-from distutils import cmd
 import os
 
 import pkg_resources
+import setuptools
 from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.build_ext import build_ext
@@ -45,7 +45,7 @@ testing_requirements = [
 ]
 
 
-class _GenerateProtoFiles(cmd.Command):
+class _GenerateProtoFiles(setuptools.Command):
   """Command to generate protobuf bindings for AndroidEnv protos."""
 
   descriptions = 'Generates Python protobuf bindings for AndroidEnv protos.'
