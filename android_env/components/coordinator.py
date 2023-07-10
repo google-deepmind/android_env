@@ -356,12 +356,17 @@ class Coordinator:
 
     # Get current timestamp and update the delta.
     now = time.time()
-    timestamp_delta = (0 if self._latest_observation_time == 0 else
-                       (now - self._latest_observation_time) * 1e6)
+    timestamp_delta = (
+        0
+        if self._latest_observation_time == 0
+        else (now - self._latest_observation_time) * 1e6
+    )
     self._latest_observation_time = now
 
     # Grab pixels.
     if self._interaction_rate_sec > 0:
+      if self._interaction_thread is None:
+        raise ValueError('InteractionThread not initalized')
       pixels = self._interaction_thread.screenshot()  # Async mode.
     else:
       pixels = self._simulator.get_screenshot()  # Sync mode.

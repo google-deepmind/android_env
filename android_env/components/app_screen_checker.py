@@ -36,7 +36,7 @@ class _DumpsysNode:
     self._data = data
 
   @property
-  def data(self) -> str:
+  def data(self) -> Optional[str]:
     return self._data
 
   @property

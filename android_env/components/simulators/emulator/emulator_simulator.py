@@ -273,6 +273,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
         will be `ERROR` and the `error_message` field will be filled.
     """
     snapshot_name = request.args.get('snapshot_name', _DEFAULT_SNAPSHOT_NAME)
+    if self._snapshot_stub is None:
+      raise ValueError('snapshot_stub is not initialized.')
     snapshot_list = self._snapshot_stub.ListSnapshots(
         snapshot_service_pb2.SnapshotFilter(
             statusFilter=snapshot_service_pb2.SnapshotFilter.LoadStatus.All
@@ -318,6 +320,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
         will be `ERROR` and the `error_message` field will be filled.
     """
     snapshot_name = request.args.get('snapshot_name', _DEFAULT_SNAPSHOT_NAME)
+    if self._snapshot_stub is None:
+      raise ValueError('snapshot_stub is not initialized.')
     snapshot_result = self._snapshot_stub.SaveSnapshot(
         snapshot_service_pb2.SnapshotPackage(snapshot_id=snapshot_name)
     )

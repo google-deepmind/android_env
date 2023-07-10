@@ -96,6 +96,20 @@ class TaskManager:
 
     logging.info('Task config: %s', self._task)
 
+  @property
+  def setup_step_interpreter(
+      self,
+  ) -> setup_step_interpreter.SetupStepInterpreter:
+    if self._setup_step_interpreter is None:
+      raise ValueError('Setup step interpreter not initialized')
+    return self._setup_step_interpreter
+
+  @property
+  def logcat_thread(self) -> logcat_thread.LogcatThread:
+    if self._logcat_thread is None:
+      raise ValueError('Logcat thread not initialized')
+    return self._logcat_thread
+
   def stats(self) -> dict[str, Any]:
     """Returns a dictionary of stats.
 
@@ -108,7 +122,7 @@ class TaskManager:
 
   def setup_task(self) -> None:
     """Performs one-off task setup.."""
-    self._setup_step_interpreter.interpret(self._task.setup_steps)
+    self.setup_step_interpreter.interpret(self._task.setup_steps)
 
   def stop(self) -> None:
     """Suspends task processing."""
@@ -121,16 +135,15 @@ class TaskManager:
     """Starts task processing."""
 
     self._start_logcat_thread(log_stream=log_stream)
-    self._logcat_thread.resume()
+    self.logcat_thread.resume()
     self._start_dumpsys_thread(adb_call_parser_factory())
     self._start_setup_step_interpreter(adb_call_parser_factory())
 
   def reset_task(self) -> None:
     """Resets a task for a new run."""
-
-    self._logcat_thread.pause()
-    self._setup_step_interpreter.interpret(self._task.reset_steps)
-    self._logcat_thread.resume()
+    self.logcat_thread.pause()
+    self.setup_step_interpreter.interpret(self._task.reset_steps)
+    self.logcat_thread.resume()
 
     # Reset some other variables.
     if not self._is_bad_episode:
@@ -150,8 +163,7 @@ class TaskManager:
     """Performs one RL step."""
 
     self._stats['episode_steps'] = 0
-
-    self._logcat_thread.line_ready().wait()
+    self.logcat_thread.line_ready().wait()
     with self._lock:
       extras = self._get_current_extras()
 
@@ -168,7 +180,7 @@ class TaskManager:
 
     self._stats['episode_steps'] += 1
 
-    self._logcat_thread.line_ready().wait()
+    self.logcat_thread.line_ready().wait()
     with self._lock:
       reward = self._get_current_reward()
       extras = self._get_current_extras()
@@ -196,6 +208,8 @@ class TaskManager:
     """Determines the type of RL transition will be used."""
 
     # Check if user existed the task
+    if self._dumpsys_thread is None:
+      raise ValueError('DumpsysThread not initialized.')
     if self._dumpsys_thread.check_user_exited():
       self._increment_bad_state()
       self._stats['reset_count_user_exited'] += 1
