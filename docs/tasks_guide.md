@@ -69,9 +69,6 @@ how to put these into code.
         of the form `reward: 1.0`, then the task will capture this info using
         the regexp `^[Rr]eward: ([-+]?[0-9]*\\.?[0-9]*)$`.
 
-*   `extras_spec`: Determines the type and shape of extras exposed by the task.
-    Extras are usually parsed from logcat messages.
-
 </details>
 
 <details>
@@ -169,16 +166,6 @@ log_parsing_config: {
     json_extra: "^json_extra: (?P<json_extra>.*)$"
   }
 }
-
-# Capture expected shape and type of extras
-extras_spec: [
-  # Grid representing the state of the board.
-  { name: "grid" shape: [4, 4], dtype: INT32},
-  # Direction of the last swipe action that prompted that change in the state.
-  # 0: up, 1: right, 2: down, 3: left
-  { name: "direction" shape: [1], dtype: INT32 }
-]
-
 ```
 
 </details>
