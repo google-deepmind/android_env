@@ -18,7 +18,6 @@
 from absl import app
 from absl import flags
 from absl import logging
-
 from android_env import loader
 from dm_env import specs
 import numpy as np
