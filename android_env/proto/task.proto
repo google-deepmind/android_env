@@ -190,6 +190,9 @@ message Task {
   // Defines parameters for parsing messages from logcat.
   LogParsingConfig log_parsing_config = 9;
 
+  // NOTE: This field is deprecated and will be removed from this Task
+  // definition soon.
+  //
   // (Optional): The task may also define extras to help the RL agent.
   // An Extra in AndroidEnv is any information that apps may send to aid the
   // understanding of the task. The type of information sent through this
