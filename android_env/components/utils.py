@@ -39,17 +39,20 @@ def transpose_pixels(frame: np.ndarray) -> np.ndarray:
 
 def orient_pixels(frame: np.ndarray, orientation: int) -> np.ndarray:
   """Rotates screen pixels according to the given orientation."""
-  if orientation == 0:  # PORTRAIT_90
-    return frame
-  elif orientation == 1:  # LANDSCAPE_90
-    return np.rot90(frame, k=3, axes=(0, 1))
-  elif orientation == 2:  # PORTRAIT_180
-    return np.rot90(frame, k=2, axes=(0, 1))
-  elif orientation == 3:  # LANDSCAPE_270
-    return np.rot90(frame, k=1, axes=(0, 1))
-  else:
-    raise ValueError(
-        'Orientation must be an integer in [0, 3] but is %r' % orientation)
+
+  match orientation:
+    case 0:  # PORTRAIT_90
+      return frame
+    case 1:  # LANDSCAPE_90
+      return np.rot90(frame, k=3, axes=(0, 1))
+    case 2:  # PORTRAIT_180
+      return np.rot90(frame, k=2, axes=(0, 1))
+    case 3:  # LANDSCAPE_270
+      return np.rot90(frame, k=1, axes=(0, 1))
+    case _:
+      raise ValueError(
+          'Orientation must be an integer in [0, 3] but is %r' % orientation
+      )
 
 
 def convert_int_to_float(data: np.ndarray,

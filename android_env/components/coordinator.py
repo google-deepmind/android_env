@@ -387,20 +387,24 @@ class Coordinator:
     """
 
     try:
-      # If the action is a TOUCH or LIFT, send a touch event to the simulator.
-      if (action['action_type'] == action_type_lib.ActionType.TOUCH or
-          action['action_type'] == action_type_lib.ActionType.LIFT):
-        prepared_action = self._prepare_touch_action(action)
-        self._simulator.send_touch(prepared_action)
-      # If the action is a key event, send a key event to the simulator.
-      elif action['action_type'] == action_type_lib.ActionType.KEYDOWN:
-        self._simulator.send_key(
-            action['keycode'].item(0), event_type='keydown'
-        )
-      elif action['action_type'] == action_type_lib.ActionType.KEYUP:
-        self._simulator.send_key(action['keycode'].item(0), event_type='keyup')
-      elif action['action_type'] == action_type_lib.ActionType.KEYPRESS:
-        self._simulator.send_key(action['keycode'].item(0), event_type='keypress')
+      match action['action_type']:
+        # If the action is a TOUCH or LIFT, send a touch event to the simulator.
+        case action_type_lib.ActionType.TOUCH | action_type_lib.ActionType.LIFT:
+          prepared_action = self._prepare_touch_action(action)
+          self._simulator.send_touch(prepared_action)
+        # If the action is a key event, send a key event to the simulator.
+        case action_type_lib.ActionType.KEYDOWN:
+          self._simulator.send_key(
+              action['keycode'].item(0), event_type='keydown'
+          )
+        case action_type_lib.ActionType.KEYUP:
+          self._simulator.send_key(
+              action['keycode'].item(0), event_type='keyup'
+          )
+        case action_type_lib.ActionType.KEYPRESS:
+          self._simulator.send_key(
+              action['keycode'].item(0), event_type='keypress'
+          )
     except (socket.error, errors.SendActionError):
       logging.exception('Unable to execute action. Restarting simulator.')
       self._stats['relaunch_count_execute_action'] += 1

@@ -261,24 +261,25 @@ class AdbCallParser:
     location_type = install_apk.WhichOneof('location')
     logging.info('location_type: %s', location_type)
 
-    if location_type == 'filesystem':
-      fpath = install_apk.filesystem.path
-      if not os.path.exists(fpath):
-        response.status = adb_pb2.AdbResponse.Status.INTERNAL_ERROR
-        response.error_message = f'Could not find local_apk_path: {fpath}'
+    match location_type:
+      case 'filesystem':
+        fpath = install_apk.filesystem.path
+        if not os.path.exists(fpath):
+          response.status = adb_pb2.AdbResponse.Status.INTERNAL_ERROR
+          response.error_message = f'Could not find local_apk_path: {fpath}'
+          return response
+      case 'blob':
+        with tempfile.NamedTemporaryFile(
+            dir=self._tmp_dir, suffix='.apk', delete=False
+        ) as f:
+          fpath = f.name
+          f.write(install_apk.blob.contents)
+      case _:
+        response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
+        response.error_message = (
+            f'Unsupported `install_apk.location` type: {location_type}'
+        )
         return response
-    elif location_type == 'blob':
-      with tempfile.NamedTemporaryFile(
-          dir=self._tmp_dir, suffix='.apk', delete=False
-      ) as f:
-        fpath = f.name
-        f.write(install_apk.blob.contents)
-    else:
-      response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-      response.error_message = (
-          f'Unsupported `install_apk.location` type: {location_type}'
-      )
-      return response
 
     response, _ = self._execute_command(
         ['install', '-r', '-t', '-g', fpath], timeout=timeout
@@ -647,64 +648,78 @@ class AdbCallParser:
     namespace = adb_pb2.AdbRequest.SettingsRequest.Namespace.Name(
         request.name_space).lower()
 
-    verb = request.WhichOneof('verb')
-    if verb == 'get':
-      get = request.get
-      if not get.key:
-        response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-        response.error_message = (
-            f'Empty SettingsRequest.get.key. Got: {request}.')
-        return response
-      response, command_output = self._execute_command(
-          ['shell', 'settings', 'get', namespace, get.key], timeout=timeout)
-      response.settings.output = command_output
-    elif verb == 'put':
-      put = request.put
-      if not put.key or not put.value:
-        response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-        response.error_message = (
-            f'Empty SettingsRequest.put key or value. Got: {request}.')
-        return response
-      response, command_output = self._execute_command(
-          ['shell', 'settings', 'put', namespace, put.key, put.value],
-          timeout=timeout)
-      response.settings.output = command_output
-    elif verb == 'delete_key':
-      delete = request.delete_key
-      if not delete.key:
-        response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-        response.error_message = (
-            f'Empty SettingsRequest.delete_key.key. Got: {request}.')
-        return response
-      response, command_output = self._execute_command(
-          ['shell', 'settings', 'delete', namespace, delete.key],
-          timeout=timeout)
-      response.settings.output = command_output
-    elif verb == 'reset':
-      reset = request.reset
-      # At least one of `package_name` or `mode` should be given.
-      if (not reset.package_name and
-          reset.mode == adb_pb2.AdbRequest.SettingsRequest.Reset.Mode.UNKNOWN):
-        response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-        response.error_message = (
-            'At least one of SettingsRequest.reset package_name or mode should '
-            f'be given. Got: {request}.')
-        return response
+    match request.WhichOneof('verb'):
+      case 'get':
+        get = request.get
+        if not get.key:
+          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
+          response.error_message = (
+              f'Empty SettingsRequest.get.key. Got: {request}.'
+          )
+          return response
+        response, command_output = self._execute_command(
+            ['shell', 'settings', 'get', namespace, get.key], timeout=timeout
+        )
+        response.settings.output = command_output
+      case 'put':
+        put = request.put
+        if not put.key or not put.value:
+          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
+          response.error_message = (
+              f'Empty SettingsRequest.put key or value. Got: {request}.'
+          )
+          return response
+        response, command_output = self._execute_command(
+            ['shell', 'settings', 'put', namespace, put.key, put.value],
+            timeout=timeout,
+        )
+        response.settings.output = command_output
+      case 'delete_key':
+        delete = request.delete_key
+        if not delete.key:
+          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
+          response.error_message = (
+              f'Empty SettingsRequest.delete_key.key. Got: {request}.'
+          )
+          return response
+        response, command_output = self._execute_command(
+            ['shell', 'settings', 'delete', namespace, delete.key],
+            timeout=timeout,
+        )
+        response.settings.output = command_output
+      case 'reset':
+        reset = request.reset
+        # At least one of `package_name` or `mode` should be given.
+        if (
+            not reset.package_name
+            and reset.mode
+            == adb_pb2.AdbRequest.SettingsRequest.Reset.Mode.UNKNOWN
+        ):
+          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
+          response.error_message = (
+              'At least one of SettingsRequest.reset package_name or mode'
+              f' should be given. Got: {request}.'
+          )
+          return response
 
-      mode = adb_pb2.AdbRequest.SettingsRequest.Reset.Mode.Name(
-          reset.mode).lower()
-      arg = reset.package_name or mode
-      response, command_output = self._execute_command(
-          ['shell', 'settings', 'reset', namespace, arg], timeout=timeout)
-      response.settings.output = command_output
-    elif verb == 'list':
-      response, command_output = self._execute_command(
-          ['shell', 'settings', 'list', namespace], timeout=timeout)
-      response.settings.output = command_output
-    else:
-      response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-      response.error_message = (
-          f'Unknown SettingsRequest.verb. Got: {request}.')
+        mode = adb_pb2.AdbRequest.SettingsRequest.Reset.Mode.Name(
+            reset.mode
+        ).lower()
+        arg = reset.package_name or mode
+        response, command_output = self._execute_command(
+            ['shell', 'settings', 'reset', namespace, arg], timeout=timeout
+        )
+        response.settings.output = command_output
+      case 'list':
+        response, command_output = self._execute_command(
+            ['shell', 'settings', 'list', namespace], timeout=timeout
+        )
+        response.settings.output = command_output
+      case _:
+        response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
+        response.error_message = (
+            f'Unknown SettingsRequest.verb. Got: {request}.'
+        )
 
     return response
 
@@ -744,54 +759,58 @@ class AdbCallParser:
     request = request.package_manager
     response = adb_pb2.AdbResponse()
 
-    verb = request.WhichOneof('verb')
-    if verb == 'list':
-      what = request.list.WhichOneof('what')
-      response, output = self._execute_command(['shell', 'pm', 'list', what],
-                                               timeout=timeout)
+    match request.WhichOneof('verb'):
+      case 'list':
+        what = request.list.WhichOneof('what')
+        response, output = self._execute_command(
+            ['shell', 'pm', 'list', what], timeout=timeout
+        )
 
-      if output:
-        items = output.decode('utf-8').split()
-        # Remove prefix for each item.
-        prefix = {
-            'features': 'feature:',
-            'libraries': 'library:',
-            'packages': 'package:',
-        }[what]
-        items = [x[len(prefix):] for x in items if x.startswith(prefix)]
-        response.package_manager.list.items.extend(items)
-      response.package_manager.output = output
-    elif verb == 'clear':
-      package_name = request.clear.package_name
-      if not package_name:
-        response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-        response.error_message = (
-            f'Empty PackageManagerRequest.clear.package_name. Got: {request}.')
-        return response
+        if output:
+          items = output.decode('utf-8').split()
+          # Remove prefix for each item.
+          prefix = {
+              'features': 'feature:',
+              'libraries': 'library:',
+              'packages': 'package:',
+          }[what]
+          items = [x[len(prefix) :] for x in items if x.startswith(prefix)]
+          response.package_manager.list.items.extend(items)
+        response.package_manager.output = output
+      case 'clear':
+        package_name = request.clear.package_name
+        if not package_name:
+          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
+          response.error_message = (
+              f'Empty PackageManagerRequest.clear.package_name. Got: {request}.'
+          )
+          return response
 
-      args = ['shell', 'pm', 'clear', package_name]
-      if request.clear.user_id:
-        args.insert(3, '-f')
-        args.insert(4, request.clear.user_id)
-      response, response.package_manager.output = self._execute_command(
-          args, timeout=timeout)
-    elif verb == 'grant':
-      grant = request.grant
-      if not grant.package_name:
-        response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-        response.error_message = ('`grant.package_name` cannot be empty.')
-        return response
-
-      if not grant.permissions:
-        response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-        response.error_message = ('`grant.permissions` cannot be empty.')
-        return response
-
-      for permission in grant.permissions:
-        logging.info('Granting permission: %r', permission)
+        args = ['shell', 'pm', 'clear', package_name]
+        if request.clear.user_id:
+          args.insert(3, '-f')
+          args.insert(4, request.clear.user_id)
         response, response.package_manager.output = self._execute_command(
-            ['shell', 'pm', 'grant', grant.package_name, permission],
-            timeout=timeout)
+            args, timeout=timeout
+        )
+      case 'grant':
+        grant = request.grant
+        if not grant.package_name:
+          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
+          response.error_message = '`grant.package_name` cannot be empty.'
+          return response
+
+        if not grant.permissions:
+          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
+          response.error_message = '`grant.permissions` cannot be empty.'
+          return response
+
+        for permission in grant.permissions:
+          logging.info('Granting permission: %r', permission)
+          response, response.package_manager.output = self._execute_command(
+              ['shell', 'pm', 'grant', grant.package_name, permission],
+              timeout=timeout,
+          )
 
     return response
 
