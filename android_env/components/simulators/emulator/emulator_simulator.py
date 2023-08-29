@@ -181,7 +181,6 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       emulator_launcher_args.update({
           'adb_path': self._adb_controller_args['adb_path'],
           'adb_port': self._adb_port,
-          'adb_server_port': self._adb_controller_args['adb_server_port'],
           'emulator_console_port': self._console_port,
           'grpc_port': self._grpc_port,
           'tmp_dir': tmp_dir,

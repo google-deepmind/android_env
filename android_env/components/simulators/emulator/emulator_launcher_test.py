@@ -34,7 +34,6 @@ class EmulatorLauncherTest(parameterized.TestCase):
     self._emulator_path = 'fake/path/emulator'
     self._adb_path = 'fake/path/adb'
     self._adb_port = 5554
-    self._adb_server_port = 1234
     self._emulator_console_port = 5555
     self._avd_name = 'my_avd_name'
 
@@ -64,7 +63,6 @@ class EmulatorLauncherTest(parameterized.TestCase):
         'ANDROID_SDK_ROOT': '',
         'ANDROID_AVD_HOME': '',
         'ANDROID_EMULATOR_KVM_DEVICE': '/dev/kvm',
-        'ANDROID_ADB_SERVER_PORT': '1234',
         'LD_LIBRARY_PATH': ld_library_path,
         'QT_XKB_CONFIG_ROOT': str(self._emulator_path[:-8] + 'qt_config/'),
         'ANDROID_EMU_ENABLE_CRASH_REPORTING': '1',
@@ -89,7 +87,6 @@ class EmulatorLauncherTest(parameterized.TestCase):
     launcher = emulator_launcher.EmulatorLauncher(
         adb_path=self._adb_path,
         adb_port=self._adb_port,
-        adb_server_port=self._adb_server_port,
         emulator_console_port=self._emulator_console_port,
         emulator_path=self._emulator_path,
         avd_name=self._avd_name,
@@ -131,7 +128,6 @@ class EmulatorLauncherTest(parameterized.TestCase):
     launcher = emulator_launcher.EmulatorLauncher(
         adb_path=self._adb_path,
         adb_port=self._adb_port,
-        adb_server_port=self._adb_server_port,
         emulator_console_port=self._emulator_console_port,
         emulator_path=self._emulator_path,
         avd_name=self._avd_name,
@@ -176,7 +172,6 @@ class EmulatorLauncherTest(parameterized.TestCase):
     launcher = emulator_launcher.EmulatorLauncher(
         adb_path=self._adb_path,
         adb_port=self._adb_port,
-        adb_server_port=self._adb_server_port,
         emulator_console_port=self._emulator_console_port,
         emulator_path=self._emulator_path,
         avd_name=self._avd_name,
@@ -224,7 +219,6 @@ class EmulatorLauncherTest(parameterized.TestCase):
     launcher = emulator_launcher.EmulatorLauncher(
         adb_path=self._adb_path,
         adb_port=self._adb_port,
-        adb_server_port=self._adb_server_port,
         emulator_console_port=self._emulator_console_port,
         emulator_path=self._emulator_path,
         avd_name=self._avd_name,

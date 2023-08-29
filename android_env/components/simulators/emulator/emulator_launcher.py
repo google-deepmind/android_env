@@ -30,7 +30,6 @@ class EmulatorLauncher:
       self,
       adb_path: str,
       adb_port: int | None = None,
-      adb_server_port: int | None = None,
       emulator_console_port: int | None = None,
       grpc_port: int = -1,
       emulator_path: str = '',
@@ -50,7 +49,6 @@ class EmulatorLauncher:
     Args:
       adb_path: Filesystem path to `adb` executable binary.
       adb_port: ADB port for the Android device.
-      adb_server_port: Port of the ADB server deamon.
       emulator_console_port: Port for telnet communication with the emulator.
       grpc_port: Port for gRPC communication with the emulator.
       emulator_path: Path to the emulator binary.
@@ -71,7 +69,6 @@ class EmulatorLauncher:
 
     self._adb_path = os.path.expandvars(adb_path)
     self._adb_port = adb_port
-    self._adb_server_port = adb_server_port
     self._emulator_console_port = emulator_console_port
     self._grpc_port = grpc_port
     self._emulator_path = os.path.expandvars(emulator_path)
@@ -117,7 +114,6 @@ class EmulatorLauncher:
         'ANDROID_SDK_ROOT': self._android_sdk_root,
         'ANDROID_AVD_HOME': self._android_avd_home,
         'ANDROID_EMULATOR_KVM_DEVICE': self._kvm_device,
-        'ANDROID_ADB_SERVER_PORT': str(self._adb_server_port),
         'LD_LIBRARY_PATH': ld_library_path,
         'QT_XKB_CONFIG_ROOT': str(self._emulator_path[:-8] + 'qt_config/'),
         'ANDROID_EMU_ENABLE_CRASH_REPORTING': '1',
