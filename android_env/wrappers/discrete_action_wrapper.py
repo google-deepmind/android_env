@@ -24,7 +24,7 @@ from dm_env import specs
 import numpy as np
 
 
-NOISE_CLIP_VALUE = 0.4999
+_NOISE_CLIP_VALUE = 0.4999
 
 
 class DiscreteActionWrapper(base_wrapper.BaseWrapper):
@@ -134,8 +134,8 @@ class DiscreteActionWrapper(base_wrapper.BaseWrapper):
     noise_y = np.random.normal(loc=0.0, scale=self._noise)
 
     # Noise is clipped so that the action will strictly stay in the cell.
-    noise_x = max(min(noise_x, NOISE_CLIP_VALUE), -NOISE_CLIP_VALUE)
-    noise_y = max(min(noise_y, NOISE_CLIP_VALUE), -NOISE_CLIP_VALUE)
+    noise_x = max(min(noise_x, _NOISE_CLIP_VALUE), -_NOISE_CLIP_VALUE)
+    noise_y = max(min(noise_y, _NOISE_CLIP_VALUE), -_NOISE_CLIP_VALUE)
 
     x_pos = (x_pos_grid + 0.5 + noise_x) / self._action_grid[1]  # WIDTH
     y_pos = (y_pos_grid + 0.5 + noise_y) / self._action_grid[0]  # HEIGHT
