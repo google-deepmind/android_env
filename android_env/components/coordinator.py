@@ -92,7 +92,7 @@ class Coordinator:
     self._tmp_dir = tmp_dir or tempfile.gettempdir()
     self._orientation = np.zeros(4, dtype=np.uint8)
     self._interaction_rate_sec = interaction_rate_sec
-    self._interaction_thread = None
+    self._interaction_thread: InteractionThread | None = None
 
     # The size of the device screen in pixels (H x W).
     self._screen_size = np.array([0, 0], dtype=np.int32)
@@ -362,6 +362,7 @@ class Coordinator:
 
     # Grab pixels.
     if self._interaction_rate_sec > 0:
+      assert self._interaction_thread is not None
       pixels = self._interaction_thread.screenshot()  # Async mode.
     else:
       pixels = self._simulator.get_screenshot()  # Sync mode.
