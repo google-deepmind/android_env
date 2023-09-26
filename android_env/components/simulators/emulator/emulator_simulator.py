@@ -148,7 +148,9 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._grpc_port = _pick_emulator_grpc_port()
 
     self._channel = None
-    self._emulator_stub = None
+    self._emulator_stub: emulator_controller_pb2_grpc.EmulatorControllerStub | None = (
+        None
+    )
     self._snapshot_stub = None
     # Set the image format to RGBA. The width and height of the returned
     # screenshots will use the device's width and height.
@@ -272,6 +274,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       * If an error occurred during the snapshot loading process, the status
         will be `ERROR` and the `error_message` field will be filled.
     """
+    assert self._snapshot_stub is not None
     snapshot_name = request.args.get('snapshot_name', _DEFAULT_SNAPSHOT_NAME)
     snapshot_list = self._snapshot_stub.ListSnapshots(
         snapshot_service_pb2.SnapshotFilter(
@@ -317,6 +320,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       * If an error occurred during the snapshot saving process, the status
         will be `ERROR` and the `error_message` field will be filled.
     """
+    assert self._snapshot_stub is not None
     snapshot_name = request.args.get('snapshot_name', _DEFAULT_SNAPSHOT_NAME)
     snapshot_result = self._snapshot_stub.SaveSnapshot(
         snapshot_service_pb2.SnapshotPackage(snapshot_id=snapshot_name)
