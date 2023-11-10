@@ -230,16 +230,24 @@ class AdbCallParser:
       An AdbResponse.
     """
 
-    send_brodcast = request.send_broadcast
+    send_broadcast = request.send_broadcast
     response = adb_pb2.AdbResponse(status=adb_pb2.AdbResponse.Status.OK)
-    if not send_brodcast.action:
+    if not send_broadcast.action:
       response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
       response.error_message = ('`send_broadcast.{action}` cannot be empty.')
       return response
 
+    if send_broadcast.component:
+      component_args = ['-n', send_broadcast.component]
+    else:
+      component_args = []
+
     response, _ = self._execute_command(
-        ['shell', 'am', 'broadcast', '-a', send_brodcast.action],
-        timeout=timeout)
+        ['shell', 'am', 'broadcast', '-a', send_broadcast.action]
+        + component_args,
+        timeout=timeout,
+    )
+
     return response
 
   def _install_apk(

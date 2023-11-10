@@ -362,6 +362,18 @@ class AdbCallParserTest(parameterized.TestCase):
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
     self.assertEmpty(response.error_message)
 
+  def test_send_broadcast_with_component_successful(self):
+    adb = mock.create_autospec(adb_controller.AdbController)
+    parser = adb_call_parser.AdbCallParser(
+        adb, tmp_dir=absltest.get_default_test_tmpdir()
+    )
+    request = adb_pb2.AdbRequest()
+    request.send_broadcast.action = 'SOME-ACTION'
+    request.send_broadcast.component = 'SOME-COMPONENT'
+    response = parser.parse(request)
+    self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
+    self.assertEmpty(response.error_message)
+
   def test_uninstall_package_empty_package_name(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(

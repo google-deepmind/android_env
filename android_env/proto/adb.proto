@@ -52,6 +52,11 @@ message AdbRequest {
   message SendBroadcast {
     // Action to send during the broadcast event.
     string action = 1;
+
+    // Specify the component name with package name prefix to create an explicit
+    // intent, such as com.example.app/.ExampleActivity (see -n specification at
+    // https://developer.android.com/tools/adb#IntentSpec).
+    string component = 2;
   }
 
   message UninstallPackage {
