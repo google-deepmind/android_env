@@ -114,6 +114,69 @@ class AdbControllerTest(absltest.TestCase):
 
   @mock.patch.object(subprocess, 'check_output', autospec=True)
   @mock.patch.object(time, 'sleep', autospec=True)
+  def test_invalid_command(self, mock_sleep, mock_check_output):
+    # Arrange.
+    restart_sequence = ['fake_output'.encode('utf-8')] * 3
+    mock_check_output.side_effect = (
+        [
+            subprocess.CalledProcessError(returncode=1, cmd='blah'),
+        ]
+        + restart_sequence
+        + [subprocess.CalledProcessError(returncode=1, cmd='blah')]
+        # Don't restart if last call fails.
+    )
+    adb_controller = adb_controller_lib.AdbController(
+        adb_path='my_adb', device_name='awesome_device', adb_server_port=9999
+    )
+
+    # Act.
+    with self.assertRaises(errors.AdbControllerError):
+      adb_controller.execute_command(['my_command'], timeout=_TIMEOUT)
+
+    # Assert.
+    expected_env = self._env_before
+    expected_env['HOME'] = '/some/path/'
+    mock_check_output.assert_has_calls(
+        [
+            mock.call(
+                ['my_adb', '-P', '9999', '-s', 'awesome_device', 'my_command'],
+                stderr=subprocess.STDOUT,
+                timeout=_TIMEOUT,
+                env=expected_env,
+            ),
+            mock.call(
+                ['my_adb', '-P', '9999', 'kill-server'],
+                stderr=subprocess.STDOUT,
+                timeout=_TIMEOUT,
+                env=expected_env,
+            ),
+            mock.call(
+                ['my_adb', '-P', '9999', 'start-server'],
+                stderr=subprocess.STDOUT,
+                timeout=_TIMEOUT,
+                env=expected_env,
+            ),
+            mock.call(
+                ['my_adb', '-P', '9999', 'devices'],
+                stderr=subprocess.STDOUT,
+                timeout=_TIMEOUT,
+                env=expected_env,
+            ),
+            mock.call(
+                ['my_adb', '-P', '9999', '-s', 'awesome_device', 'my_command'],
+                stderr=subprocess.STDOUT,
+                timeout=_TIMEOUT,
+                env=expected_env,
+            ),
+        ],
+        any_order=False,
+    )
+    mock_sleep.assert_has_calls(
+        [mock.call(0.2), mock.call(2.0), mock.call(0.2)]
+    )
+
+  @mock.patch.object(subprocess, 'check_output', autospec=True)
+  @mock.patch.object(time, 'sleep', autospec=True)
   def test_avoid_infinite_recursion(self, mock_sleep, mock_check_output):
     del mock_sleep
     mock_check_output.side_effect = subprocess.CalledProcessError(

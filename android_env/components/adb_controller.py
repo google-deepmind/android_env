@@ -122,9 +122,10 @@ class AdbController:
     command = self.command_prefix(include_device_name=device_specific) + args
     command_str = 'adb ' + ' '.join(command[1:])
 
+    n_retries = 2
     n_tries = 1
     latest_error = None
-    while n_tries < 3:
+    while n_tries <= n_retries:
       try:
         logging.info('Executing ADB command: [%s]', command_str)
         cmd_output = subprocess.check_output(
@@ -149,7 +150,7 @@ class AdbController:
             logging.error('    %s', line)
         n_tries += 1
         latest_error = e
-        if device_specific:
+        if device_specific and n_tries <= n_retries:
           self._restart_server(timeout=timeout)
 
     raise errors.AdbControllerError(
