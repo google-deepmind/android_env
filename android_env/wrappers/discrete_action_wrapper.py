@@ -15,7 +15,7 @@
 
 """Wraps the AndroidEnv environment to provide discrete actions."""
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from android_env.components import action_type
 from android_env.wrappers import base_wrapper

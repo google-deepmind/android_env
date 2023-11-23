@@ -15,9 +15,10 @@
 
 """A component that parses and processes SetupSteps."""
 
+from collections.abc import Sequence
 import copy
 import time
-from typing import Any, Sequence
+from typing import Any
 
 from absl import logging
 from android_env.components import adb_call_parser as adb_call_parser_lib

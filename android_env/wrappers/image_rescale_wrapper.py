@@ -15,7 +15,7 @@
 
 """Wraps the AndroidEnv environment to rescale the observations."""
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from android_env.wrappers import base_wrapper
 import dm_env

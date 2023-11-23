@@ -15,7 +15,7 @@
 
 """Utils for AndroidEnv."""
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from dm_env import specs
 import numpy as np

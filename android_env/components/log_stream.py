@@ -16,8 +16,9 @@
 """Abstract class for handling a stream of logs from a simulator."""
 
 import abc
+from collections.abc import Sequence
 import threading
-from typing import Generator, Sequence
+from typing import Generator
 from absl import logging
 
 

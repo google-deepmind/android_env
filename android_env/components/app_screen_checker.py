@@ -15,13 +15,13 @@
 
 """Determines if the current app screen matches an expected app screen."""
 
+from collections.abc import Sequence
 import enum
 import re
 import time
-from typing import Callable, Optional, Sequence, Pattern
+from typing import Callable, Optional, Pattern
 
 from absl import logging
-
 from android_env.components import adb_call_parser as adb_call_parser_lib
 from android_env.components import errors
 from android_env.proto import adb_pb2
