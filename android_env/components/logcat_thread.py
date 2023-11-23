@@ -18,18 +18,15 @@
 from collections.abc import Callable
 import re
 import threading
-# `typing.Pattern` has been deprecated in Python 3.9 in favor of `re.Pattern`,
-# but it is not available even in slightly older Python versions.
-# Please see https://www.python.org/dev/peps/pep-0585/
-from typing import Match, NamedTuple, Pattern
+from typing import NamedTuple
 
 from absl import logging
 from android_env.components import log_stream as log_stream_lib
 
 
 class EventListener(NamedTuple):
-  regexp: Pattern[str]
-  handler_fn: Callable[[Pattern[str], Match[str]], None]
+  regexp: re.Pattern[str]
+  handler_fn: Callable[[re.Pattern[str], re.Match[str]], None]
 
 
 class LogcatThread:

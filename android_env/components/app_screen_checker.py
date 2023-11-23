@@ -19,7 +19,7 @@ from collections.abc import Callable, Sequence
 import enum
 import re
 import time
-from typing import Optional, Pattern
+from typing import Optional
 
 from absl import logging
 from android_env.components import adb_call_parser as adb_call_parser_lib
@@ -126,9 +126,11 @@ def build_tree_from_dumpsys_output(dumpsys_output: str) -> _DumpsysNode:
   return root
 
 
-def matches_path(dumpsys_activity_output: str,
-                 expected_view_hierarchy_path: Sequence[Pattern[str]],
-                 max_levels: int = 0) -> bool:
+def matches_path(
+    dumpsys_activity_output: str,
+    expected_view_hierarchy_path: Sequence[re.Pattern[str]],
+    max_levels: int = 0,
+) -> bool:
   """Returns True if the current dumpsys output matches the expected path.
 
   Args:

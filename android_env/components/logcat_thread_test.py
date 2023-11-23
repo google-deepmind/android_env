@@ -17,7 +17,6 @@
 
 import re
 import threading
-from typing import Match, Pattern
 
 from absl.testing import absltest
 from android_env.components import log_stream
@@ -108,7 +107,7 @@ class LogcatThreadTest(absltest.TestCase):
     # Set up a listener that modifies an arbitrary state.
     some_state = threading.Event()
 
-    def my_handler(event: Pattern[str], match: Match[str]):
+    def my_handler(event: re.Pattern[str], match: re.Match[str]):
       del event, match
       nonlocal some_state
       some_state.set()
