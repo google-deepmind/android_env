@@ -16,12 +16,13 @@
 """TaskManager handles all events and information related to the task."""
 
 import ast
+from collections.abc import Callable
 import copy
 import datetime
 import json
 import re
 import threading
-from typing import Any, Callable
+from typing import Any
 
 from absl import logging
 from android_env.components import adb_call_parser as adb_call_parser_lib
