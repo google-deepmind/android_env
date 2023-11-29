@@ -27,8 +27,8 @@ _LOGCAT_COMMAND = ['logcat', '-v', 'epoch']
 class AdbLogStream(log_stream.LogStream):
   """Manages adb logcat process for a locally running emulator."""
 
-  def __init__(self, adb_command_prefix: list[str], *args, **kwargs):
-    super().__init__(*args, **kwargs)
+  def __init__(self, adb_command_prefix: list[str], verbose: bool = False):
+    super().__init__(verbose=verbose)
     self._adb_command_prefix = adb_command_prefix
 
   def _get_stream_output(self):
