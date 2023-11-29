@@ -1131,32 +1131,45 @@ package:com.another.great.thingie
     self.assertEmpty(response.error_message)
     adb.execute_command.assert_called_once_with(expected, timeout=None)
 
-  def test_dumpsys_list_only_cannot_be_combined(self):
-    """When passing `-l`, the request cannot contain a few fields."""
+  @parameterized.named_parameters(
+      (
+          'window_service',
+          adb_pb2.AdbRequest.DumpsysRequest(list_only=True, service='window'),
+      ),
+      (
+          'arbitrary_args',
+          adb_pb2.AdbRequest.DumpsysRequest(
+              list_only=True, args=['myoption', 'anotheroption']
+          ),
+      ),
+      (
+          'skip_usb',
+          adb_pb2.AdbRequest.DumpsysRequest(
+              list_only=True, skip_services=['usb']
+          ),
+      ),
+  )
+  def test_dumpsys_list_only_cannot_be_combined(
+      self, dumpsys_request: adb_pb2.AdbRequest.DumpsysRequest
+  ):
+    """When `list_only==True`, the request cannot contain a few fields."""
+
+    # Arrange.
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
     parser = adb_call_parser.AdbCallParser(
         adb, tmp_dir=absltest.get_default_test_tmpdir())
-    for d in [
-        {
-            'service': 'window'
-        },
-        {
-            'args': ['myoption', 'anotheroption']
-        },
-        {
-            'skip_services': 'usb'
-        },
-    ]:
-      request = adb_pb2.AdbRequest(
-          dumpsys=adb_pb2.AdbRequest.DumpsysRequest(list_only=True, **d))
+    request = adb_pb2.AdbRequest(dumpsys=dumpsys_request)
 
-      response = parser.parse(request)
+    # Act.
+    response = parser.parse(request)
 
-      self.assertEqual(response.status,
-                       adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)
-      self.assertNotEmpty(response.error_message)
-      adb.execute_command.assert_not_called()
+    # Assert.
+    self.assertEqual(
+        response.status, adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
+    )
+    self.assertNotEmpty(response.error_message)
+    adb.execute_command.assert_not_called()
 
   def test_dumpsys_list_only_success(self):
     adb = mock.create_autospec(adb_controller.AdbController)
