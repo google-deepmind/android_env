@@ -126,15 +126,17 @@ class EmulatorSimulatorTest(absltest.TestCase):
         })
     self.assertNotEqual(simulator._grpc_port, 8554)
 
-  def test_launch(self):
+  def test_launch_operation_order(self):
+    """Makes sure that adb_controller is started before Emulator is launched."""
 
-    # Make sure that adb_controller is started before Emulator is launched.
+    # Arrange.
     call_order = []
-    self._adb_controller.init_server.side_effect = (
-        lambda *a, **kw: call_order.append('init_server'))
+    self._adb_controller.init_server.side_effect = lambda: call_order.append(
+        'init_server'
+    )
     self._launcher.launch_emulator_process.side_effect = (
-        lambda *a, **kw: call_order.append('launch_emulator_process'))
-
+        lambda: call_order.append('launch_emulator_process')
+    )
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
@@ -145,9 +147,11 @@ class EmulatorSimulatorTest(absltest.TestCase):
             'prompt_regex': 'awesome>',
         })
 
-    # The simulator should launch and not crash.
-    simulator.launch()
+    # Act.
+    simulator.launch()  # The simulator should launch and not crash.
 
+    # Assert.
+    # The adb server should be initialized before launching the emulator.
     self.assertEqual(call_order, ['init_server', 'launch_emulator_process'])
 
   def test_close(self):
