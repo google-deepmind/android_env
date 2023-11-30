@@ -25,21 +25,6 @@ from android_env.proto import state_pb2
 import numpy as np
 
 
-def _print_logs_on_exception(func):
-  """Decorator function for printing simulator logs upon any exception."""
-  def wrapper(*args, **kwargs):
-    try:
-      return func(*args, **kwargs)
-    except Exception as error:
-      # Calls self.get_logs since self is the first arg.
-      for line in args[0].get_logs().splitlines():
-        logging.error(line)
-      raise errors.SimulatorError(
-          'Exception caught in simulator. Please see the simulator logs '
-          'above for more details.') from error
-  return wrapper
-
-
 class BaseSimulator(metaclass=abc.ABCMeta):
   """An interface for communicating with an Android simulator."""
 
@@ -75,12 +60,19 @@ class BaseSimulator(metaclass=abc.ABCMeta):
   def create_log_stream(self) -> log_stream.LogStream:
     """Creates a stream of logs from the simulator."""
 
-  @_print_logs_on_exception
   def launch(self) -> None:
     """Starts the simulator."""
 
     self._num_launch_attempts += 1
-    self._launch_impl()
+    try:
+      self._launch_impl()
+    except Exception as error:
+      for line in self.get_logs().splitlines():
+        logging.error(line)
+      raise errors.SimulatorError(
+          'Exception caught in simulator. Please see the simulator logs '
+          'above for more details.'
+      ) from error
 
   @abc.abstractmethod
   def _launch_impl(self) -> None:
