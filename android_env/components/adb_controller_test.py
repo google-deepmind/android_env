@@ -22,6 +22,7 @@ from unittest import mock
 
 from absl.testing import absltest
 from android_env.components import adb_controller as adb_controller_lib
+from android_env.components import config_classes
 from android_env.components import errors
 
 # Timeout to be used by default in tests below. Set to a small value to avoid
@@ -38,14 +39,24 @@ class AdbControllerTest(absltest.TestCase):
     os.environ['HOME'] = '$MY_ENV_VAR'
     self._env_before = os.environ
     self._adb_controller = adb_controller_lib.AdbController(
-        adb_path='my_adb', device_name='awesome_device', adb_server_port=9999)
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            adb_server_port=9999,
+        )
+    )
 
   @mock.patch.object(subprocess, 'check_output', autospec=True)
   @mock.patch.object(time, 'sleep', autospec=True)
   def test_init_server(self, mock_sleep, mock_check_output):
     # Arrange.
     adb_controller = adb_controller_lib.AdbController(
-        adb_path='my_adb', device_name='awesome_device', adb_server_port=9999)
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            adb_server_port=9999,
+        )
+    )
 
     # Act.
     adb_controller.init_server(timeout=_TIMEOUT)
@@ -69,7 +80,12 @@ class AdbControllerTest(absltest.TestCase):
         subprocess.CalledProcessError(returncode=1, cmd='blah'),
     ] + ['fake_output'.encode('utf-8')] * 4
     adb_controller = adb_controller_lib.AdbController(
-        adb_path='my_adb', device_name='awesome_device', adb_server_port=9999)
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            adb_server_port=9999,
+        )
+    )
 
     # Act.
     adb_controller.execute_command(['my_command'], timeout=_TIMEOUT)
@@ -126,7 +142,11 @@ class AdbControllerTest(absltest.TestCase):
         # Don't restart if last call fails.
     )
     adb_controller = adb_controller_lib.AdbController(
-        adb_path='my_adb', device_name='awesome_device', adb_server_port=9999
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            adb_server_port=9999,
+        )
     )
 
     # Act.
@@ -182,7 +202,12 @@ class AdbControllerTest(absltest.TestCase):
     mock_check_output.side_effect = subprocess.CalledProcessError(
         returncode=1, cmd='blah')
     adb_controller = adb_controller_lib.AdbController(
-        adb_path='my_adb', device_name='awesome_device', adb_server_port=9999)
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            adb_server_port=9999,
+        )
+    )
     self.assertRaises(
         errors.AdbControllerError,
         adb_controller.execute_command, ['my_command'], timeout=_TIMEOUT)
@@ -194,10 +219,13 @@ class AdbControllerInitTest(absltest.TestCase):
     os.environ['ANDROID_HOME'] = '/usr/local/Android/Sdk'
     os.environ['ANDROID_ADB_SERVER_PORT'] = '1337'
     adb_controller_lib.AdbController(
-        adb_path='my_adb',
-        device_name='awesome_device',
-        adb_server_port=9999,
-        default_timeout=_TIMEOUT)
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            adb_server_port=9999,
+            default_timeout=_TIMEOUT,
+        )
+    )
     self.assertNotIn('ANDROID_HOME', os.environ)
     self.assertNotIn('ANDROID_ADB_SERVER_PORT', os.environ)
 

@@ -20,30 +20,20 @@ import subprocess
 import time
 
 from absl import logging
+from android_env.components import config_classes
 from android_env.components import errors
 
 
 class AdbController:
   """Manages communication with adb."""
 
-  def __init__(self,
-               device_name: str = '',
-               adb_path: str = 'adb',
-               adb_server_port: int = 5037,
-               default_timeout: float = 120.0):
-    """Instantiates an AdbController object.
+  def __init__(self, config: config_classes.AdbControllerConfig):
+    """Instantiates an AdbController object."""
 
-    Args:
-      device_name: Name of the device to communicate with.
-      adb_path: Path to the adb binary.
-      adb_server_port: Port for adb server.
-      default_timeout: Default timeout in seconds.
-    """
-
-    self._device_name = device_name
-    self._adb_path = os.path.expandvars(adb_path)
-    self._adb_server_port = str(adb_server_port)
-    self._default_timeout = default_timeout
+    self._device_name = config.device_name
+    self._adb_path = os.path.expandvars(config.adb_path)
+    self._adb_server_port = str(config.adb_server_port)
+    self._default_timeout = config.default_timeout
     logging.info('adb_path: %r', self._adb_path)
 
     # Unset problematic environment variables. ADB commands will fail if these

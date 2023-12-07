@@ -18,6 +18,7 @@
 import os
 
 from android_env import environment
+from android_env.components import config_classes
 from android_env.components import coordinator as coordinator_lib
 from android_env.components import task_manager as task_manager_lib
 from android_env.components.simulators.emulator import emulator_simulator
@@ -49,10 +50,6 @@ def load(task_path: str,
 
   # Create simulator.
   simulator = emulator_simulator.EmulatorSimulator(
-      adb_controller_args=dict(
-          adb_path=os.path.expanduser(adb_path),
-          adb_server_port=5037,
-      ),
       emulator_launcher_args=dict(
           avd_name=avd_name,
           android_avd_home=os.path.expanduser(android_avd_home),
@@ -60,6 +57,10 @@ def load(task_path: str,
           emulator_path=os.path.expanduser(emulator_path),
           run_headless=run_headless,
           gpu_mode='swiftshader_indirect',
+      ),
+      adb_controller_config=config_classes.AdbControllerConfig(
+          adb_path=os.path.expanduser(adb_path),
+          adb_server_port=5037,
       ),
   )
 

@@ -21,6 +21,7 @@ import time
 
 from absl import logging
 from android_env.components import adb_controller
+from android_env.components import config_classes
 from android_env.components import log_stream
 from android_env.components.simulators import base_simulator
 import numpy as np
@@ -128,7 +129,7 @@ class FakeSimulator(base_simulator.BaseSimulator):
     return 'fake_simulator'
 
   def create_adb_controller(self):
-    return FakeAdbController()
+    return FakeAdbController(config_classes.AdbControllerConfig())
 
   def create_log_stream(self) -> log_stream.LogStream:
     return FakeLogStream()

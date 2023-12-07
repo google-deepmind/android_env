@@ -22,6 +22,7 @@ from typing import Any
 from absl import logging
 from android_env.components import adb_controller
 from android_env.components import adb_log_stream
+from android_env.components import config_classes
 from android_env.components import errors
 from android_env.components import log_stream
 from android_env.components.simulators import base_simulator
@@ -110,7 +111,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   def __init__(
       self,
       emulator_launcher_args: dict[str, Any],
-      adb_controller_args: dict[str, Any],
+      adb_controller_config: config_classes.AdbControllerConfig,
       tmp_dir: str = '/tmp/android_env/simulator',
       logfile_path: str | None = None,
       launch_n_times_without_reboot: int = 1,
@@ -121,7 +122,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
     Args:
       emulator_launcher_args: Arguments for EmulatorLauncher.
-      adb_controller_args: Arguments for AdbController.
+      adb_controller_config: Arguments for AdbController.
       tmp_dir: Temporary directory to hold simulator files.
       logfile_path: Path to file which holds emulator logs. If not provided, it
         will be determined by the EmulatorLauncher.
@@ -169,11 +170,14 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     super().__init__(verbose_logs=verbose_logs)
 
     # Initialize own ADB controller.
-    self._adb_controller_args = adb_controller_args
+    self._adb_controller_config = adb_controller_config
+    self._adb_controller_config.device_name = self.adb_device_name()
     self._adb_controller = self.create_adb_controller()
     self._adb_controller.init_server()
-    logging.info('Initialized simulator with ADB server port %r.',
-                 self._adb_controller_args['adb_server_port'])
+    logging.info(
+        'Initialized simulator with ADB server port %r.',
+        self._adb_controller_config.adb_server_port,
+    )
 
     # If necessary, create EmulatorLauncher.
     if self._existing_emulator_provided:
@@ -181,9 +185,9 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._launcher = None
     else:
       emulator_launcher_args.update({
-          'adb_path': self._adb_controller_args['adb_path'],
+          'adb_path': self._adb_controller_config.adb_path,
           'adb_port': self._adb_port,
-          'adb_server_port': self._adb_controller_args['adb_server_port'],
+          'adb_server_port': self._adb_controller_config.adb_server_port,
           'emulator_console_port': self._console_port,
           'grpc_port': self._grpc_port,
           'tmp_dir': tmp_dir,
@@ -207,8 +211,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
   def create_adb_controller(self):
     """Returns an ADB controller which can communicate with this simulator."""
-    return adb_controller.AdbController(
-        device_name=self.adb_device_name(), **self._adb_controller_args)
+    return adb_controller.AdbController(self._adb_controller_config)
 
   def create_log_stream(self) -> log_stream.LogStream:
     return adb_log_stream.AdbLogStream(

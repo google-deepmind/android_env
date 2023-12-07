@@ -22,6 +22,7 @@ from unittest import mock
 from absl.testing import absltest
 from android_env import environment
 from android_env import loader
+from android_env.components import config_classes
 from android_env.components import coordinator as coordinator_lib
 from android_env.components import task_manager as task_manager_lib
 from android_env.components.simulators.emulator import emulator_simulator
@@ -51,17 +52,18 @@ class LoaderTest(absltest.TestCase):
 
     self.assertIsInstance(env, environment.AndroidEnv)
     simulator.assert_called_with(
-        adb_controller_args=dict(
-            adb_path=os.path.expanduser('~/Android/Sdk/platform-tools/adb'),
-            adb_server_port=5037,
-        ),
         emulator_launcher_args=dict(
             avd_name='my_avd',
             android_avd_home=os.path.expanduser('~/.android/avd'),
             android_sdk_root=os.path.expanduser('~/Android/Sdk'),
             emulator_path=os.path.expanduser('~/Android/Sdk/emulator/emulator'),
             run_headless=False,
-            gpu_mode='swiftshader_indirect'),
+            gpu_mode='swiftshader_indirect',
+        ),
+        adb_controller_config=config_classes.AdbControllerConfig(
+            adb_path=os.path.expanduser('~/Android/Sdk/platform-tools/adb'),
+            adb_server_port=5037,
+        ),
     )
     coordinator.assert_called_with(
         simulator.return_value,
