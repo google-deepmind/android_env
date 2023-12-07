@@ -115,7 +115,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       logfile_path: str | None = None,
       launch_n_times_without_reboot: int = 1,
       launch_n_times_without_reinstall: int = 2,
-      **kwargs,
+      verbose_logs: bool = False,
   ):
     """Instantiates an EmulatorSimulator.
 
@@ -129,7 +129,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
         emulator before rebooting (reboot on the n+1-st try).
       launch_n_times_without_reinstall: The number of times to try launching the
         emulator before reinstalling (reinstall on the n+1-st try).
-      **kwargs: keyword arguments for base class.
+      verbose_logs: If true, the log stream of the simulator will be verbose.
     """
 
     # If adb_port, console_port and grpc_port are all already provided,
@@ -166,7 +166,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     self._launch_n_times_without_reboot = launch_n_times_without_reboot
     self._launch_n_times_without_reinstall = launch_n_times_without_reinstall
 
-    super().__init__(**kwargs)
+    super().__init__(verbose_logs=verbose_logs)
 
     # Initialize own ADB controller.
     self._adb_controller_args = adb_controller_args
