@@ -30,3 +30,19 @@ class AdbControllerConfig:
   adb_server_port: int = 5037
   # Default timeout in seconds for internal commands.
   default_timeout: float = 120.0
+
+
+@dataclasses.dataclass
+class SimulatorConfig:
+  """Base class for all simulator configs."""
+
+  # If true, the log stream of the simulator will be verbose.
+  verbose_logs: bool = False
+
+
+@dataclasses.dataclass
+class FakeSimulatorConfig(SimulatorConfig):
+  """Config class for FakeSimulator."""
+
+  # The dimensions in pixels of the device screen (HxW).
+  screen_dimensions: tuple[int, int] = (0, 0)

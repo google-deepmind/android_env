@@ -17,6 +17,7 @@
 
 import re
 from absl.testing import absltest
+from android_env.components import config_classes
 from android_env.components.simulators.fake import fake_simulator
 import numpy as np
 
@@ -24,18 +25,24 @@ import numpy as np
 class FakeSimulatorTest(absltest.TestCase):
 
   def test_device_name(self):
-    simulator = fake_simulator.FakeSimulator(screen_dimensions=(320, 480))
+    simulator = fake_simulator.FakeSimulator(
+        config_classes.FakeSimulatorConfig(screen_dimensions=(320, 480))
+    )
     self.assertEqual(simulator.adb_device_name(), 'fake_simulator')
 
   def test_launch_close(self):
     # The simulator should launch and not crash.
-    simulator = fake_simulator.FakeSimulator(screen_dimensions=(320, 480))
+    simulator = fake_simulator.FakeSimulator(
+        config_classes.FakeSimulatorConfig(screen_dimensions=(320, 480))
+    )
     simulator.launch()
     # Closing the simulator should also not crash.
     simulator.close()
 
   def test_get_screenshot(self):
-    simulator = fake_simulator.FakeSimulator(screen_dimensions=(320, 480))
+    simulator = fake_simulator.FakeSimulator(
+        config_classes.FakeSimulatorConfig(screen_dimensions=(320, 480))
+    )
     simulator.launch()
 
     screenshot = simulator.get_screenshot()
@@ -43,7 +50,9 @@ class FakeSimulatorTest(absltest.TestCase):
     np.testing.assert_equal(screenshot.dtype, np.uint8)
 
   def test_log_stream(self):
-    simulator = fake_simulator.FakeSimulator(screen_dimensions=(320, 480))
+    simulator = fake_simulator.FakeSimulator(
+        config_classes.FakeSimulatorConfig(screen_dimensions=(320, 480))
+    )
     simulator.launch()
     log_stream = simulator.create_log_stream()
     # Start yielding lines from LogStream.
@@ -61,7 +70,9 @@ class FakeSimulatorTest(absltest.TestCase):
         break
 
   def test_adb_output(self):
-    simulator = fake_simulator.FakeSimulator(screen_dimensions=(320, 480))
+    simulator = fake_simulator.FakeSimulator(
+        config_classes.FakeSimulatorConfig(screen_dimensions=(320, 480))
+    )
     simulator.launch()
     adb_controller = simulator.create_adb_controller()
     line = adb_controller.execute_command(['shell', 'dumpsys', 'input'])
@@ -79,7 +90,9 @@ class FakeSimulatorTest(absltest.TestCase):
                      'topActivity=ComponentInfo{fake_activity}')
 
   def test_send_touch(self):
-    simulator = fake_simulator.FakeSimulator(screen_dimensions=(320, 480))
+    simulator = fake_simulator.FakeSimulator(
+        config_classes.FakeSimulatorConfig(screen_dimensions=(320, 480))
+    )
     simulator.launch()
     simulator.send_touch([(0, 1, True, 0)])
     simulator.send_touch([(0, 1, False, 0)])
@@ -87,7 +100,9 @@ class FakeSimulatorTest(absltest.TestCase):
     # without crashing anything.
 
   def test_send_key(self):
-    simulator = fake_simulator.FakeSimulator(screen_dimensions=(320, 480))
+    simulator = fake_simulator.FakeSimulator(
+        config_classes.FakeSimulatorConfig(screen_dimensions=(320, 480))
+    )
     simulator.launch()
     simulator.send_key(np.int32(123), 'keydown')
     simulator.send_key(np.int32(123), 'keyup')

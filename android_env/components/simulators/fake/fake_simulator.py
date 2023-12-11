@@ -106,20 +106,10 @@ class FakeAdbController(adb_controller.AdbController):
 class FakeSimulator(base_simulator.BaseSimulator):
   """FakeSimulator class."""
 
-  def __init__(
-      self,
-      screen_dimensions: tuple[int, int] = (480, 320),
-      verbose_logs: bool = False,
-  ):
-    """FakeSimulator class that can replace EmulatorSimulator in AndroidEnv.
-
-    Args:
-      screen_dimensions: desired screen dimensions in pixels. This determines
-        the shape of the screenshots returned by get_screenshot().
-      verbose_logs: If true, the log stream of the simulator will be verbose.
-    """
-    super().__init__(verbose_logs=verbose_logs)
-    self._screen_dimensions = np.array(screen_dimensions)
+  def __init__(self, config: config_classes.FakeSimulatorConfig):
+    """FakeSimulator class that can replace EmulatorSimulator in AndroidEnv."""
+    super().__init__(verbose_logs=config.verbose_logs)
+    self._screen_dimensions = np.array(config.screen_dimensions)
     logging.info('Created FakeSimulator.')
 
   def get_logs(self) -> str:

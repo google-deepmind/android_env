@@ -18,6 +18,7 @@
 from unittest import mock
 
 from absl.testing import absltest
+from android_env.components import config_classes
 from android_env.components import errors
 # fake_simulator.FakeSimulator inherits from BaseSimulator, so there's no need
 # to import it here explicitly.
@@ -28,19 +29,25 @@ import numpy as np
 class BaseSimulatorTest(absltest.TestCase):
 
   def test_launch(self):
-    simulator = fake_simulator.FakeSimulator(screen_dimensions=(640, 480))
+    simulator = fake_simulator.FakeSimulator(
+        config_classes.FakeSimulatorConfig(screen_dimensions=(640, 480))
+    )
     # The simulator should launch and not crash.
     simulator.launch()
 
   def test_launch_close(self):
-    simulator = fake_simulator.FakeSimulator()
+    simulator = fake_simulator.FakeSimulator(
+        config_classes.FakeSimulatorConfig()
+    )
     # The simulator should launch and not crash.
     simulator.launch()
     # Closing the simulator should also not crash.
     simulator.close()
 
   def test_get_screenshot(self):
-    simulator = fake_simulator.FakeSimulator(screen_dimensions=(640, 480))
+    simulator = fake_simulator.FakeSimulator(
+        config_classes.FakeSimulatorConfig(screen_dimensions=(640, 480))
+    )
     # The simulator should launch and not crash.
     simulator.launch()
 
@@ -48,7 +55,9 @@ class BaseSimulatorTest(absltest.TestCase):
     np.testing.assert_equal(screenshot.shape, [640, 480, 3])
 
   def test_print_logs_on_exception(self):
-    simulator = fake_simulator.FakeSimulator()
+    simulator = fake_simulator.FakeSimulator(
+        config_classes.FakeSimulatorConfig()
+    )
     with mock.patch.object(simulator, 'get_logs') as mock_get_logs, \
          mock.patch.object(simulator, '_launch_impl', autospec=True) as mock_launch:
       mock_launch.side_effect = ValueError('Oh no!')
