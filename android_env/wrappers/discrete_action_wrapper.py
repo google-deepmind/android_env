@@ -33,7 +33,7 @@ class DiscreteActionWrapper(base_wrapper.BaseWrapper):
   def __init__(
       self,
       env: dm_env.Environment,
-      action_grid: Sequence[int] | None = (10, 10),
+      action_grid: Sequence[int] = (10, 10),
       redundant_actions: bool = True,
       noise: float = 0.1,
   ):
@@ -58,9 +58,9 @@ class DiscreteActionWrapper(base_wrapper.BaseWrapper):
     """Number of discrete actions."""
 
     if self._redundant_actions:
-      return np.prod(self._action_grid) * self._num_action_types
+      return self._grid_size * self._num_action_types
     else:
-      return np.prod(self._action_grid) + self._num_action_types - 1
+      return self._grid_size + self._num_action_types - 1
 
   def step(self, action: dict[str, int]) -> dm_env.TimeStep:
     """Take a step in the base environment."""
