@@ -19,7 +19,7 @@ from collections.abc import Callable, Sequence
 import enum
 import re
 import time
-from typing import Optional
+from typing import Self
 
 from absl import logging
 from android_env.components import adb_call_parser as adb_call_parser_lib
@@ -40,12 +40,12 @@ class _DumpsysNode:
     return self._data
 
   @property
-  def children(self) -> list['_DumpsysNode']:
+  def children(self) -> list[Self]:
     return self._children
 
   def find_child(
-      self, predicate: Callable[['_DumpsysNode'], bool], max_levels: int = 0
-  ) -> Optional['_DumpsysNode']:
+      self, predicate: Callable[[Self], bool], max_levels: int = 0
+  ) -> Self | None:
     """Returns the first direct child that matches `predicate`, None otherwise.
 
     Args:
