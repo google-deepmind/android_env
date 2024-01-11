@@ -23,6 +23,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from android_env.components import action_type
 from android_env.components import adb_call_parser
+from android_env.components import config_classes
 from android_env.components import coordinator as coordinator_lib
 from android_env.components import errors
 from android_env.components import task_manager
@@ -62,10 +63,8 @@ class CoordinatorTest(parameterized.TestCase):
             autospec=True,
             return_value=self._adb_call_parser))
     self._coordinator = coordinator_lib.Coordinator(
-        simulator=self._simulator,
-        task_manager=self._task_manager,
-        num_fingers=1,
-        periodic_restart_time_min=0)
+        simulator=self._simulator, task_manager=self._task_manager
+    )
 
   def tearDown(self):
     super().tearDown()
@@ -87,8 +86,8 @@ class CoordinatorTest(parameterized.TestCase):
     self._coordinator = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
-        num_fingers=3,
-        periodic_restart_time_min=0)
+        config=config_classes.CoordinatorConfig(num_fingers=3),
+    )
     self._coordinator.rl_reset()
     expected_actions = [
         # (x, y, is_down, identifier).
@@ -159,8 +158,10 @@ class CoordinatorTest(parameterized.TestCase):
       coordinator = coordinator_lib.Coordinator(
           simulator=self._simulator,
           task_manager=self._task_manager,
-          num_fingers=1,
-          interaction_rate_sec=0.016)
+          config=config_classes.CoordinatorConfig(
+              num_fingers=1, interaction_rate_sec=0.016
+          ),
+      )
 
       def fake_rl_step(agent_action, simulator_signals):
         del agent_action
@@ -199,8 +200,10 @@ class CoordinatorTest(parameterized.TestCase):
     coordinator = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
-        num_fingers=1,
-        interaction_rate_sec=0.5)
+        config=config_classes.CoordinatorConfig(
+            num_fingers=1, interaction_rate_sec=0.5
+        ),
+    )
     ts1 = coordinator.rl_step(
         agent_action={
             'action_type': np.array(action_type.ActionType.LIFT),
@@ -236,8 +239,10 @@ class CoordinatorTest(parameterized.TestCase):
     coordinator = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
-        num_fingers=1,
-        interaction_rate_sec=0.01)
+        config=config_classes.CoordinatorConfig(
+            num_fingers=1, interaction_rate_sec=0.01
+        ),
+    )
     ts1 = coordinator.rl_step(
         agent_action={
             'action_type': np.array(action_type.ActionType.LIFT),
@@ -266,9 +271,12 @@ class CoordinatorTest(parameterized.TestCase):
       coordinator = coordinator_lib.Coordinator(
           simulator=self._simulator,
           task_manager=self._task_manager,
-          num_fingers=1,
-          periodic_restart_time_min=1E-6,
-          interaction_rate_sec=0.5)
+          config=config_classes.CoordinatorConfig(
+              num_fingers=1,
+              periodic_restart_time_min=1e-6,
+              interaction_rate_sec=0.5,
+          ),
+      )
       mock_interaction_thread.stop.assert_not_called()
       mock_interaction_thread.join.assert_not_called()
       time.sleep(0.1)
@@ -308,8 +316,8 @@ class CoordinatorTest(parameterized.TestCase):
     self._coordinator = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
-        num_fingers=3,
-        periodic_restart_time_min=0)
+        config=config_classes.CoordinatorConfig(num_fingers=3),
+    )
 
     def fake_rl_step(simulator_signals):
       return dm_env.transition(
@@ -406,8 +414,10 @@ class CoordinatorTest(parameterized.TestCase):
     _ = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
-        periodic_restart_time_min=0,
-        tmp_dir=absltest.get_default_test_tmpdir())
+        config=config_classes.CoordinatorConfig(
+            tmp_dir=absltest.get_default_test_tmpdir()
+        ),
+    )
     mock_gettempdir.assert_not_called()
 
   @mock.patch.object(time, 'sleep', autospec=True)
@@ -415,9 +425,8 @@ class CoordinatorTest(parameterized.TestCase):
   def test_no_tmp_dir_calls_tempfile(self, mock_gettempdir, unused_mock_sleep):
     """If not passing a `tmp_dir`, `tempfile.gettempdir()` should be called."""
     _ = coordinator_lib.Coordinator(
-        simulator=self._simulator,
-        task_manager=self._task_manager,
-        periodic_restart_time_min=0)
+        simulator=self._simulator, task_manager=self._task_manager
+    )
     mock_gettempdir.assert_called_once()
 
   @parameterized.parameters(
@@ -429,7 +438,8 @@ class CoordinatorTest(parameterized.TestCase):
     _ = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
-        show_touches=show)
+        config=config_classes.CoordinatorConfig(show_touches=show),
+    )
     self._adb_call_parser.parse.assert_any_call(
         adb_pb2.AdbRequest(
             settings=adb_pb2.AdbRequest.SettingsRequest(
@@ -446,7 +456,8 @@ class CoordinatorTest(parameterized.TestCase):
     _ = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
-        show_pointer_location=show)
+        config=config_classes.CoordinatorConfig(show_pointer_location=show),
+    )
     self._adb_call_parser.parse.assert_any_call(
         adb_pb2.AdbRequest(
             settings=adb_pb2.AdbRequest.SettingsRequest(
@@ -467,8 +478,11 @@ class CoordinatorTest(parameterized.TestCase):
     _ = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
-        show_navigation_bar=show_navigation_bar,
-        show_status_bar=show_status_bar)
+        config=config_classes.CoordinatorConfig(
+            show_navigation_bar=show_navigation_bar,
+            show_status_bar=show_status_bar,
+        ),
+    )
     self._adb_call_parser.parse.assert_any_call(
         adb_pb2.AdbRequest(
             settings=adb_pb2.AdbRequest.SettingsRequest(

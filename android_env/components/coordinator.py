@@ -25,6 +25,7 @@ from typing import Any
 from absl import logging
 from android_env.components import action_type as action_type_lib
 from android_env.components import adb_call_parser
+from android_env.components import config_classes
 from android_env.components import errors
 from android_env.components import specs
 from android_env.components import task_manager as task_manager_lib
@@ -44,54 +45,19 @@ class Coordinator:
       self,
       simulator: base_simulator.BaseSimulator,
       task_manager: task_manager_lib.TaskManager,
-      num_fingers: int = 1,
-      interaction_rate_sec: float = 0.0,
-      enable_key_events: bool = False,
-      show_touches: bool = True,
-      show_pointer_location: bool = True,
-      show_status_bar: bool = False,
-      show_navigation_bar: bool = False,
-      periodic_restart_time_min: float = 0.0,
-      tmp_dir: str | None = None,
+      config: config_classes.CoordinatorConfig = config_classes.CoordinatorConfig(),
   ):
     """Handles communication between AndroidEnv and its components.
 
     Args:
       simulator: A BaseSimulator instance.
       task_manager: The TaskManager, responsible for coordinating RL tasks.
-      num_fingers: Number of virtual fingers of the agent.
-      interaction_rate_sec: How often (in seconds) to fetch the screenshot from
-        the simulator (asynchronously). If <= 0, stepping the environment blocks
-        on fetching the screenshot (the environment is synchronous). If > 0,
-        screenshots are grabbed in a separate thread at this rate; stepping
-        returns the most recently grabbed screenshot.
-      enable_key_events: Whether keyboard key events are enabled.
-      show_touches: Whether to show circles on the screen indicating the
-        position of the current touch.
-      show_pointer_location: Whether to show blue lines on the screen indicating
-        the position of the current touch.
-      show_status_bar: Whether or not to show the status bar (at the top of the
-        screen, displays battery life, time, notifications etc.).
-      show_navigation_bar: Whether or not to show the navigation bar (at the
-        bottom of the screen, displayes BACK and HOME buttons, etc.)
-      periodic_restart_time_min: Time between periodic restarts in minutes. If >
-        0.0, will trigger a simulator restart at the end of the next episode
-        once the time has been reached.
-      tmp_dir: Temporary directory to write transient data.
     """
     self._simulator = simulator
     self._task_manager = task_manager
-    self._num_fingers = num_fingers
-    self._enable_key_events = enable_key_events
-    self._show_touches = show_touches
-    self._show_pointer_location = show_pointer_location
-    self._show_status_bar = show_status_bar
-    self._show_navigation_bar = show_navigation_bar
+    self._config = config
     self._adb_call_parser: adb_call_parser.AdbCallParser = None
-    self._periodic_restart_time_min = periodic_restart_time_min
-    self._tmp_dir = tmp_dir or tempfile.gettempdir()
     self._orientation = np.zeros(4, dtype=np.uint8)
-    self._interaction_rate_sec = interaction_rate_sec
     self._interaction_thread: InteractionThread | None = None
 
     # The size of the device screen in pixels (H x W).
@@ -121,8 +87,9 @@ class Coordinator:
 
   def action_spec(self) -> dict[str, dm_env.specs.Array]:
     return specs.base_action_spec(
-        num_fingers=self._num_fingers,
-        enable_key_events=self._enable_key_events)
+        num_fingers=self._config.num_fingers,
+        enable_key_events=self._config.enable_key_events,
+    )
 
   def observation_spec(self) -> dict[str, dm_env.specs.Array]:
     return specs.base_observation_spec(
@@ -164,7 +131,7 @@ class Coordinator:
         'action_type': np.array(action_type_lib.ActionType.LIFT),
         'touch_position': np.array([0, 0]),
     }
-    for i in range(2, self._num_fingers + 1):
+    for i in range(2, self._config.num_fingers + 1):
       lift_action.update({
           f'action_type_{i}': np.array(action_type_lib.ActionType.LIFT),
           f'touch_position_{i}': np.array([0, 0]),
@@ -183,10 +150,10 @@ class Coordinator:
       Boolean indicating if it is time to restart the simulator.
     """
 
-    if self._periodic_restart_time_min and self._simulator_start_time:
+    if self._config.periodic_restart_time_min and self._simulator_start_time:
       sim_alive_time = (time.time() - self._simulator_start_time) / 60.0
       logging.info('Simulator has been running for %f mins', sim_alive_time)
-      if sim_alive_time > self._periodic_restart_time_min:
+      if sim_alive_time > self._config.periodic_restart_time_min:
         logging.info('Maximum alive time reached. Restarting simulator.')
         self._stats['relaunch_count_periodic'] += 1
         return True
@@ -252,9 +219,10 @@ class Coordinator:
       self._simulator_healthy = True
       self._stats['relaunch_count'] += 1
       break
-    if self._interaction_rate_sec > 0:
-      self._interaction_thread = InteractionThread(self._simulator,
-                                                   self._interaction_rate_sec)
+    if self._config.interaction_rate_sec > 0:
+      self._interaction_thread = InteractionThread(
+          self._simulator, self._config.interaction_rate_sec
+      )
       self._interaction_thread.start()
 
   def _update_settings(self) -> None:
@@ -267,19 +235,27 @@ class Coordinator:
                 name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.SYSTEM,
                 put=adb_pb2.AdbRequest.SettingsRequest.Put(
                     key='show_touches',
-                    value='1' if self._show_touches else '0'))))
+                    value='1' if self._config.show_touches else '0',
+                ),
+            )
+        )
+    )
     self._adb_call_parser.parse(
         adb_pb2.AdbRequest(
             settings=adb_pb2.AdbRequest.SettingsRequest(
                 name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.SYSTEM,
                 put=adb_pb2.AdbRequest.SettingsRequest.Put(
                     key='pointer_location',
-                    value='1' if self._show_pointer_location else '0'))))
-    if self._show_navigation_bar and self._show_status_bar:
+                    value='1' if self._config.show_pointer_location else '0',
+                ),
+            )
+        )
+    )
+    if self._config.show_navigation_bar and self._config.show_status_bar:
       policy_control_value = 'null*'
-    elif self._show_navigation_bar and not self._show_status_bar:
+    elif self._config.show_navigation_bar and not self._config.show_status_bar:
       policy_control_value = 'immersive.status=*'
-    elif not self._show_navigation_bar and self._show_status_bar:
+    elif not self._config.show_navigation_bar and self._config.show_status_bar:
       policy_control_value = 'immersive.navigation=*'
     else:
       policy_control_value = 'immersive.full=*'
@@ -294,7 +270,8 @@ class Coordinator:
     """Creates a new AdbCallParser instance."""
     return adb_call_parser.AdbCallParser(
         adb_controller=self._simulator.create_adb_controller(),
-        tmp_dir=self._tmp_dir)
+        tmp_dir=self._config.tmp_dir or tempfile.gettempdir(),
+    )
 
   def execute_adb_call(self, call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
     return self._adb_call_parser.parse(call)
@@ -361,7 +338,7 @@ class Coordinator:
     self._latest_observation_time = now
 
     # Grab pixels.
-    if self._interaction_rate_sec > 0:
+    if self._config.interaction_rate_sec > 0:
       assert self._interaction_thread is not None
       pixels = self._interaction_thread.screenshot()  # Async mode.
     else:
@@ -449,7 +426,7 @@ class Coordinator:
         'action_type': action['action_type'],
         'touch_position': action['touch_position'],
     }]
-    for i in range(2, self._num_fingers + 1):
+    for i in range(2, self._config.num_fingers + 1):
       single_touch_actions.append({
           'action_type': action[f'action_type_{i}'],
           'touch_position': action[f'touch_position_{i}'],
