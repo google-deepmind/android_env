@@ -46,3 +46,21 @@ class FakeSimulatorConfig(SimulatorConfig):
 
   # The dimensions in pixels of the device screen (HxW).
   screen_dimensions: tuple[int, int] = (0, 0)
+
+
+@dataclasses.dataclass
+class TaskManagerConfig:
+  """Config class for TaskManager."""
+
+  # If max_bad_states episodes finish in a bad state in a row, restart
+  # the simulation.
+  max_bad_states: int = 3
+  # The frequency to check for the current activity and view hierarchy.
+  # The unit is raw observation (i.e. each call to AndroidEnv.step()).
+  dumpsys_check_frequency: int = 150
+  # The maximum number of tries for extracting the current activity before
+  # forcing the episode to restart.
+  max_failed_current_activity: int = 10
+  # The maximum number of extras elements to store. If this number is exceeded,
+  # elements are dropped in the order they were received.
+  extras_max_buffer_size: int = 100
