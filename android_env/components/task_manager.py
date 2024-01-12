@@ -43,7 +43,7 @@ class TaskManager:
   def __init__(
       self,
       task: task_pb2.Task,
-      config: config_classes.TaskManagerConfig = config_classes.TaskManagerConfig(),
+      config: config_classes.TaskManagerConfig | None = None,
   ):
     """Controls task-relevant events and information.
 
@@ -53,7 +53,7 @@ class TaskManager:
     """
 
     self._task = task
-    self._config = config
+    self._config = config or config_classes.TaskManagerConfig()
     self._lock = threading.Lock()
     self._logcat_thread = None
     self._dumpsys_thread = None

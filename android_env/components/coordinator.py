@@ -45,7 +45,7 @@ class Coordinator:
       self,
       simulator: base_simulator.BaseSimulator,
       task_manager: task_manager_lib.TaskManager,
-      config: config_classes.CoordinatorConfig = config_classes.CoordinatorConfig(),
+      config: config_classes.CoordinatorConfig | None = None,
   ):
     """Handles communication between AndroidEnv and its components.
 
@@ -55,7 +55,7 @@ class Coordinator:
     """
     self._simulator = simulator
     self._task_manager = task_manager
-    self._config = config
+    self._config = config or config_classes.CoordinatorConfig()
     self._adb_call_parser: adb_call_parser.AdbCallParser = None
     self._orientation = np.zeros(4, dtype=np.uint8)
     self._interaction_thread: InteractionThread | None = None
