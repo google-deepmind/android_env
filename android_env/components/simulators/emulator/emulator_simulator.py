@@ -133,19 +133,21 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       verbose_logs: If true, the log stream of the simulator will be verbose.
     """
 
+    self._emulator_launcher_args = emulator_launcher_args
+
     # If adb_port, console_port and grpc_port are all already provided,
     # we assume the emulator already exists and there's no need to launch.
-    if is_existing_emulator_provided(emulator_launcher_args):
+    if is_existing_emulator_provided(self._emulator_launcher_args):
       self._existing_emulator_provided = True
-      self._adb_port = emulator_launcher_args['adb_port']
-      self._console_port = emulator_launcher_args['emulator_console_port']
-      self._grpc_port = emulator_launcher_args['grpc_port']
+      self._grpc_port = self._emulator_launcher_args['grpc_port']
       logging.info('Connecting to existing emulator "%r"',
                    self.adb_device_name())
     else:
       self._existing_emulator_provided = False
-      self._adb_port = _pick_adb_port()
-      self._console_port = portpicker.pick_unused_port()
+      self._emulator_launcher_args['adb_port'] = _pick_adb_port()
+      self._emulator_launcher_args['emulator_console_port'] = (
+          portpicker.pick_unused_port()
+      )
       self._grpc_port = _pick_emulator_grpc_port()
 
     self._channel = None
@@ -184,15 +186,12 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._logfile_path = logfile_path or None
       self._launcher = None
     else:
-      emulator_launcher_args.update({
+      self._emulator_launcher_args.update({
           'adb_path': self._adb_controller_config.adb_path,
-          'adb_port': self._adb_port,
           'adb_server_port': self._adb_controller_config.adb_server_port,
-          'emulator_console_port': self._console_port,
           'grpc_port': self._grpc_port,
           'tmp_dir': tmp_dir,
       })
-      self._emulator_launcher_args = emulator_launcher_args
       logging.info('emulator_launcher_args: %r', self._emulator_launcher_args)
       self._launcher = emulator_launcher.EmulatorLauncher(
           **self._emulator_launcher_args)
@@ -207,7 +206,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       return f'Logfile does not exist: {self._logfile_path}.'
 
   def adb_device_name(self) -> str:
-    return 'emulator-%s' % (self._adb_port - 1)
+    return 'emulator-%s' % (self._emulator_launcher_args['adb_port'] - 1)
 
   def create_adb_controller(self):
     """Returns an ADB controller which can communicate with this simulator."""
