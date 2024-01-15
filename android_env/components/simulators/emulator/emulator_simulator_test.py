@@ -107,27 +107,31 @@ class EmulatorSimulatorTest(absltest.TestCase):
 
   @mock.patch.object(portpicker, 'is_port_free', return_value=True)
   def test_grpc_port(self, unused_mock_portpicker):
+
+    launcher_args = {}
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=absltest.get_default_test_tmpdir(),
-        emulator_launcher_args={},
+        emulator_launcher_args=launcher_args,
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
         ),
     )
-    self.assertEqual(simulator._grpc_port, 8554)
+    self.assertEqual(launcher_args['grpc_port'], 8554)
 
   @mock.patch.object(portpicker, 'is_port_free', return_value=False)
   def test_grpc_port_unavailable(self, unused_mock_portpicker):
+
+    launcher_args = {}
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=absltest.get_default_test_tmpdir(),
-        emulator_launcher_args={},
+        emulator_launcher_args=launcher_args,
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
         ),
     )
-    self.assertNotEqual(simulator._grpc_port, 8554)
+    self.assertNotEqual(launcher_args['grpc_port'], 8554)
 
   def test_launch_operation_order(self):
     """Makes sure that adb_controller is started before Emulator is launched."""

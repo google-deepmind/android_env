@@ -80,23 +80,6 @@ def _pick_emulator_grpc_port() -> int:
     return portpicker.pick_unused_port()
 
 
-def _reconnect_on_grpc_error(func):
-  """Decorator function for reconnecting to emulator upon grpc errors."""
-
-  def wrapper(*args, **kwargs):
-    try:
-      return func(*args, **kwargs)  # pytype: disable=missing-parameter  # always-use-return-annotations
-    except grpc.RpcError:
-      logging.exception('RpcError caught. Reconnecting to emulator...')
-      emu = args[0]  # The first arg of the function is "self"
-      emu._emulator_stub, emu._snapshot_stub = emu._connect_to_emulator(  # pylint: disable=protected-access
-          emu._grpc_port  # pylint: disable=protected-access
-      )
-      return func(*args, **kwargs)  # pytype: disable=missing-parameter  # always-use-return-annotations
-
-  return wrapper
-
-
 class EmulatorBootError(errors.SimulatorError):
   """Raised when an emulator failed to boot."""
 
@@ -139,7 +122,6 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     # we assume the emulator already exists and there's no need to launch.
     if is_existing_emulator_provided(self._emulator_launcher_args):
       self._existing_emulator_provided = True
-      self._grpc_port = self._emulator_launcher_args['grpc_port']
       logging.info('Connecting to existing emulator "%r"',
                    self.adb_device_name())
     else:
@@ -148,7 +130,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._emulator_launcher_args['emulator_console_port'] = (
           portpicker.pick_unused_port()
       )
-      self._grpc_port = _pick_emulator_grpc_port()
+      self._emulator_launcher_args['grpc_port'] = _pick_emulator_grpc_port()
 
     self._channel = None
     self._emulator_stub: emulator_controller_pb2_grpc.EmulatorControllerStub | None = (
@@ -189,13 +171,28 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._emulator_launcher_args.update({
           'adb_path': self._adb_controller_config.adb_path,
           'adb_server_port': self._adb_controller_config.adb_server_port,
-          'grpc_port': self._grpc_port,
+          'grpc_port': self._emulator_launcher_args['grpc_port'],
           'tmp_dir': tmp_dir,
       })
       logging.info('emulator_launcher_args: %r', self._emulator_launcher_args)
       self._launcher = emulator_launcher.EmulatorLauncher(
           **self._emulator_launcher_args)
       self._logfile_path = logfile_path or self._launcher.logfile_path()
+
+  def _reconnect_on_grpc_error(func):
+    """Decorator function for reconnecting to emulator upon grpc errors."""
+
+    def wrapper(self, *args, **kwargs):
+      try:
+        return func(self, *args, **kwargs)  # pytype: disable=missing-parameter  # always-use-return-annotations
+      except grpc.RpcError:
+        logging.exception('RpcError caught. Reconnecting to emulator...')
+        self._emulator_stub, self._snapshot_stub = self._connect_to_emulator(
+            self._emulator_launcher_args['grpc_port']
+        )
+        return func(self, *args, **kwargs)  # pytype: disable=missing-parameter  # always-use-return-annotations
+
+    return wrapper
 
   def get_logs(self) -> str:
     """Returns logs recorded by the emulator."""
@@ -246,7 +243,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._launcher.launch_emulator_process()
     # Establish grpc connection to emulator process.
     self._emulator_stub, self._snapshot_stub = self._connect_to_emulator(
-        self._grpc_port
+        self._emulator_launcher_args['grpc_port']
     )
 
     # Confirm booted status.
@@ -372,6 +369,9 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   def _confirm_booted(self, startup_wait_time_sec: int = 300):
     """Waits until the emulator is fully booted."""
 
+    assert (
+        self._emulator_stub is not None
+    ), 'Emulator stub has not been initialized yet.'
     start_time = time.time()
     deadline = start_time + startup_wait_time_sec
     success = False
@@ -409,7 +409,9 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
           3 identifier: Identifies a particular finger in a multitouch event.
     """
 
-    assert self._emulator_stub, 'Emulator stub has not been initialized yet.'
+    assert (
+        self._emulator_stub is not None
+    ), 'Emulator stub has not been initialized yet.'
     touch_events = [
         emulator_controller_pb2.Touch(
             x=t[0], y=t[1], pressure=int(t[2]), identifier=t[3])
@@ -427,11 +429,15 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
         See the emulator_controller_pb2 for details.
       event_type: Type of key event to be sent.
     """
+
     event_types = emulator_controller_pb2.KeyboardEvent.KeyEventType.keys()
     if event_type not in event_types:
       raise ValueError(
           f'Event type must be one of {event_types} but is {event_type}.')
 
+    assert (
+        self._emulator_stub is not None
+    ), 'Emulator stub has not been initialized yet.'
     self._emulator_stub.sendKey(
         emulator_controller_pb2.KeyboardEvent(
             codeType=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
@@ -445,7 +451,10 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   @_reconnect_on_grpc_error
   def get_screenshot(self) -> np.ndarray:
     """Fetches the latest screenshot from the emulator."""
-    assert self._emulator_stub, 'Emulator stub has not been initialized yet.'
+
+    assert (
+        self._emulator_stub is not None
+    ), 'Emulator stub has not been initialized yet.'
     assert self._image_format, 'ImageFormat has not been initialized yet.'
     image_proto = self._emulator_stub.getScreenshot(self._image_format)
     h, w = image_proto.format.height, image_proto.format.width
@@ -460,6 +469,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     if self._emulator_stub is None:
       logging.info('Emulator (%r) is not up.', self.adb_device_name())
       return
+
+    assert self._launcher is not None, 'Launcher is already down.'
 
     logging.info('Shutting down the emulator (%r)...', self.adb_device_name())
     self._emulator_stub.setVmState(
