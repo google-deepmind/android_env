@@ -23,6 +23,7 @@ from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
+from android_env.components import config_classes
 from android_env.components.simulators.emulator import emulator_launcher
 
 
@@ -86,10 +87,13 @@ class EmulatorLauncherTest(parameterized.TestCase):
   ):
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
-    launcher = emulator_launcher.EmulatorLauncher(
+    adb_controller_config = config_classes.AdbControllerConfig(
         adb_path=self._adb_path,
-        adb_port=self._adb_port,
         adb_server_port=self._adb_server_port,
+    )
+    launcher = emulator_launcher.EmulatorLauncher(
+        adb_controller_config=adb_controller_config,
+        adb_port=self._adb_port,
         emulator_console_port=self._emulator_console_port,
         emulator_path=self._emulator_path,
         avd_name=self._avd_name,
@@ -128,10 +132,13 @@ class EmulatorLauncherTest(parameterized.TestCase):
   ):
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
-    launcher = emulator_launcher.EmulatorLauncher(
+    adb_controller_config = config_classes.AdbControllerConfig(
         adb_path=self._adb_path,
-        adb_port=self._adb_port,
         adb_server_port=self._adb_server_port,
+    )
+    launcher = emulator_launcher.EmulatorLauncher(
+        adb_controller_config=adb_controller_config,
+        adb_port=self._adb_port,
         emulator_console_port=self._emulator_console_port,
         emulator_path=self._emulator_path,
         avd_name=self._avd_name,
@@ -173,10 +180,13 @@ class EmulatorLauncherTest(parameterized.TestCase):
   ):
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
-    launcher = emulator_launcher.EmulatorLauncher(
+    adb_controller_config = config_classes.AdbControllerConfig(
         adb_path=self._adb_path,
-        adb_port=self._adb_port,
         adb_server_port=self._adb_server_port,
+    )
+    launcher = emulator_launcher.EmulatorLauncher(
+        adb_controller_config=adb_controller_config,
+        adb_port=self._adb_port,
         emulator_console_port=self._emulator_console_port,
         emulator_path=self._emulator_path,
         avd_name=self._avd_name,
@@ -221,10 +231,13 @@ class EmulatorLauncherTest(parameterized.TestCase):
   ):
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
-    launcher = emulator_launcher.EmulatorLauncher(
+    adb_controller_config = config_classes.AdbControllerConfig(
         adb_path=self._adb_path,
-        adb_port=self._adb_port,
         adb_server_port=self._adb_server_port,
+    )
+    launcher = emulator_launcher.EmulatorLauncher(
+        adb_controller_config=adb_controller_config,
+        adb_port=self._adb_port,
         emulator_console_port=self._emulator_console_port,
         emulator_path=self._emulator_path,
         avd_name=self._avd_name,

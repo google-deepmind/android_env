@@ -39,11 +39,12 @@ from android_env.proto import snapshot_service_pb2_grpc
 from google.protobuf import empty_pb2
 
 
-_DEFAULT_SNAPSHOT_NAME = 'default_snapshot'
+_DEFAULT_SNAPSHOT_NAME: str = 'default_snapshot'
 
 
-def is_existing_emulator_provided(launcher_args: dict[str, Any]) -> bool:
+def _is_existing_emulator_provided(launcher_args: dict[str, Any]) -> bool:
   """Returns true if all necessary args were provided."""
+
   return bool(
       launcher_args.get('adb_port') and
       launcher_args.get('emulator_console_port') and
@@ -59,6 +60,7 @@ def _pick_adb_port() -> int:
   Returns:
     port: an available port for adb.
   """
+
   for p in range(5555, 5587, 2):
     if portpicker.is_port_free(p):
       return p
@@ -74,6 +76,7 @@ def _pick_emulator_grpc_port() -> int:
   Returns:
     port: an available port for emulator grpc.
   """
+
   if portpicker.is_port_free(8554):
     return 8554
   else:
@@ -116,11 +119,13 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       verbose_logs: If true, the log stream of the simulator will be verbose.
     """
 
+    super().__init__(verbose_logs=verbose_logs)
+
     self._emulator_launcher_args = emulator_launcher_args
 
     # If adb_port, console_port and grpc_port are all already provided,
     # we assume the emulator already exists and there's no need to launch.
-    if is_existing_emulator_provided(self._emulator_launcher_args):
+    if _is_existing_emulator_provided(self._emulator_launcher_args):
       self._existing_emulator_provided = True
       logging.info('Connecting to existing emulator "%r"',
                    self.adb_device_name())
@@ -151,8 +156,6 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     self._launch_n_times_without_reboot = launch_n_times_without_reboot
     self._launch_n_times_without_reinstall = launch_n_times_without_reinstall
 
-    super().__init__(verbose_logs=verbose_logs)
-
     # Initialize own ADB controller.
     self._adb_controller_config = adb_controller_config
     self._adb_controller_config.device_name = self.adb_device_name()
@@ -168,15 +171,12 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._logfile_path = logfile_path or None
       self._launcher = None
     else:
-      self._emulator_launcher_args.update({
-          'adb_path': self._adb_controller_config.adb_path,
-          'adb_server_port': self._adb_controller_config.adb_server_port,
-          'grpc_port': self._emulator_launcher_args['grpc_port'],
-          'tmp_dir': tmp_dir,
-      })
+      self._emulator_launcher_args['tmp_dir'] = tmp_dir
       logging.info('emulator_launcher_args: %r', self._emulator_launcher_args)
       self._launcher = emulator_launcher.EmulatorLauncher(
-          **self._emulator_launcher_args)
+          adb_controller_config=self._adb_controller_config,
+          **self._emulator_launcher_args,
+      )
       self._logfile_path = logfile_path or self._launcher.logfile_path()
 
   def _reconnect_on_grpc_error(func):
@@ -184,13 +184,13 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
     def wrapper(self, *args, **kwargs):
       try:
-        return func(self, *args, **kwargs)  # pytype: disable=missing-parameter  # always-use-return-annotations
+        return func(self, *args, **kwargs)
       except grpc.RpcError:
         logging.exception('RpcError caught. Reconnecting to emulator...')
         self._emulator_stub, self._snapshot_stub = self._connect_to_emulator(
             self._emulator_launcher_args['grpc_port']
         )
-        return func(self, *args, **kwargs)  # pytype: disable=missing-parameter  # always-use-return-annotations
+        return func(self, *args, **kwargs)
 
     return wrapper
 
