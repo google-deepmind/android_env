@@ -35,7 +35,9 @@ class LoaderTest(absltest.TestCase):
   @mock.patch.object(emulator_simulator, 'EmulatorSimulator', autospec=True)
   @mock.patch.object(coordinator_lib, 'Coordinator', autospec=True)
   @mock.patch.object(builtins, 'open', autospec=True)
-  def test_load(self, mock_open, coordinator, simulator, task_manager):
+  def test_load(
+      self, mock_open, mock_coordinator, mock_simulator_class, mock_task_manager
+  ):
 
     mock_open.return_value.__enter__ = mock_open
     mock_open.return_value.read.return_value = ''
@@ -51,7 +53,7 @@ class LoaderTest(absltest.TestCase):
     )
 
     self.assertIsInstance(env, environment.AndroidEnv)
-    simulator.assert_called_with(
+    mock_simulator_class.assert_called_with(
         emulator_launcher_args=dict(
             avd_name='my_avd',
             android_avd_home=os.path.expanduser('~/.android/avd'),
@@ -65,18 +67,50 @@ class LoaderTest(absltest.TestCase):
             adb_server_port=5037,
         ),
     )
-    coordinator.assert_called_with(
-        simulator.return_value,
-        task_manager.return_value,
+    mock_coordinator.assert_called_with(
+        mock_simulator_class.return_value,
+        mock_task_manager.return_value,
     )
 
   @mock.patch.object(task_manager_lib, 'TaskManager', autospec=True)
   @mock.patch.object(emulator_simulator, 'EmulatorSimulator', autospec=True)
   @mock.patch.object(coordinator_lib, 'Coordinator', autospec=True)
   @mock.patch.object(builtins, 'open', autospec=True)
-  def test_task(self, mock_open, coordinator, simulator, task_manager):
+  def test_load_existing_device(
+      self, mock_open, mock_coordinator, mock_simulator_class, mock_task_manager
+  ):
+    mock_open.return_value.__enter__ = mock_open
+    mock_open.return_value.read.return_value = ''
 
-    del coordinator, simulator
+    env = loader.load(
+        task_path='some/path/',
+        console_port=5554,
+        adb_path='~/Android/Sdk/platform-tools/adb',
+    )
+
+    self.assertIsInstance(env, environment.AndroidEnv)
+    mock_simulator_class.assert_called_with(
+        emulator_launcher_args=dict(
+            emulator_console_port=5554, adb_port=5555, grpc_port=8554
+        ),
+        adb_controller_config=config_classes.AdbControllerConfig(
+            adb_path=os.path.expanduser('~/Android/Sdk/platform-tools/adb'),
+            adb_server_port=5037,
+        ),
+    )
+    mock_coordinator.assert_called_with(
+        mock_simulator_class.return_value,
+        mock_task_manager.return_value,
+    )
+
+  @mock.patch.object(task_manager_lib, 'TaskManager', autospec=True)
+  @mock.patch.object(emulator_simulator, 'EmulatorSimulator', autospec=True)
+  @mock.patch.object(coordinator_lib, 'Coordinator', autospec=True)
+  @mock.patch.object(builtins, 'open', autospec=True)
+  def test_task(
+      self, mock_open, mock_coordinator, mock_simulator, mock_task_manager
+  ):
+    del mock_coordinator, mock_simulator
     mock_open.return_value.__enter__ = mock_open
     mock_open.return_value.read.return_value = r'''
 id: "fake_task"
@@ -96,7 +130,7 @@ max_episode_sec: 0
     expected_task.description = 'Task for testing loader.'
     expected_task.max_episode_sec = 0
 
-    task_manager.assert_called_with(expected_task)
+    mock_task_manager.assert_called_with(expected_task)
     assert isinstance(env, environment.AndroidEnv)
 
 

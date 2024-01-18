@@ -27,13 +27,23 @@ from android_env.proto import task_pb2
 from google.protobuf import text_format
 
 
-def load(task_path: str,
-         avd_name: str,
-         android_avd_home: str = '~/.android/avd',
-         android_sdk_root: str = '~/Android/Sdk',
-         emulator_path: str = '~/Android/Sdk/emulator/emulator',
-         adb_path: str = '~/Android/Sdk/platform-tools/adb',
-         run_headless: bool = False) -> environment.AndroidEnv:
+def _get_task_manager(task_path: str) -> task_manager_lib.TaskManager:
+  task = task_pb2.Task()
+  with open(task_path, 'r') as proto_file:
+    text_format.Parse(proto_file.read(), task)
+  return task_manager_lib.TaskManager(task)
+
+
+def load(
+    task_path: str,
+    avd_name: str | None = None,
+    android_avd_home: str = '~/.android/avd',
+    android_sdk_root: str = '~/Android/Sdk',
+    emulator_path: str = '~/Android/Sdk/emulator/emulator',
+    adb_path: str = '~/Android/Sdk/platform-tools/adb',
+    run_headless: bool = False,
+    console_port: int | None = None,
+) -> environment.AndroidEnv:
   """Loads an AndroidEnv instance.
 
   Args:
@@ -44,33 +54,41 @@ def load(task_path: str,
     emulator_path: Path to the emulator binary.
     adb_path: Path to the ADB (Android Debug Bridge).
     run_headless: If True, the emulator display is turned off.
+    console_port: The console port number; for connecting to an already running
+      device/emulator.
+
   Returns:
     env: An AndroidEnv instance.
   """
+  connect_to_existing_device = console_port is not None
+  if not connect_to_existing_device and avd_name is None:
+    raise ValueError('An avd name must be provided if launching an emulator.')
+
+  if connect_to_existing_device:
+    launcher_args = dict(
+        emulator_console_port=console_port,
+        adb_port=console_port + 1,
+        grpc_port=8554,
+    )
+  else:
+    launcher_args = dict(
+        avd_name=avd_name,
+        android_avd_home=os.path.expanduser(android_avd_home),
+        android_sdk_root=os.path.expanduser(android_sdk_root),
+        emulator_path=os.path.expanduser(emulator_path),
+        run_headless=run_headless,
+        gpu_mode='swiftshader_indirect',
+    )
 
   # Create simulator.
   simulator = emulator_simulator.EmulatorSimulator(
-      emulator_launcher_args=dict(
-          avd_name=avd_name,
-          android_avd_home=os.path.expanduser(android_avd_home),
-          android_sdk_root=os.path.expanduser(android_sdk_root),
-          emulator_path=os.path.expanduser(emulator_path),
-          run_headless=run_headless,
-          gpu_mode='swiftshader_indirect',
-      ),
+      emulator_launcher_args=launcher_args,
       adb_controller_config=config_classes.AdbControllerConfig(
           adb_path=os.path.expanduser(adb_path),
           adb_server_port=5037,
       ),
   )
 
-  # Prepare task.
-  task = task_pb2.Task()
-  with open(task_path, 'r') as proto_file:
-    text_format.Parse(proto_file.read(), task)
-
-  task_manager = task_manager_lib.TaskManager(task)
+  task_manager = _get_task_manager(task_path)
   coordinator = coordinator_lib.Coordinator(simulator, task_manager)
-
-  # Load environment.
   return environment.AndroidEnv(coordinator=coordinator)
