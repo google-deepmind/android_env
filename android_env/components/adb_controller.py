@@ -30,11 +30,8 @@ class AdbController:
   def __init__(self, config: config_classes.AdbControllerConfig):
     """Instantiates an AdbController object."""
 
-    self._device_name = config.device_name
-    self._adb_path = os.path.expandvars(config.adb_path)
-    self._adb_server_port = str(config.adb_server_port)
-    self._default_timeout = config.default_timeout
-    logging.info('adb_path: %r', self._adb_path)
+    self._config = config
+    logging.info('config: %r', self._config)
 
     # Unset problematic environment variables. ADB commands will fail if these
     # are set. They are normally exported by AndroidStudio.
@@ -52,9 +49,13 @@ class AdbController:
 
   def command_prefix(self, include_device_name: bool = True) -> list[str]:
     """The command for instantiating an adb client to this server."""
-    command_prefix = [self._adb_path, '-P', self._adb_server_port]
+    command_prefix = [
+        self._config.adb_path,
+        '-P',
+        str(self._config.adb_server_port),
+    ]
     if include_device_name:
-      command_prefix.extend(['-s', self._device_name])
+      command_prefix.extend(['-s', self._config.device_name])
     return command_prefix
 
   def init_server(self, timeout: float | None = None):
@@ -108,7 +109,7 @@ class AdbController:
     Returns:
       The output of running such command as a binary string.
     """
-    timeout = self._default_timeout if timeout is None else timeout
+    timeout = self._config.default_timeout if timeout is None else timeout
     command = self.command_prefix(include_device_name=device_specific) + args
     command_str = 'adb ' + ' '.join(command[1:])
 

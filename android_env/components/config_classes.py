@@ -22,14 +22,17 @@ import dataclasses
 class AdbControllerConfig:
   """Settings for instatiating an `AdbController` instance."""
 
-  # Name of the device to communicate with.
-  device_name: str = ''
   # Filesystem path to the `adb` binary.
+  # NOTE: This must be a full path and must not contain environment variables
+  # or user folder shorthands (e.g. `~/some/path/to/adb`) since they will not be
+  # expanded internally by AndroidEnv.
   adb_path: str = 'adb'
   # Port for adb server.
   adb_server_port: int = 5037
   # Default timeout in seconds for internal commands.
   default_timeout: float = 120.0
+  # Name of the device to communicate with.
+  device_name: str = ''
 
 
 @dataclasses.dataclass

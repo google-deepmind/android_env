@@ -69,10 +69,6 @@ class EmulatorLauncher:
     """
 
     self._adb_controller_config = adb_controller_config
-    self._adb_controller_config.adb_path = os.path.expandvars(
-        self._adb_controller_config.adb_path
-    )
-
     self._adb_port = adb_port
     self._emulator_console_port = emulator_console_port
     self._grpc_port = grpc_port
