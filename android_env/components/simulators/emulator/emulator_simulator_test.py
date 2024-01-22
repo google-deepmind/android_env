@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2023 DeepMind Technologies Limited.
+# Copyright 2024 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -78,7 +78,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
@@ -93,7 +95,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
         logfile_path='fake/logfile/path',
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
@@ -108,30 +112,30 @@ class EmulatorSimulatorTest(absltest.TestCase):
   @mock.patch.object(portpicker, 'is_port_free', return_value=True)
   def test_grpc_port(self, unused_mock_portpicker):
 
-    launcher_args = {}
+    launcher_config = config_classes.EmulatorLauncherConfig()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=absltest.get_default_test_tmpdir(),
-        emulator_launcher_args=launcher_args,
+        emulator_launcher_config=launcher_config,
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
         ),
     )
-    self.assertEqual(launcher_args['grpc_port'], 8554)
+    self.assertEqual(launcher_config.grpc_port, 8554)
 
   @mock.patch.object(portpicker, 'is_port_free', return_value=False)
   def test_grpc_port_unavailable(self, unused_mock_portpicker):
 
-    launcher_args = {}
+    launcher_config = config_classes.EmulatorLauncherConfig()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=absltest.get_default_test_tmpdir(),
-        emulator_launcher_args=launcher_args,
+        emulator_launcher_config=launcher_config,
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
         ),
     )
-    self.assertNotEqual(launcher_args['grpc_port'], 8554)
+    self.assertNotEqual(launcher_config.grpc_port, 8554)
 
   def test_launch_operation_order(self):
     """Makes sure that adb_controller is started before Emulator is launched."""
@@ -147,7 +151,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
@@ -165,7 +171,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
@@ -186,7 +194,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
         ValueError,
         emulator_simulator.EmulatorSimulator,
         tmp_dir=tmp_dir,
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
@@ -199,7 +209,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
@@ -224,7 +236,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
@@ -250,7 +264,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
@@ -281,7 +297,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
@@ -306,7 +324,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
@@ -359,7 +379,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
@@ -400,7 +422,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,
@@ -456,7 +480,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     tmp_dir = absltest.get_default_test_tmpdir()
     simulator = emulator_simulator.EmulatorSimulator(
         tmp_dir=tmp_dir,
-        emulator_launcher_args={'grpc_port': 1234},
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234
+        ),
         adb_controller_config=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
             adb_server_port=5037,

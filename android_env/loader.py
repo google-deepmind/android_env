@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2023 DeepMind Technologies Limited.
+# Copyright 2024 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -65,13 +65,13 @@ def load(
     raise ValueError('An avd name must be provided if launching an emulator.')
 
   if connect_to_existing_device:
-    launcher_args = dict(
+    launcher_config = config_classes.EmulatorLauncherConfig(
         emulator_console_port=console_port,
         adb_port=console_port + 1,
         grpc_port=8554,
     )
   else:
-    launcher_args = dict(
+    launcher_config = config_classes.EmulatorLauncherConfig(
         avd_name=avd_name,
         android_avd_home=os.path.expanduser(android_avd_home),
         android_sdk_root=os.path.expanduser(android_sdk_root),
@@ -82,7 +82,7 @@ def load(
 
   # Create simulator.
   simulator = emulator_simulator.EmulatorSimulator(
-      emulator_launcher_args=launcher_args,
+      emulator_launcher_config=launcher_config,
       adb_controller_config=config_classes.AdbControllerConfig(
           adb_path=os.path.expanduser(adb_path),
           adb_server_port=5037,

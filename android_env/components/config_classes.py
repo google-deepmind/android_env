@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2023 DeepMind Technologies Limited.
+# Copyright 2024 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,6 +69,50 @@ class SimulatorConfig:
 
   # If true, the log stream of the simulator will be verbose.
   verbose_logs: bool = False
+
+
+@dataclasses.dataclass
+class EmulatorLauncherConfig:
+  """Config class for EmulatorLauncher."""
+
+  # NOTE: If `adb_port`, `emulator_console_port` and `grpc_port` are defined
+  # (i.e. not all equal to 0), it is assumed that the emulator they point to
+  # exists already and EmulatorLauncher will be skipped.
+
+  # Filesystem path to the `emulator` binary.
+  emulator_path: str = ''
+  # Filesystem path to the Android SDK root.
+  android_sdk_root: str = ''
+  # Name of the AVD.
+  avd_name: str = ''
+  # Local directory for AVDs.
+  android_avd_home: str = ''
+  # Name of the snapshot to load.
+  snapshot_name: str = ''
+  # Path to the KVM device.
+  kvm_device: str = '/dev/kvm'
+  # Path to directory which will hold temporary files.
+  tmp_dir: str = ''
+  # GPU mode override.
+  # Please see
+  # https://developer.android.com/studio/run/emulator-acceleration#accel-graphics.
+  gpu_mode: str = 'swangle_indirect'  # Alternative: swiftshader_indirect, host
+  # Whether to run in headless mode (i.e. without a graphical window).
+  run_headless: bool = True
+  # Whether to restrict network access.
+  # If True, will disable networking on the device. This option is only
+  # available for emulator version > 31.3.9 (June 2022).
+  restrict_network: bool = False
+  # Whether to set `SHOW_PERF_STATS=1` when launching the emulator to display
+  # performance and memory statistics.
+  show_perf_stats: bool = False
+
+  # ADB port for the Android device.
+  adb_port: int = 0
+  # Port for telnet communication with the emulator.
+  emulator_console_port: int = 0
+  # Port for gRPC communication with the emulator.
+  grpc_port: int = 0
 
 
 @dataclasses.dataclass

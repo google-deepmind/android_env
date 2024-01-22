@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2023 DeepMind Technologies Limited.
+# Copyright 2024 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,13 +44,14 @@ class EmulatorLauncherTest(parameterized.TestCase):
         '-adb-path',
         'fake/path/adb',
         '-gpu',
-        'swiftshader_indirect',
+        'swangle_indirect',
         '-no-audio',
         '-show-kernel',
         '-verbose',
         '-avd',
         self._avd_name,
     ]
+    self._headless = ['-no-skin', '-no-window']
     self._ports = ['-ports', f'{self._emulator_console_port},{self._adb_port}']
     self._snapshot = ['-no-snapshot']
 
@@ -87,18 +88,20 @@ class EmulatorLauncherTest(parameterized.TestCase):
   ):
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
-    adb_controller_config = config_classes.AdbControllerConfig(
-        adb_path=self._adb_path,
-        adb_server_port=self._adb_server_port,
-    )
-    launcher = emulator_launcher.EmulatorLauncher(
-        adb_controller_config=adb_controller_config,
+    config = config_classes.EmulatorLauncherConfig(
         adb_port=self._adb_port,
         emulator_console_port=self._emulator_console_port,
         emulator_path=self._emulator_path,
         avd_name=self._avd_name,
         grpc_port=-1,
         show_perf_stats=show_perf_stats,
+    )
+    adb_controller_config = config_classes.AdbControllerConfig(
+        adb_path=self._adb_path,
+        adb_server_port=self._adb_server_port,
+    )
+    launcher = emulator_launcher.EmulatorLauncher(
+        config=config, adb_controller_config=adb_controller_config
     )
 
     expected_env_vars = self._expected_env_vars
@@ -110,7 +113,10 @@ class EmulatorLauncherTest(parameterized.TestCase):
       f.return_value.__enter__ = f()
       launcher.launch_emulator_process()
       emulator_init.assert_called_once_with(
-          args=self._expected_command + self._ports + self._snapshot,
+          args=self._expected_command
+          + self._headless
+          + self._ports
+          + self._snapshot,
           env=expected_env_vars,
           stdout=f(),
           stderr=f(),
@@ -132,18 +138,20 @@ class EmulatorLauncherTest(parameterized.TestCase):
   ):
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
-    adb_controller_config = config_classes.AdbControllerConfig(
-        adb_path=self._adb_path,
-        adb_server_port=self._adb_server_port,
-    )
-    launcher = emulator_launcher.EmulatorLauncher(
-        adb_controller_config=adb_controller_config,
+    config = config_classes.EmulatorLauncherConfig(
         adb_port=self._adb_port,
         emulator_console_port=self._emulator_console_port,
         emulator_path=self._emulator_path,
         avd_name=self._avd_name,
         grpc_port=8554,
         show_perf_stats=show_perf_stats,
+    )
+    adb_controller_config = config_classes.AdbControllerConfig(
+        adb_path=self._adb_path,
+        adb_server_port=self._adb_server_port,
+    )
+    launcher = emulator_launcher.EmulatorLauncher(
+        config=config, adb_controller_config=adb_controller_config
     )
 
     expected_env_vars = self._expected_env_vars
@@ -157,6 +165,7 @@ class EmulatorLauncherTest(parameterized.TestCase):
       emulator_init.assert_called_once_with(
           args=self._expected_command
           + ['-grpc', '8554']
+          + self._headless
           + self._ports
           + self._snapshot,
           env=expected_env_vars,
@@ -180,12 +189,7 @@ class EmulatorLauncherTest(parameterized.TestCase):
   ):
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
-    adb_controller_config = config_classes.AdbControllerConfig(
-        adb_path=self._adb_path,
-        adb_server_port=self._adb_server_port,
-    )
-    launcher = emulator_launcher.EmulatorLauncher(
-        adb_controller_config=adb_controller_config,
+    config = config_classes.EmulatorLauncherConfig(
         adb_port=self._adb_port,
         emulator_console_port=self._emulator_console_port,
         emulator_path=self._emulator_path,
@@ -193,6 +197,13 @@ class EmulatorLauncherTest(parameterized.TestCase):
         grpc_port=-1,
         snapshot_name='my_snapshot',
         show_perf_stats=show_perf_stats,
+    )
+    adb_controller_config = config_classes.AdbControllerConfig(
+        adb_path=self._adb_path,
+        adb_server_port=self._adb_server_port,
+    )
+    launcher = emulator_launcher.EmulatorLauncher(
+        config=config, adb_controller_config=adb_controller_config
     )
 
     expected_snapshot = [
@@ -209,7 +220,10 @@ class EmulatorLauncherTest(parameterized.TestCase):
       f.return_value.__enter__ = f()
       launcher.launch_emulator_process()
       emulator_init.assert_called_once_with(
-          args=self._expected_command + self._ports + expected_snapshot,
+          args=self._expected_command
+          + self._headless
+          + self._ports
+          + expected_snapshot,
           env=expected_env_vars,
           stdout=f(),
           stderr=f(),
@@ -231,12 +245,7 @@ class EmulatorLauncherTest(parameterized.TestCase):
   ):
     mock_tmp_dir.return_value.name.return_value = 'local_tmp_dir'
 
-    adb_controller_config = config_classes.AdbControllerConfig(
-        adb_path=self._adb_path,
-        adb_server_port=self._adb_server_port,
-    )
-    launcher = emulator_launcher.EmulatorLauncher(
-        adb_controller_config=adb_controller_config,
+    config = config_classes.EmulatorLauncherConfig(
         adb_port=self._adb_port,
         emulator_console_port=self._emulator_console_port,
         emulator_path=self._emulator_path,
@@ -244,6 +253,13 @@ class EmulatorLauncherTest(parameterized.TestCase):
         grpc_port=-1,
         restrict_network=True,
         show_perf_stats=show_perf_stats,
+    )
+    adb_controller_config = config_classes.AdbControllerConfig(
+        adb_path=self._adb_path,
+        adb_server_port=self._adb_server_port,
+    )
+    launcher = emulator_launcher.EmulatorLauncher(
+        config=config, adb_controller_config=adb_controller_config
     )
 
     expected_snapshot = ['-no-snapshot']
@@ -262,6 +278,7 @@ class EmulatorLauncherTest(parameterized.TestCase):
       launcher.launch_emulator_process()
       emulator_init.assert_called_once_with(
           self._expected_command
+          + self._headless
           + self._ports
           + expected_snapshot
           + expected_network_restrict,

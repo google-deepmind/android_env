@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2023 DeepMind Technologies Limited.
+# Copyright 2024 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ class LoaderTest(absltest.TestCase):
 
     self.assertIsInstance(env, environment.AndroidEnv)
     mock_simulator_class.assert_called_with(
-        emulator_launcher_args=dict(
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
             avd_name='my_avd',
             android_avd_home=os.path.expanduser('~/.android/avd'),
             android_sdk_root=os.path.expanduser('~/Android/Sdk'),
@@ -90,7 +90,7 @@ class LoaderTest(absltest.TestCase):
 
     self.assertIsInstance(env, environment.AndroidEnv)
     mock_simulator_class.assert_called_with(
-        emulator_launcher_args=dict(
+        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
             emulator_console_port=5554, adb_port=5555, grpc_port=8554
         ),
         adb_controller_config=config_classes.AdbControllerConfig(

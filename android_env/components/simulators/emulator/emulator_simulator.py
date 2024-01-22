@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2023 DeepMind Technologies Limited.
+# Copyright 2024 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,13 +42,16 @@ from google.protobuf import empty_pb2
 _DEFAULT_SNAPSHOT_NAME: str = 'default_snapshot'
 
 
-def _is_existing_emulator_provided(launcher_args: dict[str, Any]) -> bool:
+def _is_existing_emulator_provided(
+    launcher_config: config_classes.EmulatorLauncherConfig,
+) -> bool:
   """Returns true if all necessary args were provided."""
 
   return bool(
-      launcher_args.get('adb_port') and
-      launcher_args.get('emulator_console_port') and
-      launcher_args.get('grpc_port'))
+      launcher_config.adb_port
+      and launcher_config.emulator_console_port
+      and launcher_config.grpc_port
+  )
 
 
 def _pick_adb_port() -> int:
@@ -96,7 +99,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
   def __init__(
       self,
-      emulator_launcher_args: dict[str, Any],
+      emulator_launcher_config: config_classes.EmulatorLauncherConfig,
       adb_controller_config: config_classes.AdbControllerConfig,
       tmp_dir: str = '/tmp/android_env/simulator',
       logfile_path: str | None = None,
@@ -107,7 +110,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     """Instantiates an EmulatorSimulator.
 
     Args:
-      emulator_launcher_args: Arguments for EmulatorLauncher.
+      emulator_launcher_config: Arguments for EmulatorLauncher.
       adb_controller_config: Arguments for AdbController.
       tmp_dir: Temporary directory to hold simulator files.
       logfile_path: Path to file which holds emulator logs. If not provided, it
@@ -121,21 +124,21 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
     super().__init__(verbose_logs=verbose_logs)
 
-    self._emulator_launcher_args = emulator_launcher_args
+    self._emulator_launcher_config = emulator_launcher_config
 
     # If adb_port, console_port and grpc_port are all already provided,
     # we assume the emulator already exists and there's no need to launch.
-    if _is_existing_emulator_provided(self._emulator_launcher_args):
+    if _is_existing_emulator_provided(self._emulator_launcher_config):
       self._existing_emulator_provided = True
       logging.info('Connecting to existing emulator "%r"',
                    self.adb_device_name())
     else:
       self._existing_emulator_provided = False
-      self._emulator_launcher_args['adb_port'] = _pick_adb_port()
-      self._emulator_launcher_args['emulator_console_port'] = (
+      self._emulator_launcher_config.adb_port = _pick_adb_port()
+      self._emulator_launcher_config.emulator_console_port = (
           portpicker.pick_unused_port()
       )
-      self._emulator_launcher_args['grpc_port'] = _pick_emulator_grpc_port()
+      self._emulator_launcher_config.grpc_port = _pick_emulator_grpc_port()
 
     self._channel = None
     self._emulator_stub: emulator_controller_pb2_grpc.EmulatorControllerStub | None = (
@@ -171,11 +174,13 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._logfile_path = logfile_path or None
       self._launcher = None
     else:
-      self._emulator_launcher_args['tmp_dir'] = tmp_dir
-      logging.info('emulator_launcher_args: %r', self._emulator_launcher_args)
+      self._emulator_launcher_config.tmp_dir = tmp_dir
+      logging.info(
+          'emulator_launcher_config: %r', self._emulator_launcher_config
+      )
       self._launcher = emulator_launcher.EmulatorLauncher(
+          config=self._emulator_launcher_config,
           adb_controller_config=self._adb_controller_config,
-          **self._emulator_launcher_args,
       )
       self._logfile_path = logfile_path or self._launcher.logfile_path()
 
@@ -188,7 +193,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       except grpc.RpcError:
         logging.exception('RpcError caught. Reconnecting to emulator...')
         self._emulator_stub, self._snapshot_stub = self._connect_to_emulator(
-            self._emulator_launcher_args['grpc_port']
+            self._emulator_launcher_config.grpc_port
         )
         return func(self, *args, **kwargs)
 
@@ -203,7 +208,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       return f'Logfile does not exist: {self._logfile_path}.'
 
   def adb_device_name(self) -> str:
-    return 'emulator-%s' % (self._emulator_launcher_args['adb_port'] - 1)
+    return 'emulator-%s' % (self._emulator_launcher_config.adb_port - 1)
 
   def create_adb_controller(self):
     """Returns an ADB controller which can communicate with this simulator."""
@@ -239,11 +244,13 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
           logging.info('Closing emulator (%r)', self.adb_device_name())
           self._launcher.close()
           self._launcher = emulator_launcher.EmulatorLauncher(
-              **self._emulator_launcher_args)
+              config=self._emulator_launcher_config,
+              adb_controller_config=self._adb_controller_config,
+          )
       self._launcher.launch_emulator_process()
     # Establish grpc connection to emulator process.
     self._emulator_stub, self._snapshot_stub = self._connect_to_emulator(
-        self._emulator_launcher_args['grpc_port']
+        self._emulator_launcher_config.grpc_port
     )
 
     # Confirm booted status.
