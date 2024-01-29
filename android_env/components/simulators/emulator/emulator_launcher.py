@@ -57,7 +57,7 @@ class EmulatorLauncher:
   def launch_emulator_process(self) -> None:
     """Launches the emulator."""
 
-    logging.info('Booting new emulator [%s]', self._config.emulator_path)
+    logging.info('Booting new emulator: %s', self._config.emulator_path)
 
     # Set necessary environment variables.
     base_lib_dir = self._config.emulator_path[:-8] + 'lib64/'
