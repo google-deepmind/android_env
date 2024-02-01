@@ -82,11 +82,13 @@ def load(
 
   # Create simulator.
   simulator = emulator_simulator.EmulatorSimulator(
-      emulator_launcher_config=launcher_config,
-      adb_controller_config=config_classes.AdbControllerConfig(
-          adb_path=os.path.expanduser(adb_path),
-          adb_server_port=5037,
-      ),
+      config=config_classes.EmulatorConfig(
+          emulator_launcher=launcher_config,
+          adb_controller=config_classes.AdbControllerConfig(
+              adb_path=os.path.expanduser(adb_path),
+              adb_server_port=5037,
+          ),
+      )
   )
 
   task_manager = _get_task_manager(task_path)

@@ -97,48 +97,25 @@ class EmulatorCrashError(errors.SimulatorError):
 class EmulatorSimulator(base_simulator.BaseSimulator):
   """Controls an Android Emulator."""
 
-  def __init__(
-      self,
-      emulator_launcher_config: config_classes.EmulatorLauncherConfig,
-      adb_controller_config: config_classes.AdbControllerConfig,
-      tmp_dir: str = '/tmp/android_env/simulator',
-      logfile_path: str | None = None,
-      launch_n_times_without_reboot: int = 1,
-      launch_n_times_without_reinstall: int = 2,
-      verbose_logs: bool = False,
-  ):
-    """Instantiates an EmulatorSimulator.
+  def __init__(self, config: config_classes.EmulatorConfig):
+    """Instantiates an EmulatorSimulator."""
 
-    Args:
-      emulator_launcher_config: Arguments for EmulatorLauncher.
-      adb_controller_config: Arguments for AdbController.
-      tmp_dir: Temporary directory to hold simulator files.
-      logfile_path: Path to file which holds emulator logs. If not provided, it
-        will be determined by the EmulatorLauncher.
-      launch_n_times_without_reboot: The number of times to try launching the
-        emulator before rebooting (reboot on the n+1-st try).
-      launch_n_times_without_reinstall: The number of times to try launching the
-        emulator before reinstalling (reinstall on the n+1-st try).
-      verbose_logs: If true, the log stream of the simulator will be verbose.
-    """
-
-    super().__init__(verbose_logs=verbose_logs)
-
-    self._emulator_launcher_config = emulator_launcher_config
+    super().__init__(verbose_logs=config.verbose_logs)
+    self._config = config
 
     # If adb_port, console_port and grpc_port are all already provided,
     # we assume the emulator already exists and there's no need to launch.
-    if _is_existing_emulator_provided(self._emulator_launcher_config):
+    if _is_existing_emulator_provided(self._config.emulator_launcher):
       self._existing_emulator_provided = True
       logging.info('Connecting to existing emulator "%r"',
                    self.adb_device_name())
     else:
       self._existing_emulator_provided = False
-      self._emulator_launcher_config.adb_port = _pick_adb_port()
-      self._emulator_launcher_config.emulator_console_port = (
+      self._config.emulator_launcher.adb_port = _pick_adb_port()
+      self._config.emulator_launcher.emulator_console_port = (
           portpicker.pick_unused_port()
       )
-      self._emulator_launcher_config.grpc_port = _pick_emulator_grpc_port()
+      self._config.emulator_launcher.grpc_port = _pick_emulator_grpc_port()
 
     self._channel = None
     self._emulator_stub: emulator_controller_pb2_grpc.EmulatorControllerStub | None = (
@@ -150,39 +127,41 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     self._image_format = emulator_controller_pb2.ImageFormat(
         format=emulator_controller_pb2.ImageFormat.ImgFormat.RGBA8888)
 
-    if launch_n_times_without_reboot > launch_n_times_without_reinstall:
+    if (
+        self._config.launch_n_times_without_reboot
+        > self._config.launch_n_times_without_reinstall
+    ):
       raise ValueError(
-          f'Number of launch attempts before reboot '
-          f'({launch_n_times_without_reboot}) should not be greater than '
-          f'number of launch attempts before reinstall '
-          f'({launch_n_times_without_reinstall})')
-    self._launch_n_times_without_reboot = launch_n_times_without_reboot
-    self._launch_n_times_without_reinstall = launch_n_times_without_reinstall
+          'Number of launch attempts before reboot'
+          f' ({self._config.launch_n_times_without_reboot}) should not be'
+          ' greater than number of launch attempts before reinstall'
+          f' ({self._config.launch_n_times_without_reinstall})'
+      )
 
     # Initialize own ADB controller.
-    self._adb_controller_config = adb_controller_config
-    self._adb_controller_config.device_name = self.adb_device_name()
+    self._config.adb_controller.device_name = self.adb_device_name()
     self._adb_controller = self.create_adb_controller()
     self._adb_controller.init_server()
     logging.info(
         'Initialized simulator with ADB server port %r.',
-        self._adb_controller_config.adb_server_port,
+        self._config.adb_controller.adb_server_port,
     )
 
     # If necessary, create EmulatorLauncher.
     if self._existing_emulator_provided:
-      self._logfile_path = logfile_path or None
+      self._logfile_path = self._config.logfile_path or None
       self._launcher = None
     else:
-      self._emulator_launcher_config.tmp_dir = tmp_dir
       logging.info(
-          'emulator_launcher_config: %r', self._emulator_launcher_config
+          'emulator_launcher config: %r', self._config.emulator_launcher
       )
       self._launcher = emulator_launcher.EmulatorLauncher(
-          config=self._emulator_launcher_config,
-          adb_controller_config=self._adb_controller_config,
+          config=self._config.emulator_launcher,
+          adb_controller_config=self._config.adb_controller,
       )
-      self._logfile_path = logfile_path or self._launcher.logfile_path()
+      self._logfile_path = (
+          self._config.logfile_path or self._launcher.logfile_path()
+      )
 
   def _reconnect_on_grpc_error(func):
     """Decorator function for reconnecting to emulator upon grpc errors."""
@@ -193,7 +172,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       except grpc.RpcError:
         logging.exception('RpcError caught. Reconnecting to emulator...')
         self._emulator_stub, self._snapshot_stub = self._connect_to_emulator(
-            self._emulator_launcher_config.grpc_port
+            self._config.emulator_launcher.grpc_port
         )
         return func(self, *args, **kwargs)
 
@@ -208,11 +187,11 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       return f'Logfile does not exist: {self._logfile_path}.'
 
   def adb_device_name(self) -> str:
-    return 'emulator-%s' % (self._emulator_launcher_config.adb_port - 1)
+    return 'emulator-%s' % (self._config.emulator_launcher.adb_port - 1)
 
   def create_adb_controller(self):
     """Returns an ADB controller which can communicate with this simulator."""
-    return adb_controller.AdbController(self._adb_controller_config)
+    return adb_controller.AdbController(self._config.adb_controller)
 
   def create_log_stream(self) -> log_stream.LogStream:
     return adb_log_stream.AdbLogStream(
@@ -223,12 +202,13 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     """Prepares an Android Emulator for RL interaction.
 
     The behavior depends on `self._num_launch_attempts`'s value:
-      * <= self._launch_n_times_without_reboot   -> Normal boot behavior.
-      * > self._launch_n_times_without_reboot but <=
-          self._launch_n_times_without_reinstall -> reboot (i.e. process is
-          killed and started again).
-      * > self._launch_n_times_without_reinstall -> reinstall (i.e. process is
-          killed, emulator files are deleted and the process started again).
+      * <= self._config.launch_n_times_without_reboot   -> Normal boot behavior.
+      * > self._config.launch_n_times_without_reboot but <=
+          self._config.launch_n_times_without_reinstall -> reboot (i.e. process
+          is killed and started again).
+      * > self._config.launch_n_times_without_reinstall -> reinstall (i.e.
+          process is killed, emulator files are deleted and the process started
+          again).
     """
 
     logging.info('Attempt %r at launching the Android Emulator (%r)',
@@ -236,21 +216,27 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
     if self._launcher is not None:
       # If not the first time, then shutdown the emulator first.
-      if (self._emulator_stub is not None and
-          self._num_launch_attempts > self._launch_n_times_without_reboot):
+      if (
+          self._emulator_stub is not None
+          and self._num_launch_attempts
+          > self._config.launch_n_times_without_reboot
+      ):
         self._shutdown_emulator()
         # Subsequent attempts cause the emulator files to be reinstalled.
-        if self._num_launch_attempts > self._launch_n_times_without_reinstall:
+        if (
+            self._num_launch_attempts
+            > self._config.launch_n_times_without_reinstall
+        ):
           logging.info('Closing emulator (%r)', self.adb_device_name())
           self._launcher.close()
           self._launcher = emulator_launcher.EmulatorLauncher(
-              config=self._emulator_launcher_config,
-              adb_controller_config=self._adb_controller_config,
+              config=self._config.emulator_launcher,
+              adb_controller_config=self._config.adb_controller,
           )
       self._launcher.launch_emulator_process()
     # Establish grpc connection to emulator process.
     self._emulator_stub, self._snapshot_stub = self._connect_to_emulator(
-        self._emulator_launcher_config.grpc_port
+        self._config.emulator_launcher.grpc_port
     )
 
     # Confirm booted status.

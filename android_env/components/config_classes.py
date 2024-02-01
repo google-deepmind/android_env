@@ -92,7 +92,7 @@ class EmulatorLauncherConfig:
   # Path to the KVM device.
   kvm_device: str = '/dev/kvm'
   # Path to directory which will hold temporary files.
-  tmp_dir: str = ''
+  tmp_dir: str = '/tmp/android_env/simulator/'
   # GPU mode override.
   # Please see
   # https://developer.android.com/studio/run/emulator-acceleration#accel-graphics.
@@ -113,6 +113,29 @@ class EmulatorLauncherConfig:
   emulator_console_port: int = 0
   # Port for gRPC communication with the emulator.
   grpc_port: int = 0
+
+
+@dataclasses.dataclass
+class EmulatorConfig(SimulatorConfig):
+  """Config class for EmulatorSimulator."""
+
+  # Configuration for launching the Android Emulator.
+  emulator_launcher: EmulatorLauncherConfig = dataclasses.field(
+      default_factory=EmulatorLauncherConfig
+  )
+  # Configuration for talking to adb.
+  adb_controller: AdbControllerConfig = dataclasses.field(
+      default_factory=AdbControllerConfig
+  )
+  # Path to file which holds emulator logs. If not provided, it will be
+  # determined by the EmulatorLauncher.
+  logfile_path: str = ''
+  # The number of times to try launching the emulator before rebooting (reboot
+  # on the n+1-st try).
+  launch_n_times_without_reboot: int = 1
+  # The number of times to try launching the emulator before reinstalling
+  # (reinstall on the n+1-st try).
+  launch_n_times_without_reinstall: int = 2
 
 
 @dataclasses.dataclass

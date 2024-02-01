@@ -54,18 +54,22 @@ class LoaderTest(absltest.TestCase):
 
     self.assertIsInstance(env, environment.AndroidEnv)
     mock_simulator_class.assert_called_with(
-        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
-            avd_name='my_avd',
-            android_avd_home=os.path.expanduser('~/.android/avd'),
-            android_sdk_root=os.path.expanduser('~/Android/Sdk'),
-            emulator_path=os.path.expanduser('~/Android/Sdk/emulator/emulator'),
-            run_headless=False,
-            gpu_mode='swiftshader_indirect',
-        ),
-        adb_controller_config=config_classes.AdbControllerConfig(
-            adb_path=os.path.expanduser('~/Android/Sdk/platform-tools/adb'),
-            adb_server_port=5037,
-        ),
+        config=config_classes.EmulatorConfig(
+            emulator_launcher=config_classes.EmulatorLauncherConfig(
+                avd_name='my_avd',
+                android_avd_home=os.path.expanduser('~/.android/avd'),
+                android_sdk_root=os.path.expanduser('~/Android/Sdk'),
+                emulator_path=os.path.expanduser(
+                    '~/Android/Sdk/emulator/emulator'
+                ),
+                run_headless=False,
+                gpu_mode='swiftshader_indirect',
+            ),
+            adb_controller=config_classes.AdbControllerConfig(
+                adb_path=os.path.expanduser('~/Android/Sdk/platform-tools/adb'),
+                adb_server_port=5037,
+            ),
+        )
     )
     mock_coordinator.assert_called_with(
         mock_simulator_class.return_value,
@@ -90,13 +94,15 @@ class LoaderTest(absltest.TestCase):
 
     self.assertIsInstance(env, environment.AndroidEnv)
     mock_simulator_class.assert_called_with(
-        emulator_launcher_config=config_classes.EmulatorLauncherConfig(
-            emulator_console_port=5554, adb_port=5555, grpc_port=8554
-        ),
-        adb_controller_config=config_classes.AdbControllerConfig(
-            adb_path=os.path.expanduser('~/Android/Sdk/platform-tools/adb'),
-            adb_server_port=5037,
-        ),
+        config=config_classes.EmulatorConfig(
+            emulator_launcher=config_classes.EmulatorLauncherConfig(
+                emulator_console_port=5554, adb_port=5555, grpc_port=8554
+            ),
+            adb_controller=config_classes.AdbControllerConfig(
+                adb_path=os.path.expanduser('~/Android/Sdk/platform-tools/adb'),
+                adb_server_port=5037,
+            ),
+        )
     )
     mock_coordinator.assert_called_with(
         mock_simulator_class.return_value,
