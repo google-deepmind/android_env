@@ -162,3 +162,19 @@ class TaskManagerConfig:
   # The maximum number of extras elements to store. If this number is exceeded,
   # elements are dropped in the order they were received.
   extras_max_buffer_size: int = 100
+
+
+@dataclasses.dataclass
+class TaskConfig:
+  """Base config class for loading tasks."""
+
+  # The directory for temporary task-related resources.
+  tmp_dir: str = ''
+
+
+@dataclasses.dataclass
+class FilesystemTaskConfig(TaskConfig):
+  """Config for protobuf files stored in the local filesystem."""
+
+  # Filesystem path to `.binarypb` or `.textproto` protobuf Task.
+  path: str = ''

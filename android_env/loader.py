@@ -17,6 +17,7 @@
 
 import os
 
+from absl import logging
 from android_env import environment
 from android_env.components import config_classes
 from android_env.components import coordinator as coordinator_lib
@@ -27,11 +28,18 @@ from android_env.proto import task_pb2
 from google.protobuf import text_format
 
 
-def _get_task_manager(task_path: str) -> task_manager_lib.TaskManager:
+def _load_task(task_config: config_classes.TaskConfig) -> task_pb2.Task:
+  """Returns the task according to `task_config`."""
+
   task = task_pb2.Task()
-  with open(task_path, 'r') as proto_file:
-    text_format.Parse(proto_file.read(), task)
-  return task_manager_lib.TaskManager(task)
+  match task_config:
+    case config_classes.FilesystemTaskConfig():
+      with open(task_config.path, 'r') as proto_file:
+        text_format.Parse(proto_file.read(), task)
+    case _:
+      logging.error('Unsupported TaskConfig: %r', task_config)
+
+  return task
 
 
 def load(
@@ -91,6 +99,7 @@ def load(
       )
   )
 
-  task_manager = _get_task_manager(task_path)
+  task = _load_task(config_classes.FilesystemTaskConfig(path=task_path))
+  task_manager = task_manager_lib.TaskManager(task)
   coordinator = coordinator_lib.Coordinator(simulator, task_manager)
   return environment.AndroidEnv(coordinator=coordinator)
