@@ -26,7 +26,7 @@ class AdbControllerConfig:
   # NOTE: This must be a full path and must not contain environment variables
   # or user folder shorthands (e.g. `~/some/path/to/adb`) since they will not be
   # expanded internally by AndroidEnv.
-  adb_path: str = 'adb'
+  adb_path: str = '~/Android/Sdk/platform-tools/adb'
   # Port for adb server.
   adb_server_port: int = 5037
   # Default timeout in seconds for internal commands.
@@ -80,13 +80,13 @@ class EmulatorLauncherConfig:
   # exists already and EmulatorLauncher will be skipped.
 
   # Filesystem path to the `emulator` binary.
-  emulator_path: str = ''
+  emulator_path: str = '~/Android/Sdk/emulator/emulator'
   # Filesystem path to the Android SDK root.
-  android_sdk_root: str = ''
+  android_sdk_root: str = '~/Android/Sdk'
   # Name of the AVD.
   avd_name: str = ''
   # Local directory for AVDs.
-  android_avd_home: str = ''
+  android_avd_home: str = '~/.android/avd'
   # Name of the snapshot to load.
   snapshot_name: str = ''
   # Path to the KVM device.
@@ -178,3 +178,18 @@ class FilesystemTaskConfig(TaskConfig):
 
   # Filesystem path to `.binarypb` or `.textproto` protobuf Task.
   path: str = ''
+
+
+@dataclasses.dataclass
+class AndroidEnvConfig:
+  """Config class for AndroidEnv."""
+
+  # Configs for main components.
+  task: TaskConfig = dataclasses.field(default_factory=TaskConfig)
+  task_manager: TaskManagerConfig = dataclasses.field(
+      default_factory=TaskManagerConfig
+  )
+  coordinator: CoordinatorConfig = dataclasses.field(
+      default_factory=CoordinatorConfig
+  )
+  simulator: SimulatorConfig = dataclasses.field(default_factory=EmulatorConfig)

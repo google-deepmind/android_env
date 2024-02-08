@@ -24,6 +24,7 @@ from acme import wrappers as acme_wrappers
 from acme.agents.tf import dqn
 from acme.tf import networks
 from android_env import loader
+from android_env.components import config_classes
 from android_env.wrappers import discrete_action_wrapper
 from android_env.wrappers import float_pixels_wrapper
 from android_env.wrappers import image_rescale_wrapper
@@ -58,14 +59,22 @@ def apply_wrappers(env):
 
 def main(_):
 
-  with loader.load(
-      emulator_path=FLAGS.emulator_path,
-      android_sdk_root=FLAGS.android_sdk_root,
-      android_avd_home=FLAGS.android_avd_home,
-      avd_name=FLAGS.avd_name,
-      adb_path=FLAGS.adb_path,
-      task_path=FLAGS.task_path,
-      run_headless=False) as env:
+  config = config_classes.AndroidEnvConfig(
+      task=config_classes.FilesystemTaskConfig(path=FLAGS.task_path),
+      simulator=config_classes.EmulatorConfig(
+          emulator_launcher=config_classes.EmulatorLauncherConfig(
+              emulator_path=FLAGS.emulator_path,
+              android_sdk_root=FLAGS.android_sdk_root,
+              android_avd_home=FLAGS.android_avd_home,
+              avd_name=FLAGS.avd_name,
+              run_headless=FLAGS.run_headless,
+          ),
+          adb_controller=config_classes.AdbControllerConfig(
+              adb_path=FLAGS.adb_path
+          ),
+      ),
+  )
+  with loader.load(config) as env:
 
     env = apply_wrappers(env)
     env_spec = specs.make_environment_spec(env)
