@@ -26,9 +26,6 @@ from dm_env import specs
 import numpy as np
 
 
-ActionType = action_type.ActionType
-
-
 def _make_array_spec(shape, dtype, name):
   return specs.BoundedArray(
       name=name,
@@ -56,8 +53,8 @@ class TapActionWrapperTest(absltest.TestCase):
     wrapped_env = tap_action_wrapper.TapActionWrapper(
         self.base_env, num_frames=3)
     action = {
-        'action_type': np.array(ActionType.REPEAT, dtype=np.int32),
-        'touch_position': np.array([0.5, 0.5], dtype=np.float32)
+        'action_type': np.array(action_type.ActionType.REPEAT, dtype=np.int32),
+        'touch_position': np.array([0.5, 0.5], dtype=np.float32),
     }
     actions = wrapped_env._process_action(action)
     self.assertLen(actions, wrapped_env._num_frames + 1)
@@ -67,8 +64,8 @@ class TapActionWrapperTest(absltest.TestCase):
     wrapped_env = tap_action_wrapper.TapActionWrapper(
         self.base_env, num_frames=3)
     action = {
-        'action_type': np.array(ActionType.LIFT, dtype=np.int32),
-        'touch_position': np.array([0.5, 0.5], dtype=np.float32)
+        'action_type': np.array(action_type.ActionType.LIFT, dtype=np.int32),
+        'touch_position': np.array([0.5, 0.5], dtype=np.float32),
     }
     actions = wrapped_env._process_action(action)
     self.assertLen(actions, wrapped_env._num_frames + 1)
@@ -78,12 +75,14 @@ class TapActionWrapperTest(absltest.TestCase):
     wrapped_env = tap_action_wrapper.TapActionWrapper(
         self.base_env, num_frames=3)
     action = {
-        'action_type': np.array(ActionType.TOUCH, dtype=np.int32),
-        'touch_position': np.array([0.5, 0.5], dtype=np.float32)
+        'action_type': np.array(action_type.ActionType.TOUCH, dtype=np.int32),
+        'touch_position': np.array([0.5, 0.5], dtype=np.float32),
     }
     actions = wrapped_env._process_action(action)
     self.assertLen(actions, wrapped_env._num_frames + 1)
-    self.assertEqual(actions[-1]['action_type'], np.array(ActionType.LIFT))
+    self.assertEqual(
+        actions[-1]['action_type'], np.array(action_type.ActionType.LIFT)
+    )
 
   def test_reset(self):
     wrapped_env = tap_action_wrapper.TapActionWrapper(
@@ -95,6 +94,7 @@ class TapActionWrapperTest(absltest.TestCase):
     self.assertEqual(fake_timestep, ts)
 
   def test_step(self):
+    # Arrange.
     wrapped_env = tap_action_wrapper.TapActionWrapper(
         self.base_env, num_frames=5)
     fake_timestep = dm_env.TimeStep(
@@ -103,13 +103,21 @@ class TapActionWrapperTest(absltest.TestCase):
         discount=1.0,
         observation='fake_obs')
     self.base_env.step.return_value = fake_timestep
+    self.base_env.stats.return_value = {}
+
+    # Act.
     ts = wrapped_env.step({
-        'action_type': np.array(ActionType.REPEAT, dtype=np.int32),
-        'touch_position': np.array([0.5, 0.5], dtype=np.float32)
+        'action_type': np.array(action_type.ActionType.REPEAT, dtype=np.int32),
+        'touch_position': np.array([0.5, 0.5], dtype=np.float32),
     })
+    stats = wrapped_env.stats()
+
+    # Assert.
     self.assertEqual(wrapped_env._num_frames+1, self.base_env.step.call_count)
     self.assertIsInstance(ts, dm_env.TimeStep)
-    self.assertEqual(wrapped_env._env_steps, 6)
+    self.assertIsInstance(stats, dict)
+    self.assertIn('env_steps', stats)
+    self.assertEqual(stats['env_steps'], 6)
 
   def test_observation_spec(self):
     wrapped_env = tap_action_wrapper.TapActionWrapper(
@@ -128,6 +136,33 @@ class TapActionWrapperTest(absltest.TestCase):
     self.base_env.action_spec.assert_called()
     self.assertEqual(self.base_env.action_spec(),
                      action_spec)
+
+  def test_stats(self):
+    """Checks that returned stats have expected properties."""
+
+    # Arrange.
+    self.base_env.stats.return_value = {
+        'some_key': 12345,
+        'another_key': 5.4321,
+    }
+    wrapped_env = tap_action_wrapper.TapActionWrapper(
+        self.base_env, num_frames=5
+    )
+
+    # Act.
+    stats = wrapped_env.stats()
+
+    # Assert.
+    self.assertIsInstance(stats, dict)
+    # Original entries should still be present.
+    self.assertIn('some_key', stats)
+    self.assertEqual(stats['some_key'], 12345)
+    self.assertIn('another_key', stats)
+    self.assertEqual(stats['another_key'], 5.4321)
+    # TapActionWrapper inserts its own `env_steps`.
+    self.assertIn('env_steps', stats)
+    self.assertEqual(stats['env_steps'], 0)
+
 
 if __name__ == '__main__':
   absltest.main()

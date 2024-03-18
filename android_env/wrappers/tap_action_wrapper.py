@@ -23,9 +23,6 @@ import dm_env
 import numpy as np
 
 
-ActionType = action_type.ActionType
-
-
 class TapActionWrapper(base_wrapper.BaseWrapper):
   """AndroidEnv with tap actions."""
 
@@ -51,20 +48,23 @@ class TapActionWrapper(base_wrapper.BaseWrapper):
     if self._touch_only:
       assert action['action_type'] == 0
       touch_action = action.copy()
-      touch_action['action_type'] = np.array(ActionType.TOUCH).astype(
-          self.action_spec()['action_type'].dtype)
+      touch_action['action_type'] = np.array(
+          action_type.ActionType.TOUCH
+      ).astype(self.action_spec()['action_type'].dtype)
       actions = [touch_action] * self._num_frames
       lift_action = action.copy()
-      lift_action['action_type'] = np.array(ActionType.LIFT).astype(
-          self.action_spec()['action_type'].dtype)
+      lift_action['action_type'] = np.array(action_type.ActionType.LIFT).astype(
+          self.action_spec()['action_type'].dtype
+      )
       actions.append(lift_action)
 
     else:
-      if action['action_type'] == ActionType.TOUCH:
+      if action['action_type'] == action_type.ActionType.TOUCH:
         actions = [action] * self._num_frames
         lift_action = action.copy()
-        lift_action['action_type'] = np.array(ActionType.LIFT).astype(
-            self.action_spec()['action_type'].dtype)
+        lift_action['action_type'] = np.array(
+            action_type.ActionType.LIFT
+        ).astype(self.action_spec()['action_type'].dtype)
         actions.append(lift_action)
       else:
         actions = [action] * (self._num_frames + 1)
