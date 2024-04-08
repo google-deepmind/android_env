@@ -440,18 +440,24 @@ class AdbCallParserTest(parameterized.TestCase):
                                                 None)
 
   @parameterized.named_parameters(
-      ('rotation_0', b'0', 0),
-      ('rotation_90', b'1', 1),
-      ('rotation_180', b'2', 2),
-      ('rotation_270', b'3', 3),
+      ('rotation_0', b""" SurfaceOrientation: 0""", 0),
+      ('rotation_90', b""" SurfaceOrientation: 1""", 1),
+      ('rotation_180', b""" SurfaceOrientation: 2""", 2),
+      ('rotation_270', b""" SurfaceOrientation: 3""", 3),
+      ('rotation_0_new', b""" InputDeviceOrientation: 0""", 0),
+      ('rotation_90_new', b""" InputDeviceOrientation: 1""", 1),
+      ('rotation_180_new', b""" InputDeviceOrientation: 2""", 2),
+      ('rotation_270_new', b""" InputDeviceOrientation: 3""", 3),
   )
-  def test_get_orientation_success(self, orientation, expected_orientation):
+  def test_get_orientation_success(
+      self, orientation: bytes, expected_orientation: int
+  ):
     adb = mock.create_autospec(adb_controller.AdbController)
-    adb.execute_command.return_value = b"""
-    SomeRandomKey: 12345
-    SurfaceOrientation: """ + orientation + b"""
+    adb.execute_command.return_value = (
+        b"""SomeRandomKey: 12345\n""" + orientation + b"""
     MoreRandomStuff: awesome_value
 """
+    )
 
     parser = adb_call_parser.AdbCallParser(
         adb, tmp_dir=absltest.get_default_test_tmpdir())
