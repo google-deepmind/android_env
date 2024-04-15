@@ -1,0 +1,123 @@
+// Copyright 2024 DeepMind Technologies Limited.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package android_env;
+
+import "android_env/proto/a11y/android_accessibility_action.proto";
+import "android_env/proto/a11y/android_accessibility_node_info_clickable_span.proto";
+import "android_env/proto/a11y/rect.proto";
+
+option java_multiple_files = true;
+option java_package = "com.google.androidenv.accessibilityforwarder";
+option java_api_version = 2;
+
+// An Android AccessibilityNodeInfo.
+// Next index: 32
+message AndroidAccessibilityNodeInfo {
+  // Unique monotonically-increasing ID.
+  int32 unique_id = 1;
+
+  // The bounds of this node within the device's screen.
+  ProtoRect bounds_in_screen = 2;
+
+  // The name of the View class that created this node.
+  string class_name = 3;
+
+  // The content description of the node.
+  string content_description = 4;
+
+  // The hint text of the node.
+  string hint_text = 5;
+
+  // The name of the package this node comes from.
+  string package_name = 6;
+
+  // The text of this node.
+  string text = 7;
+
+  // The start index of the text selection.
+  int64 text_selection_start = 8;
+
+  // The end index of the text selection.
+  int64 text_selection_end = 9;
+
+  // The view ID resource name of the node.
+  string view_id_resource_name = 10;
+
+  // The ID of the window this node belongs to.
+  int32 window_id = 11;
+
+  // If true, this node can be checked.
+  bool is_checkable = 12;
+
+  // If true, this node is currently checked.
+  bool is_checked = 13;
+
+  // If true, this node (probably) responds to being clicked.
+  bool is_clickable = 14;
+
+  // If true, this node's text can be edited by the user.
+  bool is_editable = 15;
+
+  // If true, this node is enabled (e.g., if it is a button).
+  bool is_enabled = 16;
+
+  // If true, this node can be focused (e.g., a text input).
+  bool is_focusable = 17;
+
+  // If true, this node is currently focused.
+  bool is_focused = 18;
+
+  // If true, this node (probably) responds to being long pressed.
+  bool is_long_clickable = 19;
+
+  // If true, this node is a password input.
+  bool is_password = 20;
+
+  // If true, this node can be scrolled.
+  bool is_scrollable = 21;
+
+  // If true, this node is currently selected.
+  bool is_selected = 22;
+
+  // If true, this node is (probably) visible to the user.
+  bool is_visible_to_user = 23;
+
+  // List of actions that can be performed on this node.
+  repeated AndroidAccessibilityAction actions = 24;
+
+  // Ordered list of child IDs (i.e., unique_id).
+  repeated int32 child_ids = 25 [packed = true];
+
+  // List of clickable spans present in the node's text or content description.
+  repeated AndroidAccessibilityNodeInfoClickableSpan clickable_spans = 26;
+
+  // The depth of this node in the accessibility tree.
+  int32 depth = 27;
+
+  // Unique ID of the node that this node is declaring itself to be labeled by.
+  int32 labeled_by_id = 28;
+
+  // Unique ID of the node that this is node is declaring itself to be a label
+  // for.
+  int32 label_for_id = 29;
+
+  // The drawing order for the node.
+  int32 drawing_order = 30;
+
+  // The tooltip text of the node.
+  string tooltip_text = 31;
+}

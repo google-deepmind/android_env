@@ -1,0 +1,81 @@
+// Copyright 2024 DeepMind Technologies Limited.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package android_env;
+
+import "android_env/proto/a11y/android_accessibility_forest.proto";
+
+option java_multiple_files = true;
+option use_java_stubby_library = true;
+option java_package = "com.google.androidenv.accessibilityforwarder";
+
+// A service to send Accessibility information to a remote server.
+//
+// The client is assumed to be running inside an Android device (e.g. emulator
+// or real device) while the server is assumed to be running outside (e.g. in a
+// Python process).
+service A11yService {
+  // Sends a forest of Accessibility trees to a server.
+  rpc SendForest(AndroidAccessibilityForest) returns (ForestResponse) {}
+  // Sends an a11y event to a server.
+  rpc SendEvent(EventRequest) returns (EventResponse) {}
+
+  // Long-lived bidirection communication between the client and the server.
+  rpc Bidi(stream ClientToServer) returns (stream ServerToClient) {}
+}
+
+// TODO(b/334952387): Remove `ForestResponse`, `EventRequest` and
+// `EventResponse` once bidi communication is in-place.
+message ForestResponse {
+  // The error if anything.
+  string error = 1;
+}
+
+message EventRequest {
+  // The event to send, as a dictionary.
+  map<string, string> event = 1;
+}
+
+message EventResponse {
+  // The error if anything.
+  string error = 1;
+}
+
+// The message sent from the Android device to the server running outside of the
+// device.
+message ClientToServer {
+  // An Accessibility event.
+  message A11yEvent {
+    // A single event as a dictionary.
+    map<string, string> event = 1;
+  }
+
+  oneof payload {
+    A11yEvent event = 1;
+    AndroidAccessibilityForest forest = 2;
+  }
+}
+
+// The message sent from the server running outside of the device to the Android
+// device.
+message ServerToClient {
+  // A request to obtain the Accessibility forest.
+  message GetA11yForest {}
+
+  oneof payload {
+    GetA11yForest get_forest = 1;
+  }
+}

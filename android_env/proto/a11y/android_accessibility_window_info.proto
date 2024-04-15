@@ -1,0 +1,85 @@
+// Copyright 2024 DeepMind Technologies Limited.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package android_env;
+
+import "android_env/proto/a11y/android_accessibility_tree.proto";
+import "android_env/proto/a11y/rect.proto";
+
+option java_multiple_files = true;
+option java_package = "com.google.androidenv.accessibilityforwarder";
+option java_api_version = 2;
+
+// An Android AccessibilityWindowInfo.
+// Next index: 12
+message AndroidAccessibilityWindowInfo {
+  // Type of the window.
+  // Next index: 6
+  enum WindowType {
+    // The window type is an unknown value.
+    UNKNOWN_TYPE = 0;
+
+    // A standard application window.
+    TYPE_APPLICATION = 1;
+
+    // An IME window (e.g. GBoard).
+    TYPE_INPUT_METHOD = 2;
+
+    // A system window (e.g., a notification).
+    TYPE_SYSTEM = 3;
+
+    // An accessibility overlay.
+    TYPE_ACCESSIBILITY_OVERLAY = 4;
+
+    // A system window used to divide the screen in split-screen mode. This type
+    // of window is present only in split-screen mode.
+    TYPE_SPLIT_SCREEN_DIVIDER = 5;
+  }
+
+  // Bounds of this window in the device's screen.
+  ProtoRect bounds_in_screen = 1;
+
+  // A unique ID identifying the display in which this window is shown.
+  int32 display_id = 2;
+
+  // Unique ID as defined by the Android platform.
+  int32 id = 3;
+
+  // Z-index of the window. Windows with a greater z-index appear in front of
+  // those with a lesser z-index.
+  int32 layer = 4;
+
+  // The title of the window, if set.
+  string title = 5;
+
+  // The type of the window.
+  WindowType window_type = 6;
+
+  // If true, the window is currently accessibility-focused.
+  bool is_accessibility_focused = 7;
+
+  // If true, the window is currently active.
+  bool is_active = 8;
+
+  // If true, the window is currently focused.
+  bool is_focused = 9;
+
+  // If true, the window is in Picture in Picture mode.
+  bool is_in_picture_in_picture_mode = 10;
+
+  // The associated accessibility tree for this window.
+  AndroidAccessibilityTree tree = 11;
+}
