@@ -44,8 +44,9 @@ message ForestResponse {
   string error = 1;
 }
 
+// An Accessibility event.
 message EventRequest {
-  // The event to send, as a dictionary.
+  // A single event as a dictionary.
   map<string, string> event = 1;
 }
 
@@ -57,14 +58,8 @@ message EventResponse {
 // The message sent from the Android device to the server running outside of the
 // device.
 message ClientToServer {
-  // An Accessibility event.
-  message A11yEvent {
-    // A single event as a dictionary.
-    map<string, string> event = 1;
-  }
-
   oneof payload {
-    A11yEvent event = 1;
+    EventRequest event = 1;
     AndroidAccessibilityForest forest = 2;
   }
 }
