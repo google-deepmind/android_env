@@ -18,7 +18,6 @@ package android_env;
 
 option java_multiple_files = true;
 option java_package = "com.google.androidenv.accessibilityforwarder";
-option java_api_version = 2;
 
 // Proto representation of Android Rect.
 // https://developer.android.com/reference/android/graphics/Rect

@@ -20,7 +20,6 @@ import "android_env/proto/a11y/android_accessibility_node_info.proto";
 
 option java_multiple_files = true;
 option java_package = "com.google.androidenv.accessibilityforwarder";
-option java_api_version = 2;
 
 // A tree (actually a graph) of Android accessibility nodes.
 // Next index: 3

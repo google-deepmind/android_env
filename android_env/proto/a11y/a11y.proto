@@ -19,7 +19,6 @@ package android_env;
 import "android_env/proto/a11y/android_accessibility_forest.proto";
 
 option java_multiple_files = true;
-option use_java_stubby_library = true;
 option java_package = "com.google.androidenv.accessibilityforwarder";
 
 // A service to send Accessibility information to a remote server.

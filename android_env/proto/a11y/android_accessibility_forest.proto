@@ -20,7 +20,6 @@ import "android_env/proto/a11y/android_accessibility_window_info.proto";
 
 option java_multiple_files = true;
 option java_package = "com.google.androidenv.accessibilityforwarder";
-option java_api_version = 2;
 
 // A forest of Android accessibility trees. Each tree belongs to a single
 // window. Next index: 2

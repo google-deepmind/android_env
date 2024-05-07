@@ -34,6 +34,14 @@ _ANDROID_ENV_PROTOS = (
     'android_env/proto/snapshot_service.proto',
     'android_env/proto/state.proto',
     'android_env/proto/task.proto',
+    'android_env/proto/a11y/a11y.proto',
+    'android_env/proto/a11y/android_accessibility_action.proto',
+    'android_env/proto/a11y/android_accessibility_forest.proto',
+    'android_env/proto/a11y/android_accessibility_node_info.proto',
+    'android_env/proto/a11y/android_accessibility_node_info_clickable_span.proto',
+    'android_env/proto/a11y/android_accessibility_tree.proto',
+    'android_env/proto/a11y/android_accessibility_window_info.proto',
+    'android_env/proto/a11y/rect.proto',
 )
 
 testing_requirements = [

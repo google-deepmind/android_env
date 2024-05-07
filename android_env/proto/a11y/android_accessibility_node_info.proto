@@ -22,7 +22,6 @@ import "android_env/proto/a11y/rect.proto";
 
 option java_multiple_files = true;
 option java_package = "com.google.androidenv.accessibilityforwarder";
-option java_api_version = 2;
 
 // An Android AccessibilityNodeInfo.
 // Next index: 32

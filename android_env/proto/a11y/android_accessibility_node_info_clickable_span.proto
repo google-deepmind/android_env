@@ -18,7 +18,6 @@ package android_env;
 
 option java_multiple_files = true;
 option java_package = "com.google.androidenv.accessibilityforwarder";
-option java_api_version = 2;
 
 // A single clickable span found in the accessibility node's text.
 // Next index: 6
