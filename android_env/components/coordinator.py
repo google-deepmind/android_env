@@ -33,7 +33,6 @@ from android_env.components import utils
 from android_env.components.simulators import base_simulator
 from android_env.proto import adb_pb2
 from android_env.proto import state_pb2
-from android_env.proto import task_pb2
 import dm_env
 import numpy as np
 
