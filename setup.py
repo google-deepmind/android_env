@@ -48,7 +48,6 @@ testing_requirements = [
     'attrs==20.3.0',  # temporary pin to fix pytype issue.
     'pillow',
     'pytype',
-    'pytest-xdist',
     'gym',
 ]
 

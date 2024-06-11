@@ -30,7 +30,6 @@ testing = [
     "gym",
     "pillow",
     "pytype",
-    "pytest-xdist",
 ]
 acme = ["dm-acme"]
 gym = ["gym"]

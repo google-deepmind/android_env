@@ -33,6 +33,8 @@ jobs:
           python setup.py install
           pip install .[testing]
 
-      - name: Test with pytest
+      - name: Run tests
         run: |
-          pytest -n "$(grep -c ^processor /proc/cpuinfo)" android_env
+          # Find all test files, print their names and execute them in parallel
+          # with a maximum of 20 proccesses.
+          find . -type f -name "*_test.py" -print0 | xargs -t -0 -n1 -P 20 python3
