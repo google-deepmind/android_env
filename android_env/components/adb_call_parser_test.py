@@ -32,6 +32,7 @@ from android_env.proto import adb_pb2
 class AdbCallParserTest(parameterized.TestCase):
 
   def test_unknown_command(self):
+    """Gets UNKNOWN_COMMAND for an empty request."""
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(
         adb, tmp_dir=self.create_tempdir().full_path
@@ -58,6 +59,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
   @mock.patch.object(os.path, 'exists', autospec=True)
   def test_install_apk_file_not_found(self, mock_exists):
+    """Should fail installing APK when it is not found."""
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(
         adb, tmp_dir=self.create_tempdir().full_path
@@ -73,6 +75,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
   @mock.patch.object(os.path, 'exists', autospec=True)
   def test_install_apk_successful(self, mock_exists):
+    """Should succeed installing an arbitrary APK."""
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(
         adb, tmp_dir=self.create_tempdir().full_path
@@ -89,6 +92,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
   @mock.patch.object(tempfile, 'NamedTemporaryFile', autospec=True)
   def test_install_apk_from_blob(self, mock_tempfile):
+    """Should succeed installing APK from blob."""
     adb = mock.create_autospec(adb_controller.AdbController)
     tmp_dir = self.create_tempdir().full_path
     parser = adb_call_parser.AdbCallParser(adb, tmp_dir=tmp_dir)
@@ -114,6 +118,7 @@ class AdbCallParserTest(parameterized.TestCase):
     # pytype: enable=attribute-error
 
   def test_start_activity_empty_full_activity(self):
+    """A start_activity command should always have a nonempty activity."""
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(
         adb, tmp_dir=self.create_tempdir().full_path
