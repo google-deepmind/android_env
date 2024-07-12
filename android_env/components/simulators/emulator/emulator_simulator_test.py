@@ -77,7 +77,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
   def test_adb_device_name_not_empty(self):
     config = config_classes.EmulatorConfig(
         emulator_launcher=config_classes.EmulatorLauncherConfig(
-            grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),
         adb_controller=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
@@ -93,7 +93,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
     config = config_classes.EmulatorConfig(
         logfile_path='fake/logfile/path',
         emulator_launcher=config_classes.EmulatorLauncherConfig(
-            grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),
         adb_controller=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
@@ -111,7 +111,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
   def test_grpc_port(self, unused_mock_portpicker):
 
     launcher_config = config_classes.EmulatorLauncherConfig(
-        tmp_dir=absltest.get_default_test_tmpdir()
+        tmp_dir=self.create_tempdir().full_path
     )
     config = config_classes.EmulatorConfig(
         emulator_launcher=launcher_config,
@@ -127,7 +127,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
   def test_grpc_port_unavailable(self, unused_mock_portpicker):
 
     launcher_config = config_classes.EmulatorLauncherConfig(
-        tmp_dir=absltest.get_default_test_tmpdir()
+        tmp_dir=self.create_tempdir().full_path
     )
     config = config_classes.EmulatorConfig(
         emulator_launcher=launcher_config,
@@ -152,7 +152,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
     )
     config = config_classes.EmulatorConfig(
         emulator_launcher=config_classes.EmulatorLauncherConfig(
-            grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),
         adb_controller=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
@@ -171,7 +171,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
   def test_close(self):
     config = config_classes.EmulatorConfig(
         emulator_launcher=config_classes.EmulatorLauncherConfig(
-            grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),
         adb_controller=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
@@ -194,7 +194,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
         emulator_simulator.EmulatorSimulator,
         config=config_classes.EmulatorConfig(
             emulator_launcher=config_classes.EmulatorLauncherConfig(
-                grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+                grpc_port=1234, tmp_dir=self.create_tempdir().full_path
             ),
             adb_controller=config_classes.AdbControllerConfig(
                 adb_path='/my/adb',
@@ -208,7 +208,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
   def test_launch_attempt_reboot(self):
     config = config_classes.EmulatorConfig(
         emulator_launcher=config_classes.EmulatorLauncherConfig(
-            grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),
         adb_controller=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
@@ -234,7 +234,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
   def test_launch_attempt_reinstall_after_zero_attempts(self):
     config = config_classes.EmulatorConfig(
         emulator_launcher=config_classes.EmulatorLauncherConfig(
-            grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),
         adb_controller=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
@@ -261,7 +261,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
   def test_launch_attempt_reinstall(self):
     config = config_classes.EmulatorConfig(
         emulator_launcher=config_classes.EmulatorLauncherConfig(
-            grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),
         adb_controller=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
@@ -293,7 +293,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
   def test_get_screenshot(self):
     config = config_classes.EmulatorConfig(
         emulator_launcher=config_classes.EmulatorLauncherConfig(
-            grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),
         adb_controller=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
@@ -319,7 +319,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
   def test_load_state(self):
     config = config_classes.EmulatorConfig(
         emulator_launcher=config_classes.EmulatorLauncherConfig(
-            grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),
         adb_controller=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
@@ -373,7 +373,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
   def test_save_state(self):
     config = config_classes.EmulatorConfig(
         emulator_launcher=config_classes.EmulatorLauncherConfig(
-            grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),
         adb_controller=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
@@ -415,7 +415,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
   def test_send_touch(self):
     config = config_classes.EmulatorConfig(
         emulator_launcher=config_classes.EmulatorLauncherConfig(
-            grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),
         adb_controller=config_classes.AdbControllerConfig(
             adb_path='/my/adb',
@@ -472,7 +472,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
   def test_send_key(self):
     config = config_classes.EmulatorConfig(
         emulator_launcher=config_classes.EmulatorLauncherConfig(
-            grpc_port=1234, tmp_dir=absltest.get_default_test_tmpdir()
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),
         adb_controller=config_classes.AdbControllerConfig(
             adb_path='/my/adb',

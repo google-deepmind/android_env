@@ -415,7 +415,7 @@ class CoordinatorTest(parameterized.TestCase):
         simulator=self._simulator,
         task_manager=self._task_manager,
         config=config_classes.CoordinatorConfig(
-            tmp_dir=absltest.get_default_test_tmpdir()
+            tmp_dir=self.create_tempdir().full_path
         ),
     )
     mock_gettempdir.assert_not_called()
