@@ -71,14 +71,16 @@ class ImageRescaleWrapper(base_wrapper.BaseWrapper):
     return self._resize_image_array(image, new_shape)
 
   def _resize_image_array(
-      self,
-      grayscale_or_rbg_array: np.ndarray,
-      new_shape: Sequence[int]) -> np.ndarray:
+      self, grayscale_or_rbg_array: np.ndarray, new_shape: np.ndarray
+  ) -> np.ndarray:
     """Resize color or grayscale/action_layer array to new_shape."""
-    assert np.array(new_shape).ndim == 1
+    assert new_shape.ndim == 1
     assert len(new_shape) == 2
-    resized_array = np.array(Image.fromarray(
-        grayscale_or_rbg_array.astype('uint8')).resize(new_shape))
+    resized_array = np.array(
+        Image.fromarray(grayscale_or_rbg_array.astype('uint8')).resize(
+            tuple(new_shape)
+        )
+    )
     if resized_array.ndim == 2:
       return np.expand_dims(resized_array, axis=-1)
     return resized_array
