@@ -35,8 +35,9 @@ class FloatPixelsWrapper(base_wrapper.BaseWrapper):
       self, observation: dict[str, np.ndarray]
   ) -> dict[str, np.ndarray]:
     if self._should_convert_int_to_float:
-      float_pixels = utils.convert_int_to_float(observation['pixels'],
-                                                self._input_spec, np.float32)
+      float_pixels = utils.convert_int_to_float(
+          observation['pixels'], self._input_spec
+      )
       observation['pixels'] = float_pixels
     return observation
 
