@@ -16,7 +16,7 @@
 """Extends Android observation with the latest action taken."""
 
 from android_env.components import action_type
-from android_env.components import utils
+from android_env.components import pixel_fns
 from android_env.wrappers import base_wrapper
 import dm_env
 from dm_env import specs
@@ -76,8 +76,9 @@ class LastActionWrapper(base_wrapper.BaseWrapper):
     if ('action_type' in last_action and
         last_action['action_type'] == action_type.ActionType.TOUCH):
       touch_position = last_action['touch_position']
-      x, y = utils.touch_position_to_pixel_position(
-          touch_position, width_height=self._screen_dimensions[::-1])
+      x, y = pixel_fns.touch_position_to_pixel_position(
+          touch_position, width_height=self._screen_dimensions[::-1]
+      )
       last_action_layer[y, x] = 255
 
     return last_action_layer

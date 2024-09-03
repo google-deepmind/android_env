@@ -15,7 +15,7 @@
 
 """Converts pixel observation to from int to float32 between 0.0 and 1.0."""
 
-from android_env.components import utils
+from android_env.components import pixel_fns
 from android_env.wrappers import base_wrapper
 import dm_env
 from dm_env import specs
@@ -35,7 +35,7 @@ class FloatPixelsWrapper(base_wrapper.BaseWrapper):
       self, observation: dict[str, np.ndarray]
   ) -> dict[str, np.ndarray]:
     if self._should_convert_int_to_float:
-      float_pixels = utils.convert_int_to_float(
+      float_pixels = pixel_fns.convert_int_to_float(
           observation['pixels'], self._input_spec
       )
       observation['pixels'] = float_pixels

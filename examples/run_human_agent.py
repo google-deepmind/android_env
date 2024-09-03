@@ -24,7 +24,7 @@ from absl import logging
 from android_env import loader
 from android_env.components import action_type
 from android_env.components import config_classes
-from android_env.components import utils
+from android_env.components import pixel_fns
 import dm_env
 import numpy as np
 import pygame
@@ -116,8 +116,8 @@ def _render_pygame_frame(surface: pygame.Surface, screen: pygame.Surface,
   """Displays latest observation on pygame surface."""
 
   frame = timestep.observation['pixels'][:, :, :3]  # (H x W x C) (RGB)
-  frame = utils.transpose_pixels(frame)  # (W x H x C)
-  frame = utils.orient_pixels(frame, orientation)
+  frame = pixel_fns.transpose_pixels(frame)  # (W x H x C)
+  frame = pixel_fns.orient_pixels(frame, orientation)
 
   pygame.surfarray.blit_array(surface, frame)
   pygame.transform.smoothscale(surface, screen.get_size(), screen)

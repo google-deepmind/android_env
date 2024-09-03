@@ -27,9 +27,9 @@ from android_env.components import action_type as action_type_lib
 from android_env.components import adb_call_parser
 from android_env.components import config_classes
 from android_env.components import errors
+from android_env.components import pixel_fns
 from android_env.components import specs
 from android_env.components import task_manager as task_manager_lib
-from android_env.components import utils
 from android_env.components.simulators import base_simulator
 from android_env.proto import adb_pb2
 from android_env.proto import state_pb2
@@ -92,7 +92,8 @@ class Coordinator:
 
   def observation_spec(self) -> dict[str, dm_env.specs.Array]:
     return specs.base_observation_spec(
-        height=self._screen_size[0], width=self._screen_size[1])
+        height=self._screen_size[0], width=self._screen_size[1]
+    )
 
   def _update_screen_size(self) -> None:
     """Sets the screen size from a screenshot ignoring the color channel."""
@@ -109,7 +110,9 @@ class Coordinator:
 
     orientation_response = self._adb_call_parser.parse(
         adb_pb2.AdbRequest(
-            get_orientation=adb_pb2.AdbRequest.GetOrientationRequest()))
+            get_orientation=adb_pb2.AdbRequest.GetOrientationRequest()
+        )
+    )
     if orientation_response.status != adb_pb2.AdbResponse.Status.OK:
       logging.error('Got bad orientation: %r', orientation_response)
       return
@@ -180,7 +183,8 @@ class Coordinator:
     while True:
       if num_tries > max_retries:
         raise errors.TooManyRestartsError(
-            'Maximum number of restart attempts reached.') from latest_error
+            'Maximum number of restart attempts reached.'
+        ) from latest_error
       logging.info('Simulator launch attempt %d of %d', num_tries, max_retries)
 
       self._task_manager.stop()
@@ -263,7 +267,11 @@ class Coordinator:
             settings=adb_pb2.AdbRequest.SettingsRequest(
                 name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.GLOBAL,
                 put=adb_pb2.AdbRequest.SettingsRequest.Put(
-                    key='policy_control', value=policy_control_value))))
+                    key='policy_control', value=policy_control_value
+                ),
+            )
+        )
+    )
 
   def _create_adb_call_parser(self):
     """Creates a new AdbCallParser instance."""
@@ -332,8 +340,11 @@ class Coordinator:
 
     # Get current timestamp and update the delta.
     now = time.time()
-    timestamp_delta = (0 if self._latest_observation_time == 0 else
-                       (now - self._latest_observation_time) * 1e6)
+    timestamp_delta = (
+        0
+        if self._latest_observation_time == 0
+        else (now - self._latest_observation_time) * 1e6
+    )
     self._latest_observation_time = now
 
     # Grab pixels.
@@ -409,10 +420,12 @@ class Coordinator:
     width_height = self._screen_size[::-1]
     for i, finger_action in enumerate(self._split_touch_action(action)):
       is_touch = (
-          finger_action['action_type'] == action_type_lib.ActionType.TOUCH)
+          finger_action['action_type'] == action_type_lib.ActionType.TOUCH
+      )
       touch_position = finger_action['touch_position']
-      touch_pixels = utils.touch_position_to_pixel_position(
-          touch_position, width_height=width_height)
+      touch_pixels = pixel_fns.touch_position_to_pixel_position(
+          touch_position, width_height=width_height
+      )
       touch_events.append((touch_pixels[0], touch_pixels[1], is_touch, i))
     return touch_events
 
@@ -495,8 +508,9 @@ class Coordinator:
 class InteractionThread(threading.Thread):
   """A thread that interacts with a simulator."""
 
-  def __init__(self, simulator: base_simulator.BaseSimulator,
-               interaction_rate_sec: float):
+  def __init__(
+      self, simulator: base_simulator.BaseSimulator, interaction_rate_sec: float
+  ):
     super().__init__()
     self._simulator = simulator
     self._interaction_rate_sec = interaction_rate_sec
