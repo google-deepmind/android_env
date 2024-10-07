@@ -22,7 +22,6 @@ from android_env import env_interface
 from android_env.components import coordinator as coordinator_lib
 from android_env.proto import adb_pb2
 from android_env.proto import state_pb2
-from android_env.proto import task_pb2
 import dm_env
 import numpy as np
 
