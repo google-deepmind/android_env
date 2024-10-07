@@ -19,10 +19,12 @@ from unittest import mock
 
 from absl.testing import absltest
 from android_env import environment
+from android_env.components import config_classes
 from android_env.components import coordinator as coordinator_lib
+from android_env.components import task_manager as task_manager_lib
+from android_env.components.simulators.fake import fake_simulator
 from android_env.proto import adb_pb2
 from android_env.proto import state_pb2
-from android_env.proto import task_pb2
 import dm_env
 import numpy as np
 
@@ -44,10 +46,21 @@ def _create_mock_coordinator() -> coordinator_lib.Coordinator:
   return coordinator
 
 
+def _create_fake_simulator() -> fake_simulator.FakeSimulator:
+  return fake_simulator.FakeSimulator(
+      config=config_classes.FakeSimulatorConfig(screen_dimensions=(123, 456))
+  )
+
+
 class AndroidEnvTest(absltest.TestCase):
 
   def test_specs(self):
-    env = environment.AndroidEnv(_create_mock_coordinator())
+    simulator = _create_fake_simulator()
+    coordinator = _create_mock_coordinator()
+    task_manager = mock.create_autospec(task_manager_lib.TaskManager)
+    env = environment.AndroidEnv(
+        simulator=simulator, coordinator=coordinator, task_manager=task_manager
+    )
 
     # Check action spec.
     self.assertNotEmpty(env.action_spec())
@@ -77,7 +90,9 @@ class AndroidEnvTest(absltest.TestCase):
     self.assertEqual(env.observation_spec()['orientation'].shape, (4,))
 
   def test_reset_and_step(self):
-    coordinator = mock.create_autospec(coordinator_lib.Coordinator)
+    simulator = _create_fake_simulator()
+    coordinator = _create_mock_coordinator()
+    task_manager = mock.create_autospec(task_manager_lib.TaskManager)
     coordinator.action_spec.return_value = {
         'action_type':
             dm_env.specs.DiscreteArray(num_values=3),
@@ -90,7 +105,9 @@ class AndroidEnvTest(absltest.TestCase):
         'timedelta': dm_env.specs.Array(shape=(), dtype=np.int64),
         'orientation': dm_env.specs.Array(shape=(4,), dtype=np.uint8),
     }
-    env = environment.AndroidEnv(coordinator)
+    env = environment.AndroidEnv(
+        simulator=simulator, coordinator=coordinator, task_manager=task_manager
+    )
     coordinator.rl_reset.return_value = dm_env.TimeStep(
         step_type=dm_env.StepType.FIRST,
         reward=0.0,
@@ -125,9 +142,8 @@ class AndroidEnvTest(absltest.TestCase):
     self.assertIn('click', extras)
     self.assertEqual(extras['click'], np.array([246], dtype=np.int64))
 
-    coordinator.stats.return_value = {
-        'my_measurement': 135,
-    }
+    coordinator.stats.return_value = {'my_measurement': 135}
+    task_manager.stats.return_value = {'another_measurement': 79}
 
     # Step again in the environment and check expectations again.
     pixels = np.random.rand(987, 654, 3)
@@ -189,8 +205,12 @@ class AndroidEnvTest(absltest.TestCase):
     np.testing.assert_equal(obs['orientation'], (1, 0, 0, 0))
 
   def test_adb_call(self):
+    simulator = _create_fake_simulator()
     coordinator = _create_mock_coordinator()
-    env = environment.AndroidEnv(coordinator)
+    task_manager = mock.create_autospec(task_manager_lib.TaskManager)
+    env = environment.AndroidEnv(
+        simulator=simulator, coordinator=coordinator, task_manager=task_manager
+    )
     call = adb_pb2.AdbRequest(
         force_stop=adb_pb2.AdbRequest.ForceStop(package_name='blah'))
     expected_response = adb_pb2.AdbResponse(
@@ -203,8 +223,12 @@ class AndroidEnvTest(absltest.TestCase):
     coordinator.execute_adb_call.assert_called_once_with(call)
 
   def test_load_state(self):
+    simulator = _create_fake_simulator()
     coordinator = _create_mock_coordinator()
-    env = environment.AndroidEnv(coordinator)
+    task_manager = mock.create_autospec(task_manager_lib.TaskManager)
+    env = environment.AndroidEnv(
+        simulator=simulator, coordinator=coordinator, task_manager=task_manager
+    )
     expected_response = state_pb2.LoadStateResponse(
         status=state_pb2.LoadStateResponse.Status.OK
     )
@@ -215,8 +239,12 @@ class AndroidEnvTest(absltest.TestCase):
     coordinator.load_state.assert_called_once_with(request)
 
   def test_save_state(self):
+    simulator = _create_fake_simulator()
     coordinator = _create_mock_coordinator()
-    env = environment.AndroidEnv(coordinator)
+    task_manager = mock.create_autospec(task_manager_lib.TaskManager)
+    env = environment.AndroidEnv(
+        simulator=simulator, coordinator=coordinator, task_manager=task_manager
+    )
     expected_response = state_pb2.SaveStateResponse(
         status=state_pb2.SaveStateResponse.Status.OK
     )
@@ -227,8 +255,12 @@ class AndroidEnvTest(absltest.TestCase):
     coordinator.save_state.assert_called_once_with(request)
 
   def test_double_close(self):
+    simulator = _create_fake_simulator()
     coordinator = _create_mock_coordinator()
-    env = environment.AndroidEnv(coordinator)
+    task_manager = mock.create_autospec(task_manager_lib.TaskManager)
+    env = environment.AndroidEnv(
+        simulator=simulator, coordinator=coordinator, task_manager=task_manager
+    )
     env.close()
     env.close()
     coordinator.close.assert_called_once()

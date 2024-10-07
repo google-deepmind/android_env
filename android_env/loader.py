@@ -59,7 +59,9 @@ def load(config: config_classes.AndroidEnvConfig) -> environment.AndroidEnv:
       raise ValueError('Unsupported simulator config: {config.simulator}')
 
   coordinator = coordinator_lib.Coordinator(simulator, task_manager)
-  return environment.AndroidEnv(coordinator=coordinator)
+  return environment.AndroidEnv(
+      simulator=simulator, coordinator=coordinator, task_manager=task_manager
+  )
 
 
 def _process_emulator_launcher_config(

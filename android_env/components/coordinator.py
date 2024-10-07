@@ -51,6 +51,7 @@ class Coordinator:
     Args:
       simulator: A BaseSimulator instance.
       task_manager: The TaskManager, responsible for coordinating RL tasks.
+      config: Settings to customize this Coordinator.
     """
     self._simulator = simulator
     self._task_manager = task_manager
@@ -453,9 +454,7 @@ class Coordinator:
   def stats(self) -> dict[str, Any]:
     """Returns various statistics."""
 
-    output = copy.deepcopy(self._stats)
-    output.update(self._task_manager.stats())
-    return output
+    return copy.deepcopy(self._stats)
 
   def load_state(
       self, request: state_pb2.LoadStateRequest

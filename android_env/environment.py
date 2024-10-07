@@ -20,6 +20,8 @@ from typing import Any
 from absl import logging
 from android_env import env_interface
 from android_env.components import coordinator as coordinator_lib
+from android_env.components import task_manager as task_manager_lib
+from android_env.components.simulators import base_simulator
 from android_env.proto import adb_pb2
 from android_env.proto import state_pb2
 import dm_env
@@ -29,10 +31,17 @@ import numpy as np
 class AndroidEnv(env_interface.AndroidEnvInterface):
   """An RL environment that interacts with Android apps."""
 
-  def __init__(self, coordinator: coordinator_lib.Coordinator):
+  def __init__(
+      self,
+      simulator: base_simulator.BaseSimulator,
+      coordinator: coordinator_lib.Coordinator,
+      task_manager: task_manager_lib.TaskManager,
+  ):
     """Initializes the state of this AndroidEnv object."""
 
+    self._simulator = simulator
     self._coordinator = coordinator
+    self._task_manager = task_manager
     self._latest_action = {}
     self._latest_observation = {}
     self._latest_extras = {}
@@ -132,7 +141,9 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
     return self._latest_observation.copy()
 
   def stats(self) -> dict[str, Any]:
-    return self._coordinator.stats()
+    coordinator_stats = self._coordinator.stats()
+    task_manager_stats = self._task_manager.stats()
+    return coordinator_stats | task_manager_stats
 
   def execute_adb_call(self, call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
     return self._coordinator.execute_adb_call(call)
