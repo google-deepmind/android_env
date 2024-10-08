@@ -19,6 +19,7 @@ from typing import Any
 
 from absl import logging
 from android_env import env_interface
+from android_env.components import adb_call_parser
 from android_env.components import coordinator as coordinator_lib
 from android_env.components import task_manager as task_manager_lib
 from android_env.components.simulators import base_simulator
@@ -161,7 +162,16 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
       A `LoadStateResponse` containing the status, error message (if
       applicable), and any other relevant information.
     """
-    return self._coordinator.load_state(request)
+
+    self._task_manager.stop()
+    response = self._simulator.load_state(request)
+    self._task_manager.start(
+        adb_call_parser_factory=lambda: adb_call_parser.AdbCallParser(
+            self._simulator.create_adb_controller()
+        ),
+        log_stream=self._simulator.create_log_stream(),
+    )
+    return response
 
   def save_state(
       self, request: state_pb2.SaveStateRequest
@@ -176,4 +186,5 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
       A `SaveStateResponse` containing the status, error message (if
       applicable), and any other relevant information.
     """
-    return self._coordinator.save_state(request)
+
+    return self._simulator.save_state(request)

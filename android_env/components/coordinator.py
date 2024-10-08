@@ -17,7 +17,6 @@
 
 import copy
 import socket
-import tempfile
 import threading
 import time
 from typing import Any
@@ -32,7 +31,6 @@ from android_env.components import specs
 from android_env.components import task_manager as task_manager_lib
 from android_env.components.simulators import base_simulator
 from android_env.proto import adb_pb2
-from android_env.proto import state_pb2
 import dm_env
 import numpy as np
 
@@ -454,42 +452,6 @@ class Coordinator:
     """Returns various statistics."""
 
     return copy.deepcopy(self._stats)
-
-  def load_state(
-      self, request: state_pb2.LoadStateRequest
-  ) -> state_pb2.LoadStateResponse:
-    """Loads a state.
-
-    Args:
-      request: A `LoadStateRequest` containing any parameters necessary to
-        specify how/what state to load.
-
-    Returns:
-      A `LoadStateResponse` containing the status, error message (if
-      applicable), and any other relevant information.
-    """
-    self._task_manager.stop()
-    response = self._simulator.load_state(request)
-    self._task_manager.start(
-        adb_call_parser_factory=self._create_adb_call_parser,
-        log_stream=self._simulator.create_log_stream(),
-    )
-    return response
-
-  def save_state(
-      self, request: state_pb2.SaveStateRequest
-  ) -> state_pb2.SaveStateResponse:
-    """Saves a state.
-
-    Args:
-      request: A `SaveStateRequest` containing any parameters necessary to
-        specify how/what state to save.
-
-    Returns:
-      A `SaveStateResponse` containing the status, error message (if
-      applicable), and any other relevant information.
-    """
-    return self._simulator.save_state(request)
 
   def close(self):
     """Cleans up the state of this Coordinator."""

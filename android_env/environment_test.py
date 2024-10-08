@@ -22,6 +22,7 @@ from android_env import environment
 from android_env.components import config_classes
 from android_env.components import coordinator as coordinator_lib
 from android_env.components import task_manager as task_manager_lib
+from android_env.components.simulators import base_simulator
 from android_env.components.simulators.fake import fake_simulator
 from android_env.proto import adb_pb2
 from android_env.proto import state_pb2
@@ -223,7 +224,7 @@ class AndroidEnvTest(absltest.TestCase):
     coordinator.execute_adb_call.assert_called_once_with(call)
 
   def test_load_state(self):
-    simulator = _create_fake_simulator()
+    simulator = mock.create_autospec(base_simulator.BaseSimulator)
     coordinator = _create_mock_coordinator()
     task_manager = mock.create_autospec(task_manager_lib.TaskManager)
     env = environment.AndroidEnv(
@@ -233,13 +234,15 @@ class AndroidEnvTest(absltest.TestCase):
         status=state_pb2.LoadStateResponse.Status.OK
     )
     request = state_pb2.LoadStateRequest(args={'foo': 'bar'})
-    coordinator.load_state.return_value = expected_response
+    simulator.load_state.return_value = expected_response
     response = env.load_state(request)
     self.assertEqual(response, expected_response)
-    coordinator.load_state.assert_called_once_with(request)
+    simulator.load_state.assert_called_once_with(request)
+    task_manager.stop.assert_called_once()
+    task_manager.start.assert_called_once()
 
   def test_save_state(self):
-    simulator = _create_fake_simulator()
+    simulator = mock.create_autospec(base_simulator.BaseSimulator)
     coordinator = _create_mock_coordinator()
     task_manager = mock.create_autospec(task_manager_lib.TaskManager)
     env = environment.AndroidEnv(
@@ -249,10 +252,10 @@ class AndroidEnvTest(absltest.TestCase):
         status=state_pb2.SaveStateResponse.Status.OK
     )
     request = state_pb2.SaveStateRequest(args={'foo': 'bar'})
-    coordinator.save_state.return_value = expected_response
+    simulator.save_state.return_value = expected_response
     response = env.save_state(request)
     self.assertEqual(response, expected_response)
-    coordinator.save_state.assert_called_once_with(request)
+    simulator.save_state.assert_called_once_with(request)
 
   def test_double_close(self):
     simulator = _create_fake_simulator()

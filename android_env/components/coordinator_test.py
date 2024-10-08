@@ -467,30 +467,6 @@ class CoordinatorTest(parameterized.TestCase):
                 put=adb_pb2.AdbRequest.SettingsRequest.Put(
                     key='policy_control', value=expected_value))))
 
-  def test_load_state(self):
-    expected_response = state_pb2.LoadStateResponse(
-        status=state_pb2.LoadStateResponse.Status.OK
-    )
-    request = state_pb2.LoadStateRequest(args={'foo': 'bar'})
-    self._simulator.load_state.return_value = expected_response
-    stop_call_count = self._task_manager.stop.call_count
-    start_call_count = self._task_manager.start.call_count
-    response = self._coordinator.load_state(request)
-    self.assertEqual(response, expected_response)
-    self._simulator.load_state.assert_called_once_with(request)
-    self.assertEqual(self._task_manager.stop.call_count, stop_call_count + 1)
-    self.assertEqual(self._task_manager.start.call_count, start_call_count + 1)
-
-  def test_save_state(self):
-    expected_response = state_pb2.SaveStateResponse(
-        status=state_pb2.SaveStateResponse.Status.OK
-    )
-    request = state_pb2.SaveStateRequest(args={'foo': 'bar'})
-    self._simulator.save_state.return_value = expected_response
-    response = self._coordinator.save_state(request)
-    self.assertEqual(response, expected_response)
-    self._simulator.save_state.assert_called_once_with(request)
-
 
 if __name__ == '__main__':
   absltest.main()
