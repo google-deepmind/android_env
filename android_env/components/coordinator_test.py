@@ -406,29 +406,6 @@ class CoordinatorTest(parameterized.TestCase):
     self.assertEqual(response, expected_response)
     self._adb_call_parser.parse.assert_called_with(call)
 
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(tempfile, 'gettempdir', autospec=True)
-  def test_with_tmp_dir_no_tempfile_call(self, mock_gettempdir,
-                                         unused_mock_sleep):
-    """If passing a `tmp_dir`, `tempfile.gettempdir()` should not be called."""
-    _ = coordinator_lib.Coordinator(
-        simulator=self._simulator,
-        task_manager=self._task_manager,
-        config=config_classes.CoordinatorConfig(
-            tmp_dir=self.create_tempdir().full_path
-        ),
-    )
-    mock_gettempdir.assert_not_called()
-
-  @mock.patch.object(time, 'sleep', autospec=True)
-  @mock.patch.object(tempfile, 'gettempdir', autospec=True)
-  def test_no_tmp_dir_calls_tempfile(self, mock_gettempdir, unused_mock_sleep):
-    """If not passing a `tmp_dir`, `tempfile.gettempdir()` should be called."""
-    _ = coordinator_lib.Coordinator(
-        simulator=self._simulator, task_manager=self._task_manager
-    )
-    mock_gettempdir.assert_called_once()
-
   @parameterized.parameters(
       (True, '1'),
       (False, '0'),

@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for adb_call_parser."""
-
 import builtins
 import os
 import subprocess
@@ -34,9 +32,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_unknown_command(self):
     """Gets UNKNOWN_COMMAND for an empty request."""
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     response = parser.parse(request)
     self.assertEqual(
@@ -46,9 +42,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_invalid_timeout(self):
     """AdbRequest.timeout_sec must be positive."""
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.tap.x = 123
     request.timeout_sec = -5
@@ -61,9 +55,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_install_apk_file_not_found(self, mock_exists):
     """Should fail installing APK when it is not found."""
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.install_apk.filesystem.path = '/my/home/game.apk'
     mock_exists.return_value = False
@@ -77,9 +69,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_install_apk_successful(self, mock_exists):
     """Should succeed installing an arbitrary APK."""
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.install_apk.filesystem.path = '/my/home/game.apk'
     mock_exists.return_value = True
@@ -94,8 +84,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_install_apk_from_blob(self, mock_tempfile):
     """Should succeed installing APK from blob."""
     adb = mock.create_autospec(adb_controller.AdbController)
-    tmp_dir = self.create_tempdir().full_path
-    parser = adb_call_parser.AdbCallParser(adb, tmp_dir=tmp_dir)
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     blob_content = b'A fake blob content'
     request.install_apk.blob.contents = blob_content
@@ -110,7 +99,7 @@ class AdbCallParserTest(parameterized.TestCase):
     )
     # pytype: disable=attribute-error
     mock_tempfile.assert_has_calls([
-        mock.call(dir=tmp_dir, suffix='.apk', delete=False),  # Constructor
+        mock.call(suffix='.apk'),  # Constructor
         mock.call().__enter__(),  # Enter context
         mock.call().__enter__().write(blob_content),  # Call write function
         mock.call().__exit__(None, None, None),  # Exit context
@@ -120,9 +109,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_start_activity_empty_full_activity(self):
     """A start_activity command should always have a nonempty activity."""
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.start_activity.extra_args.extend(['blah'])
     response = parser.parse(request)
@@ -135,9 +122,7 @@ class AdbCallParserTest(parameterized.TestCase):
     command_output = (b'Stopping: my.project.SplashActivity\n'
                       b'Starting: Intent { cmp=my.project.SplashActivity }\n')
     adb.execute_command.return_value = command_output
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.start_activity.full_activity = 'my.project.SplashActivity'
     request.start_activity.extra_args.extend(['blah'])
@@ -158,9 +143,7 @@ class AdbCallParserTest(parameterized.TestCase):
     command_output = (b'Stopping: my.project.SplashActivity\n'
                       b'Starting: Intent { cmp=my.project.SplashActivity }\n')
     adb.execute_command.return_value = command_output
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.start_activity.full_activity = 'my.project.SplashActivity'
     request.start_activity.extra_args.extend(['blah'])
@@ -182,9 +165,7 @@ class AdbCallParserTest(parameterized.TestCase):
                       b'Starting: Intent { cmp=my.project.SplashActivity }\n'
                       b'Error: Activity not started, unknown error code 101\n')
     adb.execute_command.return_value = command_output
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.start_activity.full_activity = 'my.project.SplashActivity'
     request.start_activity.extra_args.extend(['blah'])
@@ -196,9 +177,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
   def test_force_stop(self):
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.force_stop.package_name = 'my.project'
     response = parser.parse(request)
@@ -209,9 +188,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
   def test_grant_permissions_empty_package_name(self):
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.package_manager.grant.permissions.extend(['perm1', 'perm2'])
     response = parser.parse(request)
@@ -221,9 +198,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
   def test_grant_permissions_empty_permissions(self):
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.package_manager.grant.package_name = 'my.project'
     response = parser.parse(request)
@@ -234,9 +209,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_grant_permissions_successful(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.package_manager.grant.package_name = 'my.project'
     request.package_manager.grant.permissions.extend(['perm1', 'perm2'])
@@ -250,9 +223,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
   def test_press_button_invalid_button(self):
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.press_button.button = 99999
     response = parser.parse(request)
@@ -263,9 +234,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_press_button_successful(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b''
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     # HOME.
     request = adb_pb2.AdbRequest()
     request.press_button.button = adb_pb2.AdbRequest.PressButton.Button.HOME
@@ -296,9 +265,7 @@ class AdbCallParserTest(parameterized.TestCase):
     adb.execute_command.return_value = (
         b'  taskId=12345: my.project.AnotherActivity visible=true'
         b'  topActivity=ComponentInfo{my.project.AnotherActivity}')
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.start_screen_pinning.full_activity = 'my.project.AmazingActivity'
     response = parser.parse(request)
@@ -312,9 +279,7 @@ class AdbCallParserTest(parameterized.TestCase):
     adb.execute_command.return_value = (
         b'  taskId=12345: my.project.AmazingActivity visible=true'
         b'  topActivity=ComponentInfo{my.project.AmazingActivity}')
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.start_screen_pinning.full_activity = 'my.project.AmazingActivity'
     response = parser.parse(request)
@@ -330,9 +295,7 @@ class AdbCallParserTest(parameterized.TestCase):
     adb.execute_command.return_value = (
         b'  taskId=12345: my.project.MainActivity visible=true'
         b'  topActivity=ComponentInfo{my.project.TopActivity}')
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.start_screen_pinning.full_activity = 'my.project.MainActivity'
     response = parser.parse(request)
@@ -348,9 +311,7 @@ class AdbCallParserTest(parameterized.TestCase):
     adb.execute_command.return_value = (
         b'  taskId=12345: my.project.MainActivity visible=true'
         b'  topActivity=ComponentInfo{my.project.TopActivity}')
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.start_screen_pinning.full_activity = 'my.project.TopActivity'
     response = parser.parse(request)
@@ -363,9 +324,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
   def test_send_broadcast_empty_action(self):
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         send_broadcast=adb_pb2.AdbRequest.SendBroadcast())
     response = parser.parse(request)
@@ -375,9 +334,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
   def test_send_broadcast_successful(self):
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.send_broadcast.action = 'SOME-ACTION'
     response = parser.parse(request)
@@ -386,9 +343,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
   def test_send_broadcast_with_component_successful(self):
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.send_broadcast.action = 'SOME-ACTION'
     request.send_broadcast.component = 'SOME-COMPONENT'
@@ -398,9 +353,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
   def test_uninstall_package_empty_package_name(self):
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.uninstall_package.package_name = ''
     response = parser.parse(request)
@@ -411,9 +364,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_uninstall_package_successful(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'package:my.package'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.uninstall_package.package_name = 'my.package'
     response = parser.parse(request)
@@ -423,9 +374,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_get_current_activity_no_visible_task(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = None
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         get_current_activity=adb_pb2.AdbRequest.GetCurrentActivity())
     response = parser.parse(request)
@@ -441,9 +390,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_get_orientation_empty_dumpsys(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b''
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         get_orientation=adb_pb2.AdbRequest.GetOrientationRequest())
     response = parser.parse(request)
@@ -455,9 +402,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_get_orientation_invalid_device_no_surface_orientation(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b' PhysicalWidth: -123px'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         get_orientation=adb_pb2.AdbRequest.GetOrientationRequest())
     response = parser.parse(request)
@@ -486,9 +431,7 @@ class AdbCallParserTest(parameterized.TestCase):
 """
     )
 
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         get_orientation=adb_pb2.AdbRequest.GetOrientationRequest())
     response = parser.parse(request)
@@ -501,9 +444,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_get_current_activity_no_matches(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         get_current_activity=adb_pb2.AdbRequest.GetCurrentActivity())
     for platform in ['win32', 'linux']:
@@ -524,9 +465,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_get_current_activity_successful(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'{MyAwesomeActivity}'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         get_current_activity=adb_pb2.AdbRequest.GetCurrentActivity())
     for platform in ['win32', 'linux']:
@@ -545,9 +484,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_push_no_path(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         push=adb_pb2.AdbRequest.Push(content=b'Has content but no path'))
     response = parser.parse(request)
@@ -559,9 +496,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_push_successful(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         push=adb_pb2.AdbRequest.Push(
             content=b'My text.', path='/sdcard/my_file.txt'))
@@ -583,9 +518,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_pull_no_path(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(pull=adb_pb2.AdbRequest.Pull())
     response = parser.parse(request)
     self.assertEqual(response.status,
@@ -599,9 +532,7 @@ class AdbCallParserTest(parameterized.TestCase):
     adb.execute_command.return_value = b'whatever'
     mock_open.return_value.__enter__ = mock_open
     mock_open.return_value.read.return_value = b'S3cR3t. dO nOt TeLl ANYONE'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         pull=adb_pb2.AdbRequest.Pull(path='/sdcard/my_file.txt'))
 
@@ -623,9 +554,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_input_text_no_text(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(input_text=adb_pb2.AdbRequest.InputText())
     response = parser.parse(request)
     self.assertEqual(response.status,
@@ -636,9 +565,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_input_text_successful(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         input_text=adb_pb2.AdbRequest.InputText(
             text='The Greatest Text of All Time'))
@@ -659,9 +586,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_tap_failed(self, request: adb_pb2.AdbRequest):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     response = parser.parse(request)
     self.assertEqual(response.status,
                      adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)
@@ -671,9 +596,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_tap_successful(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(tap=adb_pb2.AdbRequest.Tap(x=135, y=246))
     response = parser.parse(request)
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
@@ -710,9 +633,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_settings_failures(self, request):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(settings=request)
     response = parser.parse(request)
     self.assertEqual(response.status,
@@ -723,9 +644,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_settings_success_get(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'here it is!'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
 
     request = adb_pb2.AdbRequest.SettingsRequest(
         name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.SYSTEM,
@@ -742,9 +661,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_settings_success_put(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'Done for ya!'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
 
     request = adb_pb2.AdbRequest.SettingsRequest(
         name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.SECURE,
@@ -761,9 +678,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_settings_success_delete(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'Key deleted.'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
 
     request = adb_pb2.AdbRequest.SettingsRequest(
         name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.GLOBAL,
@@ -804,9 +719,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_settings_success_reset(self, mode, package_name, expected_arg):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'Pkg reset.'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
 
     request = adb_pb2.AdbRequest.SettingsRequest(
         name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.GLOBAL,
@@ -824,9 +737,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_settings_success_list(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'volume_ring=5\nvolume_system=7'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
 
     request = adb_pb2.AdbRequest.SettingsRequest(
         name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.SYSTEM,
@@ -846,9 +757,7 @@ class AdbCallParserTest(parameterized.TestCase):
     expected_output = b'generic_output'
     args = ['shell', 'am', 'broadcast', '-n', 'receiver', '-a', 'action']
     adb.execute_command.return_value = expected_output
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
 
     generic_request = adb_pb2.AdbRequest.GenericRequest(args=args)
     request = adb_pb2.AdbRequest(generic=generic_request)
@@ -864,9 +773,7 @@ class AdbCallParserTest(parameterized.TestCase):
     args = ['shell', 'am', 'broadcast', '-n', 'receiver', '-a', 'action']
     adb.execute_command.side_effect = subprocess.CalledProcessError(
         cmd='cmd', output='adb_error', returncode=-1)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
 
     generic_request = adb_pb2.AdbRequest.GenericRequest(args=args)
     request = adb_pb2.AdbRequest(generic=generic_request)
@@ -882,9 +789,7 @@ class AdbCallParserTest(parameterized.TestCase):
     args = ['shell', 'am', 'broadcast', '-n', 'receiver', '-a', 'action']
     adb.execute_command.side_effect = subprocess.TimeoutExpired(
         cmd='cmd', timeout=10)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
 
     generic_request = adb_pb2.AdbRequest.GenericRequest(args=args)
     request = adb_pb2.AdbRequest(generic=generic_request)
@@ -918,9 +823,7 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_package_manager_list_bad_output(self, request):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b"""Something irrelevant."""
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     response = parser.parse(request)
     response.package_manager.output = b"""Something irrelevant."""
     self.assertEmpty(response.package_manager.list.items)
@@ -940,9 +843,7 @@ feature:android.software.backup
 feature:android.software.webview
 """
     adb.execute_command.return_value = output
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         package_manager=adb_pb2.AdbRequest.PackageManagerRequest(
             list=adb_pb2.AdbRequest.PackageManagerRequest.List(
@@ -986,9 +887,7 @@ library:javax.obex
 library:org.apache.http.legacy
 """
     adb.execute_command.return_value = output
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         package_manager=adb_pb2.AdbRequest.PackageManagerRequest(
             list=adb_pb2.AdbRequest.PackageManagerRequest.List(
@@ -1028,9 +927,7 @@ package:com.awesome.company
 package:com.another.great.thingie
 """
     adb.execute_command.return_value = output
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         package_manager=adb_pb2.AdbRequest.PackageManagerRequest(
             list=adb_pb2.AdbRequest.PackageManagerRequest.List(
@@ -1051,9 +948,7 @@ package:com.another.great.thingie
   def test_package_manager_clear_no_package_name(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b"""Something irrelevant."""
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
 
     request = adb_pb2.AdbRequest(
         package_manager=adb_pb2.AdbRequest.PackageManagerRequest(
@@ -1070,9 +965,7 @@ package:com.another.great.thingie
   def test_package_manager_clear_successful_no_user_id(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b"""Some successful message."""
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
 
     request = adb_pb2.AdbRequest(
         package_manager=adb_pb2.AdbRequest.PackageManagerRequest(
@@ -1090,9 +983,7 @@ package:com.another.great.thingie
   def test_package_manager_clear_successful_with_user_id(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b"""Some successful message."""
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
 
     request = adb_pb2.AdbRequest(
         package_manager=adb_pb2.AdbRequest.PackageManagerRequest(
@@ -1111,9 +1002,7 @@ package:com.another.great.thingie
     """An empty `DumpsysRequest` is a valid request."""
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(dumpsys=adb_pb2.AdbRequest.DumpsysRequest())
 
     response = parser.parse(request)
@@ -1134,9 +1023,7 @@ package:com.another.great.thingie
   def test_dumpsys_negative_timeouts(self, request):
     """`DumpsysRequest.timeout_{sec, ms}` if passed, should be positive."""
     adb = mock.create_autospec(adb_controller.AdbController)
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
 
     response = parser.parse(request)
 
@@ -1154,9 +1041,7 @@ package:com.another.great.thingie
   def test_dumpsys_timeout_successful(self, timeout_sec, timeout_ms, expected):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         dumpsys=adb_pb2.AdbRequest.DumpsysRequest(
             timeout_sec=timeout_sec, timeout_ms=timeout_ms))
@@ -1183,9 +1068,7 @@ package:com.another.great.thingie
   def test_dumpsys_priority_timeout_successful(self, priority, expected):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         dumpsys=adb_pb2.AdbRequest.DumpsysRequest(priority=priority))
 
@@ -1221,9 +1104,7 @@ package:com.another.great.thingie
     # Arrange.
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(dumpsys=dumpsys_request)
 
     # Act.
@@ -1239,9 +1120,7 @@ package:com.another.great.thingie
   def test_dumpsys_list_only_success(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         dumpsys=adb_pb2.AdbRequest.DumpsysRequest(list_only=True))
 
@@ -1256,9 +1135,7 @@ package:com.another.great.thingie
     """When using `DumpsysRequest.skip_service`, it cannot contain `.service`."""
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         dumpsys=adb_pb2.AdbRequest.DumpsysRequest(
             service='wifi', skip_services=['window', 'usb']))
@@ -1273,9 +1150,7 @@ package:com.another.great.thingie
   def test_dumpsys_skip_services(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         dumpsys=adb_pb2.AdbRequest.DumpsysRequest(
             skip_services=['window', 'usb']))
@@ -1290,9 +1165,7 @@ package:com.another.great.thingie
   def test_dumpsys_single_service(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         dumpsys=adb_pb2.AdbRequest.DumpsysRequest(service='window'))
 
@@ -1306,9 +1179,7 @@ package:com.another.great.thingie
   def test_dumpsys_single_service_with_args(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'whatever'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         dumpsys=adb_pb2.AdbRequest.DumpsysRequest(
             service='window', args=['arg1', 'arg2']))
@@ -1323,9 +1194,7 @@ package:com.another.great.thingie
   def test_dumpsys_single_service_with_proto(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     adb.execute_command.return_value = b'some binary output'
-    parser = adb_call_parser.AdbCallParser(
-        adb, tmp_dir=self.create_tempdir().full_path
-    )
+    parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest(
         dumpsys=adb_pb2.AdbRequest.DumpsysRequest(service='window', proto=True))
 

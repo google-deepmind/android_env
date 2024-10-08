@@ -277,8 +277,7 @@ class Coordinator:
   def _create_adb_call_parser(self):
     """Creates a new AdbCallParser instance."""
     return adb_call_parser.AdbCallParser(
-        adb_controller=self._simulator.create_adb_controller(),
-        tmp_dir=self._config.tmp_dir or tempfile.gettempdir(),
+        adb_controller=self._simulator.create_adb_controller()
     )
 
   def execute_adb_call(self, call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:

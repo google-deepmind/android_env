@@ -59,8 +59,6 @@ class CoordinatorConfig:
   # a simulator restart at the beginning of the next episode once the time has
   # been reached.
   periodic_restart_time_min: float = 0.0
-  # The target directory that will contain coordinator related files.
-  tmp_dir: str = ''
 
 
 @dataclasses.dataclass

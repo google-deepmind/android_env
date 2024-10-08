@@ -40,9 +40,8 @@ _BUTTON_TO_KEYCODE = {
 class AdbCallParser:
   """Parses AdbRequest messages and executes corresponding adb commands."""
 
-  def __init__(self, adb_controller: adb_control.AdbController, tmp_dir: str):
+  def __init__(self, adb_controller: adb_control.AdbController):
     self._adb_controller = adb_controller
-    self._tmp_dir = tmp_dir
     self._handlers = {
         'install_apk': self._install_apk,
         'start_activity': self._start_activity,
@@ -276,12 +275,18 @@ class AdbCallParser:
           response.status = adb_pb2.AdbResponse.Status.INTERNAL_ERROR
           response.error_message = f'Could not find local_apk_path: {fpath}'
           return response
+
+        response, _ = self._execute_command(
+            ['install', '-r', '-t', '-g', fpath], timeout=timeout
+        )
       case 'blob':
-        with tempfile.NamedTemporaryFile(
-            dir=self._tmp_dir, suffix='.apk', delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(suffix='.apk') as f:
           fpath = f.name
           f.write(install_apk.blob.contents)
+
+          response, _ = self._execute_command(
+              ['install', '-r', '-t', '-g', fpath], timeout=timeout
+          )
       case _:
         response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
         response.error_message = (
@@ -289,9 +294,6 @@ class AdbCallParser:
         )
         return response
 
-    response, _ = self._execute_command(
-        ['install', '-r', '-t', '-g', fpath], timeout=timeout
-    )
     return response
 
   def _start_activity(
@@ -541,7 +543,7 @@ class AdbCallParser:
           error_message='Push.path is empty.')
 
     # Create temporary file with `push` contents.
-    with tempfile.NamedTemporaryFile(dir=self._tmp_dir, delete=False) as f:
+    with tempfile.NamedTemporaryFile(delete=False) as f:
       fname = f.name
       f.write(request.push.content)
     # Issue `adb push` command to upload file.
@@ -572,7 +574,7 @@ class AdbCallParser:
           error_message='Pull.path is empty.')
 
     # Issue `adb pull` command to copy it to a temporary file.
-    with tempfile.NamedTemporaryFile(dir=self._tmp_dir, delete=False) as f:
+    with tempfile.NamedTemporaryFile(delete=False) as f:
       fname = f.name
       logging.info('Downloading %r to %r.', path, fname)
       response, _ = self._execute_command(['pull', path, fname],
