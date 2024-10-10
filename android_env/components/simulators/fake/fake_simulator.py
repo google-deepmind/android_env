@@ -108,7 +108,7 @@ class FakeSimulator(base_simulator.BaseSimulator):
 
   def __init__(self, config: config_classes.FakeSimulatorConfig):
     """FakeSimulator class that can replace EmulatorSimulator in AndroidEnv."""
-    super().__init__(verbose_logs=config.verbose_logs)
+    super().__init__(config)
     self._screen_dimensions = np.array(config.screen_dimensions)
     logging.info('Created FakeSimulator.')
 
@@ -133,6 +133,6 @@ class FakeSimulator(base_simulator.BaseSimulator):
   def send_key(self, keycode: np.int32, event_type: str) -> None:
     del keycode, event_type
 
-  def get_screenshot(self) -> np.ndarray:
+  def _get_screenshot_impl(self) -> np.ndarray:
     return np.random.randint(
         low=0, high=255, size=(*self._screen_dimensions, 3), dtype=np.uint8)

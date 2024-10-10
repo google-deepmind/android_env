@@ -16,9 +16,13 @@
 """A base class for talking to different types of Android simulators."""
 
 import abc
+from collections.abc import Callable
+import threading
+import time
 
 from absl import logging
 from android_env.components import adb_controller
+from android_env.components import config_classes
 from android_env.components import errors
 from android_env.components import log_stream
 from android_env.proto import state_pb2
@@ -28,7 +32,7 @@ import numpy as np
 class BaseSimulator(metaclass=abc.ABCMeta):
   """An interface for communicating with an Android simulator."""
 
-  def __init__(self, verbose_logs: bool = False):
+  def __init__(self, config: config_classes.SimulatorConfig):
     """Instantiates a BaseSimulator object.
 
     The simulator may be an emulator, virtual machine or even a physical device.
@@ -36,10 +40,11 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     bookkeeping.
 
     Args:
-      verbose_logs: If true, the log stream of the simulator will be verbose.
+      config: Settings for this simulator.
     """
 
-    self._verbose_logs = verbose_logs
+    self._config = config
+    self._interaction_thread: InteractionThread | None = None
 
     # An increasing number that tracks the attempt at launching the simulator.
     self._num_launch_attempts: int = 0
@@ -63,6 +68,11 @@ class BaseSimulator(metaclass=abc.ABCMeta):
   def launch(self) -> None:
     """Starts the simulator."""
 
+    # Stop screenshot thread if it's enabled.
+    if self._interaction_thread is not None:
+      self._interaction_thread.stop()
+      self._interaction_thread.join()
+
     self._num_launch_attempts += 1
     try:
       self._launch_impl()
@@ -73,6 +83,13 @@ class BaseSimulator(metaclass=abc.ABCMeta):
           'Exception caught in simulator. Please see the simulator logs '
           'above for more details.'
       ) from error
+
+    # Start interaction thread.
+    if self._config.interaction_rate_sec > 0:
+      self._interaction_thread = InteractionThread(
+          self._get_screenshot_impl, self._config.interaction_rate_sec
+      )
+      self._interaction_thread.start()
 
   @abc.abstractmethod
   def _launch_impl(self) -> None:
@@ -131,9 +148,18 @@ class BaseSimulator(metaclass=abc.ABCMeta):
     """
     raise NotImplementedError('This simulator does not support save_state()')
 
-  @abc.abstractmethod
   def get_screenshot(self) -> np.ndarray:
-    """Returns pixels representing the current screenshot of the simulator.
+    """Returns pixels representing the current screenshot of the simulator."""
+
+    if self._config.interaction_rate_sec > 0:
+      assert self._interaction_thread is not None
+      return self._interaction_thread.screenshot()  # Async mode.
+    else:
+      return self._get_screenshot_impl()  # Sync mode.
+
+  @abc.abstractmethod
+  def _get_screenshot_impl(self) -> np.ndarray:
+    """Actual implementation of `get_screenshot()`.
 
     The output numpy array should have shape [height, width, num_channels] and
     can be loaded into PIL using Image.fromarray(img, mode='RGB') and be saved
@@ -142,3 +168,41 @@ class BaseSimulator(metaclass=abc.ABCMeta):
 
   def close(self):
     """Frees up resources allocated by this object."""
+
+    if self._interaction_thread is not None:
+      self._interaction_thread.stop()
+      self._interaction_thread.join()
+
+
+class InteractionThread(threading.Thread):
+  """A thread that gets screenshot in the background."""
+
+  def __init__(
+      self,
+      get_screenshot_fn: Callable[[], np.ndarray],
+      interaction_rate_sec: float,
+  ):
+    super().__init__()
+    self._get_screenshot_fn = get_screenshot_fn
+    self._interaction_rate_sec = interaction_rate_sec
+    self._should_stop = threading.Event()
+    self._screenshot = self._get_screenshot_fn()
+
+  def run(self):
+    last_read = time.time()
+    while not self._should_stop.is_set():
+      self._screenshot = self._get_screenshot_fn()
+      now = time.time()
+      elapsed = now - last_read
+      last_read = now
+      sleep_time = self._interaction_rate_sec - elapsed
+      if sleep_time > 0.0:
+        time.sleep(sleep_time)
+    logging.info('InteractionThread.run() finished.')
+
+  def stop(self):
+    logging.info('Stopping InteractionThread.')
+    self._should_stop.set()
+
+  def screenshot(self) -> np.ndarray:
+    return self._screenshot
