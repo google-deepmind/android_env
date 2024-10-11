@@ -1,0 +1,12 @@
+# Bazel build file for reinforcement Learning environment based on the Android operating system.
+load("@rules_license//rules:license.bzl", "license")
+
+package(
+    default_applicable_licenses = ["//:license"],
+    default_visibility = ["//visibility:public"],
+)
+
+licenses(["notice"])
+
+# new-style license rule. This one has a default attribute that links to the LICENSE file.
+license(name = "license")
