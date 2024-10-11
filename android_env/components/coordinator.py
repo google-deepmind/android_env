@@ -17,7 +17,6 @@
 
 import copy
 import socket
-import threading
 import time
 from typing import Any
 
@@ -56,7 +55,6 @@ class Coordinator:
     self._config = config or config_classes.CoordinatorConfig()
     self._adb_call_parser: adb_call_parser.AdbCallParser = None
     self._orientation = np.zeros(4, dtype=np.uint8)
-    self._interaction_thread: InteractionThread | None = None
 
     # The size of the device screen in pixels (H x W).
     self._screen_size = np.array([0, 0], dtype=np.int32)
@@ -171,11 +169,6 @@ class Coordinator:
 
     self._simulator_healthy = False
 
-    # Stop screenshot thread.
-    if self._interaction_thread is not None:
-      self._interaction_thread.stop()
-      self._interaction_thread.join()
-
     # Attempt to restart the system a given number of times.
     num_tries = 1
     latest_error = None
@@ -221,11 +214,6 @@ class Coordinator:
       self._simulator_healthy = True
       self._stats['relaunch_count'] += 1
       break
-    if self._config.interaction_rate_sec > 0:
-      self._interaction_thread = InteractionThread(
-          self._simulator, self._config.interaction_rate_sec
-      )
-      self._interaction_thread.start()
 
   def _update_settings(self) -> None:
     """Updates some internal state and preferences given in the constructor."""
@@ -345,15 +333,8 @@ class Coordinator:
     )
     self._latest_observation_time = now
 
-    # Grab pixels.
-    if self._config.interaction_rate_sec > 0:
-      assert self._interaction_thread is not None
-      pixels = self._interaction_thread.screenshot()  # Async mode.
-    else:
-      pixels = self._simulator.get_screenshot()  # Sync mode.
-
     return {
-        'pixels': pixels,
+        'pixels': self._simulator.get_screenshot(),
         'orientation': self._orientation,
         'timedelta': np.array(timestamp_delta, dtype=np.int64),
     }
@@ -455,44 +436,8 @@ class Coordinator:
 
   def close(self):
     """Cleans up the state of this Coordinator."""
-    if self._interaction_thread is not None:
-      self._interaction_thread.stop()
-      self._interaction_thread.join()
 
     if hasattr(self, '_task_manager'):
       self._task_manager.stop()
     if hasattr(self, '_simulator'):
       self._simulator.close()
-
-
-class InteractionThread(threading.Thread):
-  """A thread that interacts with a simulator."""
-
-  def __init__(
-      self, simulator: base_simulator.BaseSimulator, interaction_rate_sec: float
-  ):
-    super().__init__()
-    self._simulator = simulator
-    self._interaction_rate_sec = interaction_rate_sec
-    self._should_stop = threading.Event()
-    self._screenshot = self._simulator.get_screenshot()
-
-  def run(self):
-    last_read = time.time()
-    while not self._should_stop.is_set():
-      self._screenshot = self._simulator.get_screenshot()
-
-      now = time.time()
-      elapsed = now - last_read
-      last_read = now
-      sleep_time = self._interaction_rate_sec - elapsed
-      if sleep_time > 0.0:
-        time.sleep(sleep_time)
-    logging.info('InteractionThread.run() finished.')
-
-  def stop(self):
-    logging.info('Stopping InteractionThread.')
-    self._should_stop.set()
-
-  def screenshot(self):
-    return self._screenshot

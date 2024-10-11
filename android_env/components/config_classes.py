@@ -41,10 +41,6 @@ class CoordinatorConfig:
 
   # Number of virtual "fingers" of the agent.
   num_fingers: int = 1
-  # How often to (asynchronously) grab the screenshot from the simulator.
-  # If <= 0, stepping the environment blocks on fetching the screenshot (the
-  # environment is synchronous).
-  interaction_rate_sec: float = 0.0
   # Whether to enable keyboard key events.
   enable_key_events: bool = False
   # Whether to show circles on the screen indicating touch position.
@@ -67,6 +63,10 @@ class SimulatorConfig:
 
   # If true, the log stream of the simulator will be verbose.
   verbose_logs: bool = False
+  # How often to (asynchronously) grab the screenshot from the simulator.
+  # If <= 0, stepping the environment blocks on fetching the screenshot (the
+  # environment is synchronous).
+  interaction_rate_sec: float = 0.0
 
 
 @dataclasses.dataclass

@@ -100,7 +100,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   def __init__(self, config: config_classes.EmulatorConfig):
     """Instantiates an EmulatorSimulator."""
 
-    super().__init__(verbose_logs=config.verbose_logs)
+    super().__init__(config)
     self._config = config
 
     # If adb_port, console_port and grpc_port are all already provided,
@@ -196,7 +196,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   def create_log_stream(self) -> log_stream.LogStream:
     return adb_log_stream.AdbLogStream(
         adb_command_prefix=self._adb_controller.command_prefix(),
-        verbose=self._verbose_logs)
+        verbose=self._config.verbose_logs,
+    )
 
   def _launch_impl(self) -> None:
     """Prepares an Android Emulator for RL interaction.
@@ -442,7 +443,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     )
 
   @_reconnect_on_grpc_error
-  def get_screenshot(self) -> np.ndarray:
+  def _get_screenshot_impl(self) -> np.ndarray:
     """Fetches the latest screenshot from the emulator."""
 
     assert (
@@ -472,6 +473,8 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     self._launcher.confirm_shutdown()
 
   def close(self):
+    super().close()
+
     if self._launcher is not None:
       self._shutdown_emulator()
       logging.info('Closing emulator (%r)', self.adb_device_name())
