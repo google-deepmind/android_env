@@ -424,11 +424,6 @@ class Coordinator:
       })
     return single_touch_actions
 
-  def _get_time_since_last_observation(self) -> float:
-    """Computes time passed since the last observation was fetched."""
-
-    return time.time() - self._latest_observation_time
-
   def stats(self) -> dict[str, Any]:
     """Returns various statistics."""
 
