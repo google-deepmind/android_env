@@ -21,6 +21,7 @@ import time
 from typing import Any
 
 from absl import logging
+from android_env.components import action_fns
 from android_env.components import action_type as action_type_lib
 from android_env.components import adb_call_parser
 from android_env.components import config_classes
@@ -56,8 +57,9 @@ class Coordinator:
     self._adb_call_parser: adb_call_parser.AdbCallParser = None
     self._orientation = np.zeros(4, dtype=np.uint8)
 
-    # The size of the device screen in pixels (H x W).
-    self._screen_size = np.array([0, 0], dtype=np.int32)
+    # The size of the device screen in pixels.
+    self._screen_width = 0
+    self._screen_height = 0
 
     # Initialize stats.
     self._stats = {
@@ -89,13 +91,14 @@ class Coordinator:
 
   def observation_spec(self) -> dict[str, dm_env.specs.Array]:
     return specs.base_observation_spec(
-        height=self._screen_size[0], width=self._screen_size[1]
+        height=self._screen_height, width=self._screen_width
     )
 
   def _update_screen_size(self) -> None:
     """Sets the screen size from a screenshot ignoring the color channel."""
     screenshot = self._simulator.get_screenshot()
-    self._screen_size = np.array(screenshot.shape[:2], dtype=np.int32)
+    self._screen_height = screenshot.shape[0]
+    self._screen_width = screenshot.shape[1]
 
   def _update_device_orientation(self) -> None:
     """Updates the current device orientation."""
@@ -123,19 +126,6 @@ class Coordinator:
     orientation_onehot = np.zeros([4], dtype=np.uint8)
     orientation_onehot[orientation] = 1
     self._orientation = orientation_onehot
-
-  def _lift_all_fingers(self) -> None:
-    """Performs a lift action with every finger."""
-    lift_action = {
-        'action_type': np.array(action_type_lib.ActionType.LIFT),
-        'touch_position': np.array([0, 0]),
-    }
-    for i in range(2, self._config.num_fingers + 1):
-      lift_action.update({
-          f'action_type_{i}': np.array(action_type_lib.ActionType.LIFT),
-          f'touch_position_{i}': np.array([0, 0]),
-      })
-    self._send_action_to_simulator(lift_action)
 
   def _should_periodic_relaunch(self) -> bool:
     """Checks if it is time to restart the simulator.
@@ -283,7 +273,15 @@ class Coordinator:
         self._stats[key] = 0.0
 
     # Execute a lift action before resetting the task.
-    self._lift_all_fingers()
+    if not action_fns.send_action_to_simulator(
+        action_fns.lift_all_fingers_action(self._config.num_fingers),
+        self._simulator,
+        self._screen_width,
+        self._screen_height,
+        self._config.num_fingers,
+    ):
+      self._stats['relaunch_count_execute_action'] += 1
+      self._simulator_healthy = False
 
     # Reset the task.
     self._task_manager.reset_task()
@@ -306,7 +304,15 @@ class Coordinator:
       An RL timestep.
     """
 
-    self._send_action_to_simulator(agent_action)
+    if not action_fns.send_action_to_simulator(
+        agent_action,
+        self._simulator,
+        self._screen_width,
+        self._screen_height,
+        self._config.num_fingers,
+    ):
+      self._stats['relaunch_count_execute_action'] += 1
+      self._simulator_healthy = False
 
     # Get data from the simulator.
     try:
@@ -341,88 +347,6 @@ class Coordinator:
 
   def __del__(self):
     self.close()
-
-  def _send_action_to_simulator(self, action: dict[str, np.ndarray]) -> None:
-    """Sends the selected action to the simulator.
-
-    The simulator will interpret the action as a touchscreen event and perform
-    it accordingly. The effect this action triggers in the Android OS will be
-    determined by the currently running application.
-
-    Args:
-      action: action which will get interpreted as a touchscreen event.
-    """
-
-    try:
-      match action['action_type']:
-        # If the action is a TOUCH or LIFT, send a touch event to the simulator.
-        case action_type_lib.ActionType.TOUCH | action_type_lib.ActionType.LIFT:
-          prepared_action = self._prepare_touch_action(action)
-          self._simulator.send_touch(prepared_action)
-        # If the action is a key event, send a key event to the simulator.
-        case action_type_lib.ActionType.KEYDOWN:
-          self._simulator.send_key(
-              action['keycode'].item(0), event_type='keydown'
-          )
-        case action_type_lib.ActionType.KEYUP:
-          self._simulator.send_key(
-              action['keycode'].item(0), event_type='keyup'
-          )
-        case action_type_lib.ActionType.KEYPRESS:
-          self._simulator.send_key(
-              action['keycode'].item(0), event_type='keypress'
-          )
-    except (socket.error, errors.SendActionError):
-      logging.exception('Unable to execute action. Restarting simulator.')
-      self._stats['relaunch_count_execute_action'] += 1
-      self._simulator_healthy = False
-
-  def _prepare_touch_action(
-      self, action: dict[str, np.ndarray]
-  ) -> list[tuple[int, int, bool, int]]:
-    """Turns an AndroidEnv action into values that the simulator can interpret.
-
-    Converts float-valued 'touch_position' to integer coordinates corresponding
-    to specific pixels, and 'action_type' to booleans indicating whether the
-    screen is touched at said location or not. The result of this function can
-    be sent directly to the underlying simulator (e.g. the Android Emulator,
-    virtual machine, or a phone).
-
-    Args:
-      action: An action containing 'action_type' and 'touch_position'.
-
-    Returns:
-      A tuple with the format (x: int, y: int, down/up: bool).
-    """
-
-    touch_events = []
-    width_height = self._screen_size[::-1]
-    for i, finger_action in enumerate(self._split_touch_action(action)):
-      is_touch = (
-          finger_action['action_type'] == action_type_lib.ActionType.TOUCH
-      )
-      touch_position = finger_action['touch_position']
-      touch_pixels = pixel_fns.touch_position_to_pixel_position(
-          touch_position, width_height=width_height
-      )
-      touch_events.append((touch_pixels[0], touch_pixels[1], is_touch, i))
-    return touch_events
-
-  def _split_touch_action(
-      self, action: dict[str, np.ndarray]
-  ) -> list[dict[str, np.ndarray]]:
-    """Splits a multitouch action into a list of single-touch actions."""
-
-    single_touch_actions = [{
-        'action_type': action['action_type'],
-        'touch_position': action['touch_position'],
-    }]
-    for i in range(2, self._config.num_fingers + 1):
-      single_touch_actions.append({
-          'action_type': action[f'action_type_{i}'],
-          'touch_position': action[f'touch_position_{i}'],
-      })
-    return single_touch_actions
 
   def stats(self) -> dict[str, Any]:
     """Returns various statistics."""

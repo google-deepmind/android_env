@@ -70,7 +70,22 @@ class CoordinatorTest(parameterized.TestCase):
 
   @mock.patch.object(time, 'sleep', autospec=True)
   def test_reset(self, unused_mock_sleep):
+    """'relaunch_count_execute_action' should be zero if there's no error."""
+
     self._coordinator.rl_reset()
+    stats = self._coordinator.stats()
+    self.assertIn('relaunch_count_execute_action', stats)
+    self.assertEqual(stats['relaunch_count_execute_action'], 0)
+
+  @mock.patch.object(time, 'sleep', autospec=True)
+  def test_reset_error_sending_action(self, unused_mock_sleep):
+    """'relaunch_count_execute_action' should be positive if there's an error."""
+
+    self._simulator.send_touch.side_effect = errors.SendActionError()
+    self._coordinator.rl_reset()
+    stats = self._coordinator.stats()
+    self.assertIn('relaunch_count_execute_action', stats)
+    self.assertEqual(stats['relaunch_count_execute_action'], 1)
 
   @mock.patch.object(time, 'sleep', autospec=True)
   def test_lift_all_fingers(self, unused_mock_sleep):
