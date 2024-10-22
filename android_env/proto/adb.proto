@@ -286,6 +286,13 @@ message AdbRequest {
     repeated string skip_services = 9;
   }
 
+  // For executing `uiautomator dump`.
+  message UIAutomatorRequest {
+    // The file to dump the accessibility tree to. If empty, the accessibility
+    // tree will be dumped to the device's /sdcard/window_dump.xml.
+    string file = 1;
+  }
+
   oneof command {
     InstallApk install_apk = 1;
     StartActivity start_activity = 2;
@@ -304,6 +311,7 @@ message AdbRequest {
     PackageManagerRequest package_manager = 23;
     DumpsysRequest dumpsys = 26;
     SendBroadcast send_broadcast = 25;
+    UIAutomatorRequest uiautomator = 27;
   }
 
   // Optional (soft) deadline in seconds for completing this command.
@@ -417,6 +425,12 @@ message AdbResponse {
     bytes output = 1;
   }
 
+  // Response for UIAutomatorRequests.
+  message UIAutomatorResponse {
+    // The output, if any, of the `uiautomator dump` command.
+    string output = 1;
+  }
+
   oneof payload {
     GetCurrentActivityResponse get_current_activity = 10;
     StartActivityResponse start_activity = 11;
@@ -429,5 +443,6 @@ message AdbResponse {
     PackageManagerResponse package_manager = 18;
     GetOrientationResponse get_orientation = 19;
     DumpsysResponse dumpsys = 21;
+    UIAutomatorResponse uiautomator = 22;
   }
 }
