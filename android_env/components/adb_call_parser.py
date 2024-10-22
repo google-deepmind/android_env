@@ -60,6 +60,7 @@ class AdbCallParser:
         'generic': self._handle_generic,
         'package_manager': self._handle_package_manager,
         'dumpsys': self._handle_dumpsys,
+        'uiautomator': self._handle_uiautomator,
     }
 
   def _execute_command(
@@ -904,4 +905,33 @@ class AdbCallParser:
     response, response.dumpsys.output = self._execute_command(
         cmd, timeout=timeout)
 
+    return response
+
+  def _handle_uiautomator(
+      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+  ) -> adb_pb2.AdbResponse:
+    """Handles UIAUtomatorRequest messages.
+
+    Args:
+      request: The request with the `.uiautomator` field set containing
+        sub-commands to `adb shell uiautomator dump` shell command..
+      timeout: Optional time limit in seconds.
+
+    Returns:
+      An AdbResponse.
+    """
+    request = request.uiautomator
+    cmd = ['shell', 'uiautomator', 'dump']
+
+    if request.file:
+      cmd.append(request.file)
+
+    response, cmd_output = self._execute_command(cmd, timeout=timeout)
+
+    if cmd_output.startswith('UI hierchary dumped to'.encode('utf-8')):
+      response.status = adb_pb2.AdbResponse.Status.OK
+      response.uiautomator.output = cmd_output
+    else:
+      response.status = adb_pb2.AdbResponse.Status.ADB_ERROR
+      response.error_message = cmd_output
     return response
