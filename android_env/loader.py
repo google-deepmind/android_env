@@ -21,6 +21,7 @@ from absl import logging
 from android_env import environment
 from android_env.components import config_classes
 from android_env.components import coordinator as coordinator_lib
+from android_env.components import device_settings as device_settings_lib
 from android_env.components import task_manager as task_manager_lib
 from android_env.components.simulators.emulator import emulator_simulator
 from android_env.components.simulators.fake import fake_simulator
@@ -58,7 +59,10 @@ def load(config: config_classes.AndroidEnvConfig) -> environment.AndroidEnv:
     case _:
       raise ValueError('Unsupported simulator config: {config.simulator}')
 
-  coordinator = coordinator_lib.Coordinator(simulator, task_manager)
+  device_settings = device_settings_lib.DeviceSettings(simulator)
+  coordinator = coordinator_lib.Coordinator(
+      simulator, task_manager, device_settings
+  )
   return environment.AndroidEnv(
       simulator=simulator, coordinator=coordinator, task_manager=task_manager
   )

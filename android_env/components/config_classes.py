@@ -36,13 +36,9 @@ class AdbControllerConfig:
 
 
 @dataclasses.dataclass
-class CoordinatorConfig:
-  """Config class for Coordinator."""
+class DeviceSettingsConfig:
+  """Config class for DeviceSettings."""
 
-  # Number of virtual "fingers" of the agent.
-  num_fingers: int = 1
-  # Whether to enable keyboard key events.
-  enable_key_events: bool = False
   # Whether to show circles on the screen indicating touch position.
   show_touches: bool = True
   # Whether to show blue lines on the screen indicating touch position.
@@ -51,10 +47,24 @@ class CoordinatorConfig:
   show_status_bar: bool = False
   # Whether or not to show the navigation (bottom) bar.
   show_navigation_bar: bool = False
+
+
+@dataclasses.dataclass
+class CoordinatorConfig:
+  """Config class for Coordinator."""
+
+  # Number of virtual "fingers" of the agent.
+  num_fingers: int = 1
+  # Whether to enable keyboard key events.
+  enable_key_events: bool = False
   # Time between periodic restarts in minutes. If > 0, will trigger
   # a simulator restart at the beginning of the next episode once the time has
   # been reached.
   periodic_restart_time_min: float = 0.0
+  # General Android settings.
+  device_settings: DeviceSettingsConfig = dataclasses.field(
+      default_factory=DeviceSettingsConfig
+  )
 
 
 @dataclasses.dataclass

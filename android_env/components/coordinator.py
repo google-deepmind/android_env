@@ -25,6 +25,7 @@ from android_env.components import action_fns
 from android_env.components import action_type as action_type_lib
 from android_env.components import adb_call_parser
 from android_env.components import config_classes
+from android_env.components import device_settings as device_settings_lib
 from android_env.components import errors
 from android_env.components import pixel_fns
 from android_env.components import specs
@@ -42,6 +43,7 @@ class Coordinator:
       self,
       simulator: base_simulator.BaseSimulator,
       task_manager: task_manager_lib.TaskManager,
+      device_settings: device_settings_lib.DeviceSettings,
       config: config_classes.CoordinatorConfig | None = None,
   ):
     """Handles communication between AndroidEnv and its components.
@@ -54,12 +56,8 @@ class Coordinator:
     self._simulator = simulator
     self._task_manager = task_manager
     self._config = config or config_classes.CoordinatorConfig()
+    self._device_settings = device_settings
     self._adb_call_parser: adb_call_parser.AdbCallParser = None
-    self._orientation = np.zeros(4, dtype=np.uint8)
-
-    # The size of the device screen in pixels.
-    self._screen_width = 0
-    self._screen_height = 0
 
     # Initialize stats.
     self._stats = {
@@ -91,41 +89,9 @@ class Coordinator:
 
   def observation_spec(self) -> dict[str, dm_env.specs.Array]:
     return specs.base_observation_spec(
-        height=self._screen_height, width=self._screen_width
+        height=self._device_settings.screen_height(),
+        width=self._device_settings.screen_width(),
     )
-
-  def _update_screen_size(self) -> None:
-    """Sets the screen size from a screenshot ignoring the color channel."""
-    screenshot = self._simulator.get_screenshot()
-    self._screen_height = screenshot.shape[0]
-    self._screen_width = screenshot.shape[1]
-
-  def _update_device_orientation(self) -> None:
-    """Updates the current device orientation."""
-
-    # Skip fetching the orientation if we already have it.
-    if not np.all(self._orientation == np.zeros(4)):
-      logging.info('self._orientation already set, not setting it again')
-      return
-
-    orientation_response = self._adb_call_parser.parse(
-        adb_pb2.AdbRequest(
-            get_orientation=adb_pb2.AdbRequest.GetOrientationRequest()
-        )
-    )
-    if orientation_response.status != adb_pb2.AdbResponse.Status.OK:
-      logging.error('Got bad orientation: %r', orientation_response)
-      return
-
-    orientation = orientation_response.get_orientation.orientation
-    if orientation not in {0, 1, 2, 3}:
-      logging.error('Got bad orientation: %r', orientation_response)
-      return
-
-    # Transform into one-hot format.
-    orientation_onehot = np.zeros([4], dtype=np.uint8)
-    orientation_onehot[orientation] = 1
-    self._orientation = orientation_onehot
 
   def _should_periodic_relaunch(self) -> bool:
     """Checks if it is time to restart the simulator.
@@ -178,9 +144,9 @@ class Coordinator:
       # From here on, the simulator is assumed to be up and running.
       self._adb_call_parser = self._create_adb_call_parser()
       try:
-        self._update_settings()
+        self._device_settings.update(self._config.device_settings)
       except errors.AdbControllerError as e:
-        logging.exception('_update_settings() failed.')
+        logging.exception('device_settings.update() failed.')
         self._stats['relaunch_count_update_settings'] += 1
         self._latest_error = e
         num_tries += 1
@@ -204,51 +170,6 @@ class Coordinator:
       self._simulator_healthy = True
       self._stats['relaunch_count'] += 1
       break
-
-  def _update_settings(self) -> None:
-    """Updates some internal state and preferences given in the constructor."""
-
-    self._update_screen_size()
-    self._adb_call_parser.parse(
-        adb_pb2.AdbRequest(
-            settings=adb_pb2.AdbRequest.SettingsRequest(
-                name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.SYSTEM,
-                put=adb_pb2.AdbRequest.SettingsRequest.Put(
-                    key='show_touches',
-                    value='1' if self._config.show_touches else '0',
-                ),
-            )
-        )
-    )
-    self._adb_call_parser.parse(
-        adb_pb2.AdbRequest(
-            settings=adb_pb2.AdbRequest.SettingsRequest(
-                name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.SYSTEM,
-                put=adb_pb2.AdbRequest.SettingsRequest.Put(
-                    key='pointer_location',
-                    value='1' if self._config.show_pointer_location else '0',
-                ),
-            )
-        )
-    )
-    if self._config.show_navigation_bar and self._config.show_status_bar:
-      policy_control_value = 'null*'
-    elif self._config.show_navigation_bar and not self._config.show_status_bar:
-      policy_control_value = 'immersive.status=*'
-    elif not self._config.show_navigation_bar and self._config.show_status_bar:
-      policy_control_value = 'immersive.navigation=*'
-    else:
-      policy_control_value = 'immersive.full=*'
-    self._adb_call_parser.parse(
-        adb_pb2.AdbRequest(
-            settings=adb_pb2.AdbRequest.SettingsRequest(
-                name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.GLOBAL,
-                put=adb_pb2.AdbRequest.SettingsRequest.Put(
-                    key='policy_control', value=policy_control_value
-                ),
-            )
-        )
-    )
 
   def _create_adb_call_parser(self):
     """Creates a new AdbCallParser instance."""
@@ -276,8 +197,8 @@ class Coordinator:
     if not action_fns.send_action_to_simulator(
         action_fns.lift_all_fingers_action(self._config.num_fingers),
         self._simulator,
-        self._screen_width,
-        self._screen_height,
+        self._device_settings.screen_width(),
+        self._device_settings.screen_height(),
         self._config.num_fingers,
     ):
       self._stats['relaunch_count_execute_action'] += 1
@@ -285,7 +206,7 @@ class Coordinator:
 
     # Reset the task.
     self._task_manager.reset_task()
-    self._update_device_orientation()
+    self._device_settings.get_orientation()
 
     # Get data from the simulator.
     simulator_signals = self._gather_simulator_signals()
@@ -307,8 +228,8 @@ class Coordinator:
     if not action_fns.send_action_to_simulator(
         agent_action,
         self._simulator,
-        self._screen_width,
-        self._screen_height,
+        self._device_settings.screen_width(),
+        self._device_settings.screen_height(),
         self._config.num_fingers,
     ):
       self._stats['relaunch_count_execute_action'] += 1
@@ -341,7 +262,7 @@ class Coordinator:
 
     return {
         'pixels': self._simulator.get_screenshot(),
-        'orientation': self._orientation,
+        'orientation': self._device_settings.get_orientation(),
         'timedelta': np.array(timestamp_delta, dtype=np.int64),
     }
 

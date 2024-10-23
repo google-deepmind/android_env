@@ -25,6 +25,7 @@ from android_env.components import action_type
 from android_env.components import adb_call_parser
 from android_env.components import config_classes
 from android_env.components import coordinator as coordinator_lib
+from android_env.components import device_settings as device_settings_lib
 from android_env.components import errors
 from android_env.components import task_manager
 from android_env.components.simulators import base_simulator
@@ -54,7 +55,9 @@ class CoordinatorTest(parameterized.TestCase):
             autospec=True,
             return_value=self._adb_call_parser))
     self._coordinator = coordinator_lib.Coordinator(
-        simulator=self._simulator, task_manager=self._task_manager
+        simulator=self._simulator,
+        task_manager=self._task_manager,
+        device_settings=device_settings_lib.DeviceSettings(self._simulator),
     )
 
   def tearDown(self):
@@ -92,6 +95,7 @@ class CoordinatorTest(parameterized.TestCase):
     self._coordinator = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
+        device_settings=device_settings_lib.DeviceSettings(self._simulator),
         config=config_classes.CoordinatorConfig(num_fingers=3),
     )
     self._coordinator.rl_reset()
@@ -183,6 +187,7 @@ class CoordinatorTest(parameterized.TestCase):
     self._coordinator = coordinator_lib.Coordinator(
         simulator=self._simulator,
         task_manager=self._task_manager,
+        device_settings=device_settings_lib.DeviceSettings(self._simulator),
         config=config_classes.CoordinatorConfig(num_fingers=3),
     )
 
@@ -272,67 +277,6 @@ class CoordinatorTest(parameterized.TestCase):
 
     self.assertEqual(response, expected_response)
     self._adb_call_parser.parse.assert_called_with(call)
-
-  @parameterized.parameters(
-      (True, '1'),
-      (False, '0'),
-  )
-  @mock.patch.object(time, 'sleep', autospec=True)
-  def test_touch_indicator(self, show, expected_value, unused_mock_sleep):
-    _ = coordinator_lib.Coordinator(
-        simulator=self._simulator,
-        task_manager=self._task_manager,
-        config=config_classes.CoordinatorConfig(show_touches=show),
-    )
-    self._adb_call_parser.parse.assert_any_call(
-        adb_pb2.AdbRequest(
-            settings=adb_pb2.AdbRequest.SettingsRequest(
-                name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.SYSTEM,
-                put=adb_pb2.AdbRequest.SettingsRequest.Put(
-                    key='show_touches', value=expected_value))))
-
-  @parameterized.parameters(
-      (True, '1'),
-      (False, '0'),
-  )
-  @mock.patch.object(time, 'sleep', autospec=True)
-  def test_pointer_location(self, show, expected_value, unused_mock_sleep):
-    _ = coordinator_lib.Coordinator(
-        simulator=self._simulator,
-        task_manager=self._task_manager,
-        config=config_classes.CoordinatorConfig(show_pointer_location=show),
-    )
-    self._adb_call_parser.parse.assert_any_call(
-        adb_pb2.AdbRequest(
-            settings=adb_pb2.AdbRequest.SettingsRequest(
-                name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.SYSTEM,
-                put=adb_pb2.AdbRequest.SettingsRequest.Put(
-                    key='pointer_location', value=expected_value))))
-
-  @parameterized.parameters(
-      (True, True, 'null*'),
-      (True, False, 'immersive.status=*'),
-      (False, True, 'immersive.navigation=*'),
-      (False, False, 'immersive.full=*'),
-      (None, None, 'immersive.full=*'),  # Defaults to hiding both.
-  )
-  @mock.patch.object(time, 'sleep', autospec=True)
-  def test_bar_visibility(self, show_navigation_bar, show_status_bar,
-                          expected_value, unused_mock_sleep):
-    _ = coordinator_lib.Coordinator(
-        simulator=self._simulator,
-        task_manager=self._task_manager,
-        config=config_classes.CoordinatorConfig(
-            show_navigation_bar=show_navigation_bar,
-            show_status_bar=show_status_bar,
-        ),
-    )
-    self._adb_call_parser.parse.assert_any_call(
-        adb_pb2.AdbRequest(
-            settings=adb_pb2.AdbRequest.SettingsRequest(
-                name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.GLOBAL,
-                put=adb_pb2.AdbRequest.SettingsRequest.Put(
-                    key='policy_control', value=expected_value))))
 
 
 if __name__ == '__main__':

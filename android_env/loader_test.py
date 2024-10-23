@@ -24,6 +24,7 @@ from android_env import env_interface
 from android_env import loader
 from android_env.components import config_classes
 from android_env.components import coordinator as coordinator_lib
+from android_env.components import device_settings as device_settings_lib
 from android_env.components import task_manager as task_manager_lib
 from android_env.components.simulators.emulator import emulator_simulator
 from android_env.components.simulators.fake import fake_simulator
@@ -34,10 +35,16 @@ class LoaderTest(absltest.TestCase):
 
   @mock.patch.object(task_manager_lib, 'TaskManager', autospec=True)
   @mock.patch.object(emulator_simulator, 'EmulatorSimulator', autospec=True)
+  @mock.patch.object(device_settings_lib, 'DeviceSettings', autospec=True)
   @mock.patch.object(coordinator_lib, 'Coordinator', autospec=True)
   @mock.patch.object(builtins, 'open', autospec=True)
   def test_load_emulator(
-      self, mock_open, mock_coordinator, mock_simulator_class, mock_task_manager
+      self,
+      mock_open,
+      mock_coordinator,
+      mock_device_settings,
+      mock_simulator_class,
+      mock_task_manager,
   ):
 
     # Arrange.
@@ -85,14 +92,21 @@ class LoaderTest(absltest.TestCase):
     mock_coordinator.assert_called_with(
         mock_simulator_class.return_value,
         mock_task_manager.return_value,
+        mock_device_settings.return_value,
     )
 
   @mock.patch.object(task_manager_lib, 'TaskManager', autospec=True)
   @mock.patch.object(fake_simulator, 'FakeSimulator', autospec=True)
+  @mock.patch.object(device_settings_lib, 'DeviceSettings', autospec=True)
   @mock.patch.object(coordinator_lib, 'Coordinator', autospec=True)
   @mock.patch.object(builtins, 'open', autospec=True)
   def test_load_fake_simulator(
-      self, mock_open, mock_coordinator, mock_simulator_class, mock_task_manager
+      self,
+      mock_open,
+      mock_coordinator,
+      mock_device_settings,
+      mock_simulator_class,
+      mock_task_manager,
   ):
 
     # Arrange.
@@ -118,6 +132,7 @@ class LoaderTest(absltest.TestCase):
     mock_coordinator.assert_called_with(
         mock_simulator_class.return_value,
         mock_task_manager.return_value,
+        mock_device_settings.return_value,
     )
 
   @mock.patch.object(task_manager_lib, 'TaskManager', autospec=True)
