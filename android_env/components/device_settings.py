@@ -15,6 +15,9 @@
 
 """Sets and gets some global settings on an Android device."""
 
+from typing import Final
+from unittest import mock
+
 from absl import logging
 from android_env.components import adb_call_parser
 from android_env.components import config_classes
@@ -23,14 +26,24 @@ from android_env.proto import adb_pb2
 import numpy as np
 
 
+# The internal `AdbCallParser` instance is lazily instantiated within
+# `DeviceSettings`. If we make it optional (i.e. `| None`), pytype will think
+# that it could be `None`, requiring either explicit runtime checks or escape
+# hatches in every actual call, even if it's never actually `None` if reached
+# via the public API.
+# The trick here is to create this dummy instance of the right type that's used
+# as a sentinel to indicate that it hasn't been initialized yet.
+_PLACEHOLDER_ADB_CALL_PARSER: Final[adb_call_parser.AdbCallParser] = (
+    mock.create_autospec(adb_call_parser.AdbCallParser)
+)
+
+
 class DeviceSettings:
   """An abstraction for general properties and settings of an Android device."""
 
   def __init__(self, simulator: base_simulator.BaseSimulator):
     self._simulator = simulator
-    self._adb_call_parser = adb_call_parser.AdbCallParser(
-        adb_controller=self._simulator.create_adb_controller()
-    )
+    self._adb_call_parser = _PLACEHOLDER_ADB_CALL_PARSER
 
     # The size of the device screen in pixels.
     self._screen_width: int = 0
@@ -40,6 +53,11 @@ class DeviceSettings:
 
   def update(self, config: config_classes.DeviceSettingsConfig) -> None:
     """Sets the configuration of the device according to `config`."""
+
+    if self._adb_call_parser is _PLACEHOLDER_ADB_CALL_PARSER:
+      self._adb_call_parser = adb_call_parser.AdbCallParser(
+          adb_controller=self._simulator.create_adb_controller()
+      )
 
     self._update_screen_size()
     self._set_show_touches(config.show_touches)
@@ -60,6 +78,11 @@ class DeviceSettings:
 
   def get_orientation(self) -> np.ndarray:
     """Returns the device orientation. Please see specs.py for details."""
+
+    if self._adb_call_parser is _PLACEHOLDER_ADB_CALL_PARSER:
+      self._adb_call_parser = adb_call_parser.AdbCallParser(
+          adb_controller=self._simulator.create_adb_controller()
+      )
 
     self._update_orientation()
     return self._orientation
