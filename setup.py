@@ -78,6 +78,7 @@ class _GenerateProtoFiles(setuptools.Command):
           '--proto_path={}'.format(grpc_protos_include),
           '--proto_path={}'.format(_ROOT_DIR),
           '--python_out={}'.format(_ROOT_DIR),
+          '--pyi_out={}'.format(_ROOT_DIR),
           '--grpc_python_out={}'.format(_ROOT_DIR),
           os.path.join(_ROOT_DIR, proto_path),
       ]
