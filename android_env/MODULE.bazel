@@ -1,0 +1,23 @@
+"""
+Bazel dependencies
+"""
+
+bazel_dep(name = "rules_android", version = "0.1.1")
+bazel_dep(name = "rules_kotlin", version = "1.9.5")
+bazel_dep(name = "rules_jvm_external", version = "6.0")
+bazel_dep(name = "rules_license", version = "0.0.8")
+
+# =========================================
+# Maven dependencies (external packages)
+# =========================================
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+maven.install(
+    artifacts = [
+        "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0",
+        "com.google.auto.value:auto-value-annotations:1.11.0",
+    ],
+    repositories = [
+        "https://mvnrepository.com",
+    ],
+)
+use_repo(maven, "maven")
