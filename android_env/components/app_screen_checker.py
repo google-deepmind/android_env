@@ -152,7 +152,7 @@ def matches_path(
         'view_hierarchy is None. Dumpsys activity output: %s. tree: %r',
         str(dumpsys_activity_output), root.print_tree())
     logging.error('Tree root: %s', str(root))
-    return None
+    return None  # pytype: disable=bad-return-type
 
   current_node = view_hierarchy
   for i, regex in enumerate(expected_view_hierarchy_path):
@@ -167,7 +167,7 @@ def matches_path(
                     regex.pattern, current_node)
       logging.error('Dumpsys activity output: %s', str(dumpsys_activity_output))
       logging.error('Tree root: %s', str(root))
-      return None
+      return None  # pytype: disable=bad-return-type
     else:
       current_node = child
   return True
