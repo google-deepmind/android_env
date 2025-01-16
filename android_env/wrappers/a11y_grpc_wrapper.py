@@ -222,7 +222,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
       )
 
   def _reset_enable_networking_attempts(self) -> None:
-    self._enable_networking_attepts_left = self._max_enable_networking_attempts
+    self._enable_networking_attempts_left = self._max_enable_networking_attempts
     self._enabling_networking_future = None
     self._a11y_exception = None
 
@@ -446,6 +446,15 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
         services by re-enabling the network connection.
     """
     base_extras = self._env.task_extras(latest_only=False).copy()
+    # If the previous future is done, reset it to the initial state.
+    if (
+        self._enabling_networking_future is not None
+        and self._enabling_networking_future.done()
+    ):
+      self._enabling_networking_future = None
+      self._enable_networking_attempts_left -= 1
+      logging.info('Finished enabling networking.')
+
     if (
         self._enabling_networking_future is None
         and 'exception' in base_extras
@@ -455,10 +464,10 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
       logging.warning(
           'AccessibilityForwarder logged exceptions: %s', self._a11y_exception
       )
-      if self._enable_networking_attepts_left > 0:
+      if self._enable_networking_attempts_left > 0:
         logging.warning(
-            'Attempting to enable networking. %s attemps left.',
-            self._enable_networking_attepts_left - 1,
+            'Attempting to enable networking. %s attempts left.',
+            self._enable_networking_attempts_left - 1,
         )
         executor = futures.ThreadPoolExecutor(max_workers=1)
         self._enabling_networking_future = executor.submit(
@@ -469,14 +478,6 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
             'A11y service failed multiple times with'
             f' exception.{self._a11y_exception}.'
         )
-
-    if (
-        self._enabling_networking_future is not None
-        and self._enabling_networking_future.done()
-    ):
-      self._enabling_networking_future = None
-      self._enable_networking_attepts_left -= 1
-      logging.info('Finished enabling networking.')
 
     forests = self._servicer.gather_forests()
     if forests:

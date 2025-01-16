@@ -327,11 +327,8 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
       a11y_pb2_grpc, 'add_A11yServiceServicer_to_server', autospec=True
   )
   @mock.patch.object(grpc, 'server', autospec=True)
-  def test_task_extras_rasises_with_a11y_info_exception(
-      self,
-      mock_sleep,
-      mock_add_servicer,
-      mock_server,
+  def test_task_extras_raises_a11y_info_exception(
+      self, mock_sleep, mock_add_servicer, mock_server
   ):
     del mock_server, mock_add_servicer, mock_sleep
     base_env = mock.create_autospec(
@@ -366,6 +363,7 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
       extras = wrapped_env._fetch_task_extras()
       self.assertNotIn('accessibility_tree', extras)
       self.assertNotIn('full_event', extras)
+      # Wait for the the attempt to finish.
       future = wrapped_env._enabling_networking_future
       if future is not None:
         future.result()
