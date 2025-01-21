@@ -18,7 +18,6 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import com.google.common.truth.Truth.assertThat
-import com.google.thirdparty.robolectric.testparameterinjector.RobolectricTestParameterInjector
 import io.grpc.Status
 import io.grpc.StatusException
 import io.grpc.inprocess.InProcessChannelBuilder
@@ -28,6 +27,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestParameterInjector
 import org.robolectric.Shadows.shadowOf
 
 @RunWith(RobolectricTestParameterInjector::class)
