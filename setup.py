@@ -14,9 +14,9 @@
 
 """Simple package definition for using with `pip`."""
 
+import importlib
 import os
 
-import pkg_resources
 import setuptools
 from setuptools import find_packages
 from setuptools import setup
@@ -68,8 +68,10 @@ class _GenerateProtoFiles(setuptools.Command):
     # dependencies.
     from grpc_tools import protoc  # pylint: disable=g-import-not-at-top
 
-    grpc_protos_include = pkg_resources.resource_filename(
-        'grpc_tools', '_proto')
+    with importlib.resources.as_file(
+        importlib.resources.files('grpc_tools').joinpath('_proto')
+    ) as path:
+      grpc_protos_include = str(path)
 
     for proto_path in _ANDROID_ENV_PROTOS:
       proto_args = [
