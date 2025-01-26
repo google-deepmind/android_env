@@ -1,0 +1,6 @@
+# This file marks the root of the Bazel workspace.
+# See MODULE.bazel for external dependencies setup.
+
+# Configures Bazel to use a local Android SDK to support building Android targets.
+# Also need to set the $ANDROID_HOME environment variable to the path of your Android SDK.
+android_sdk_repository(name = "androidsdk")
