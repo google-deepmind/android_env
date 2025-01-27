@@ -44,12 +44,6 @@ _ANDROID_ENV_PROTOS = (
     'android_env/proto/a11y/rect.proto',
 )
 
-testing_requirements = [
-    'pillow',
-    'pytype',
-    'gym',
-]
-
 
 class _GenerateProtoFiles(setuptools.Command):
   """Command to generate protobuf bindings for AndroidEnv protos."""
