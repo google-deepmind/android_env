@@ -16,15 +16,18 @@
 """A class that launches a thread to read Android log outputs."""
 
 from collections.abc import Callable
+import dataclasses
 import re
 import threading
-from typing import NamedTuple
 
 from absl import logging
 from android_env.components import log_stream as log_stream_lib
 
 
-class EventListener(NamedTuple):
+@dataclasses.dataclass
+class EventListener:
+  """A function that's called when an event is triggered."""
+
   regexp: re.Pattern[str]
   handler_fn: Callable[[re.Pattern[str], re.Match[str]], None]
 
