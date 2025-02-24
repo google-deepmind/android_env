@@ -15,8 +15,6 @@
 
 """Functions to convert actions between different components' formats."""
 
-import socket
-
 from absl import logging
 from android_env.components import action_type as action_type_lib
 from android_env.components import errors
@@ -61,7 +59,7 @@ def send_action_to_simulator(
         simulator.send_key(action['keycode'].item(0), event_type='keyup')
       case action_type_lib.ActionType.KEYPRESS:
         simulator.send_key(action['keycode'].item(0), event_type='keypress')
-  except (socket.error, errors.SendActionError):
+  except errors.SendActionError:
     logging.exception('Unable to execute action: %r', action)
     return False
 

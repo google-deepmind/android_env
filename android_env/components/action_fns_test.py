@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import socket
 from unittest import mock
 
 from absl.testing import absltest
@@ -44,30 +43,6 @@ class ActionFnsTest(parameterized.TestCase):
         600,
         1,
     )
-
-  def test_send_action_to_simulator_socket_error(self):
-    """Returns `False` if the simulator raises a socket error."""
-
-    # Arrange.
-    simulator = mock.create_autospec(base_simulator.BaseSimulator)
-    simulator.send_touch.side_effect = socket.error('not today')
-    action = {
-        'action_type': action_type_lib.ActionType.TOUCH,
-        'touch_position': np.array([0.3, 0.5], np.float32),
-    }
-
-    # Act.
-    output = action_fns.send_action_to_simulator(
-        action,
-        simulator,
-        800,
-        600,
-        1,
-    )
-
-    # Assert.
-    self.assertFalse(output)
-    simulator.send_touch.assert_called_once()
 
   def test_send_action_to_simulator_sendactionerror(self):
     """Returns `False` if the simulator raises a SendActionError."""

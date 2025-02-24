@@ -16,7 +16,6 @@
 """Coordinator handles interaction between internal components of AndroidEnv."""
 
 import copy
-import socket
 import time
 from typing import Any
 
@@ -238,7 +237,7 @@ class Coordinator:
     # Get data from the simulator.
     try:
       simulator_signals = self._gather_simulator_signals()
-    except (errors.ReadObservationError, socket.error):
+    except errors.ReadObservationError:
       logging.exception('Unable to fetch observation. Restarting simulator.')
       self._stats['relaunch_count_fetch_observation'] += 1
       self._simulator_healthy = False
