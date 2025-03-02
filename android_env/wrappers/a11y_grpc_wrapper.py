@@ -18,6 +18,9 @@
 from concurrent import futures
 import time
 from typing import Any
+import tempfile
+import uuid
+import os
 
 import urllib
 
@@ -188,10 +191,17 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
   def _install_a11y_forwarding_apk(self) -> None:
     """Enables accessibility information forwarding."""
     a11y_fwd_apk = _get_accessibility_forwarder_apk()
+    tempdir = tempfile.gettempdir()
+    random_filename = str(uuid.uuid4()).replace("-", "")[:10] + ".apk"
+    a11y_fwd_apk_path = os.path.join(tempdir, random_filename)
+    with open(a11y_fwd_apk_path, 'wb') as f:
+      f.write(a11y_fwd_apk)
+
     # Install and setup the Accesssibility Forwarder.
     install_request = adb_pb2.AdbRequest(
         install_apk=adb_pb2.AdbRequest.InstallApk(
-            blob=adb_pb2.AdbRequest.InstallApk.Blob(contents=a11y_fwd_apk),
+            filesystem=adb_pb2.AdbRequest.InstallApk.Filesystem(
+                    path=a11y_fwd_apk_path),
         )
     )
     install_response = self._env.execute_adb_call(install_request)
