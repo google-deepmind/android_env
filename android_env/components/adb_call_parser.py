@@ -280,7 +280,15 @@ class AdbCallParser:
             ['install', '-r', '-t', '-g', fpath], timeout=timeout
         )
       case 'blob':
-        with tempfile.NamedTemporaryFile(suffix='.apk') as f:
+
+        # `delete_on_close` was only added in Python 3.12 so we add a switch
+        # here to still support previous Python versions.
+        if sys.version_info >= (3, 12):
+          kwargs = {'suffix': '.apk', 'delete_on_close': False}
+        else:
+          kwargs = {'suffix': '.apk'}
+
+        with tempfile.NamedTemporaryFile(**kwargs) as f:
           fpath = f.name
           f.write(install_apk.blob.contents)
 
