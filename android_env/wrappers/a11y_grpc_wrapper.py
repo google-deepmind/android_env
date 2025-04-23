@@ -24,12 +24,12 @@ import urllib
 from absl import logging
 from android_env import env_interface
 from android_env.components import action_type as android_action_type_lib
-from android_env.components.a11y import a11y_events
-from android_env.components.a11y import a11y_forests
-from android_env.components.a11y import a11y_servicer
 from android_env.proto import adb_pb2
 from android_env.proto.a11y import a11y_pb2_grpc
 from android_env.wrappers import base_wrapper
+from android_env.wrappers.a11y import a11y_events
+from android_env.wrappers.a11y import a11y_forests
+from android_env.wrappers.a11y import a11y_servicer
 import dm_env
 import grpc
 import numpy as np
