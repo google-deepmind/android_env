@@ -95,7 +95,7 @@ class AdbCallParser:
 
     response = adb_pb2.AdbResponse(status=adb_pb2.AdbResponse.Status.OK)
     command_type = request.WhichOneof('command')
-    logging.info('AdbRequest command type: %s', command_type)
+    logging.debug('AdbRequest command type: %s', command_type)
     if command_type is None:
       response.status = adb_pb2.AdbResponse.Status.UNKNOWN_COMMAND
       response.error_message = 'AdbRequest.command is None.'
@@ -584,7 +584,7 @@ class AdbCallParser:
     # Issue `adb pull` command to copy it to a temporary file.
     with tempfile.NamedTemporaryFile(delete=False) as f:
       fname = f.name
-      logging.info('Downloading %r to %r.', path, fname)
+      logging.debug('Downloading %r to %r.', path, fname)
       response, _ = self._execute_command(['pull', path, fname],
                                           timeout=timeout)
     # Read the content of the file.
