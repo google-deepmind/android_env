@@ -87,6 +87,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
       a11y_info_timeout: float | None = None,
       max_enable_networking_attempts: int = 10,
       latest_a11y_info_only: bool = False,
+      grpc_server_ip: str = '10.0.2.2',
   ):
     """Initializes wrapper.
 
@@ -115,8 +116,14 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
         an EnableNetworkingError.
       latest_a11y_info_only: When True, the a11y servicer is setup to save only
         the latest tree it has received from the Android app.
+      grpc_server_ip: The IP address of the gRPC server which will be
+        broadcasted to the AccessibilityForwarder app where it should log the
+        a11y info. By default, this is set to the IP address of the AVD's host
+        machine which is 10.0.2.2: See
+        https://developer.android.com/studio/run/emulator-networking#networkaddresses.
     """
     self._env = env
+    self._grpc_server_ip = grpc_server_ip
     if install_a11y_forwarding:
       self._install_a11y_forwarding_apk()
       time.sleep(10.0)
@@ -267,7 +274,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
     time.sleep(1.0)
 
   def _configure_grpc(self) -> None:
-    """Configure networking and set the gRPC port in the AVD."""
+    """Configure networking and set the gRPC ip and port on AVD or device."""
 
     if self._disable_other_network_traffic:
       self.execute_adb_call(
@@ -283,7 +290,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
                       '-p',
                       'tcp',
                       '-d',
-                      '10.0.2.2',
+                      self._grpc_server_ip,
                       '--dport',
                       str(self._port),
                       '-j',
@@ -316,7 +323,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
             settings=adb_pb2.AdbRequest.SettingsRequest(
                 name_space=adb_pb2.AdbRequest.SettingsRequest.Namespace.GLOBAL,
                 put=adb_pb2.AdbRequest.SettingsRequest.Put(
-                    key='no_proxy', value=f'10.0.2.2:{self._port}'
+                    key='no_proxy', value=f'{self._grpc_server_ip}:{self._port}'
                 ),
             )
         )
@@ -327,7 +334,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
             send_broadcast=adb_pb2.AdbRequest.SendBroadcast(
                 action=(
                     'accessibility_forwarder.intent.action.SET_GRPC --ei'
-                    f' "port" {self._port}'
+                    f' "port" {self._port} --es "host" {self._grpc_server_ip}'
                 ),
                 component=(
                     'com.google.androidenv.accessibilityforwarder/com.google.androidenv.accessibilityforwarder.FlagsBroadcastReceiver'

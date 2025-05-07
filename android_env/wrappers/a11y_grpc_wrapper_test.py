@@ -844,6 +844,87 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         'com.google.androidenv.accessibilityforwarder/com.google.androidenv.accessibilityforwarder.FlagsBroadcastReceiver',
     )
 
+  def test_broadcast_sent_default_grpc_server_ip(self):
+    """Tests that the broadcast sets the default grpc server ip."""
+    base_env = mock.create_autospec(
+        env_interface.AndroidEnvInterface, instance=True
+    )
+    base_env.execute_adb_call.return_value = _ok_response()
+    base_env.stats.return_value = {'relaunch_count': 1}
+
+    wrapped_env = a11y_grpc_wrapper.A11yGrpcWrapper(
+        env=base_env,
+        disable_other_network_traffic=False,
+        install_a11y_forwarding=False,
+        start_a11y_service=False,
+        enable_a11y_tree_info=False,
+    )
+    wrapped_env.reset()
+
+    self.assertStartsWith(
+        base_env.execute_adb_call.call_args[0][0].send_broadcast.action,
+        'accessibility_forwarder.intent.action.SET_GRPC',
+    )
+
+    self.assertIn(
+        '--es "host" 10.0.2.2',
+        base_env.execute_adb_call.call_args[0][0].send_broadcast.action,
+    )
+
+  @parameterized.parameters(('127.0.0.1',), ('1.2.3.4',), 'localhost')
+  def test_broadcast_sent_custom_grpc_server_ip(self, grpc_server_ip):
+    """Tests that the broadcast sets the custom grpc server ip."""
+    base_env = mock.create_autospec(
+        env_interface.AndroidEnvInterface, instance=True
+    )
+    base_env.execute_adb_call.return_value = _ok_response()
+    base_env.stats.return_value = {'relaunch_count': 1}
+
+    wrapped_env = a11y_grpc_wrapper.A11yGrpcWrapper(
+        env=base_env,
+        disable_other_network_traffic=False,
+        install_a11y_forwarding=False,
+        start_a11y_service=False,
+        enable_a11y_tree_info=False,
+        grpc_server_ip=grpc_server_ip,
+    )
+    wrapped_env.reset()
+
+    self.assertStartsWith(
+        base_env.execute_adb_call.call_args[0][0].send_broadcast.action,
+        'accessibility_forwarder.intent.action.SET_GRPC',
+    )
+    self.assertIn(
+        f'--es "host" {grpc_server_ip}',
+        base_env.execute_adb_call.call_args[0][0].send_broadcast.action,
+    )
+
+  def test_broadcast_sent_port(self):
+    """Tests that the broadcast sets the correct port."""
+    base_env = mock.create_autospec(
+        env_interface.AndroidEnvInterface, instance=True
+    )
+    base_env.execute_adb_call.return_value = _ok_response()
+    base_env.stats.return_value = {'relaunch_count': 1}
+
+    wrapped_env = a11y_grpc_wrapper.A11yGrpcWrapper(
+        env=base_env,
+        disable_other_network_traffic=False,
+        install_a11y_forwarding=False,
+        start_a11y_service=False,
+        enable_a11y_tree_info=False,
+    )
+    wrapped_env.reset()
+
+    self.assertStartsWith(
+        base_env.execute_adb_call.call_args[0][0].send_broadcast.action,
+        'accessibility_forwarder.intent.action.SET_GRPC',
+    )
+    self.assertIn(
+        f'--ei "port" {wrapped_env.get_port()}',
+        base_env.execute_adb_call.call_args[0][0].send_broadcast.action,
+    )
+
 
 if __name__ == '__main__':
   absltest.main()
