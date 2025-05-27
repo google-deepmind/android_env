@@ -16,9 +16,10 @@
 """TaskManager handles all events and information related to the task."""
 
 import ast
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Sequence
 import copy
 import datetime
+import itertools
 import json
 import re
 import threading
@@ -264,41 +265,63 @@ class TaskManager:
     else:
       logging.warning('Max bad states not set, bad states will be ignored.')
 
-  def _logcat_listeners(self):
+  def _logcat_listeners(self) -> Iterable[logcat_thread.EventListener]:
     """Creates list of EventListeners for logcat thread."""
 
     # Defaults to 'a^' since that regex matches no string by definition.
     regexps = self._task.log_parsing_config.log_regexps
-    listeners = []
+    return itertools.chain(
+        self._reward_listeners(regexps),
+        self._reward_event_listeners(regexps),
+        self._score_listeners(regexps),
+        self._episode_end_listeners(regexps),
+        self._extras_listeners(regexps),
+        self._json_extras_listeners(regexps),
+    )
 
-    # Reward listeners
-    def _reward_handler(event, match):
+  def _reward_listeners(
+      self, regexps: task_pb2.LogParsingConfig.LogRegexps
+  ) -> Iterable[logcat_thread.EventListener]:
+    """Creates an iterable of reward listeners."""
+
+    def _reward_handler(event: re.Pattern[str], match: re.Match[str]):
       del event
       reward = float(match.group(1))
       with self._lock:
         self._latest_values['reward'] += reward
 
     for regexp in regexps.reward:
-      listeners.append(logcat_thread.EventListener(
-          regexp=re.compile(regexp or 'a^'),
-          handler_fn=_reward_handler))
+      yield logcat_thread.EventListener(
+          regexp=re.compile(regexp or 'a^'), handler_fn=_reward_handler
+      )
 
-    # RewardEvent listeners
+  def _reward_event_listeners(
+      self, regexps: task_pb2.LogParsingConfig.LogRegexps
+  ) -> Iterable[logcat_thread.EventListener]:
+    """Creates an iterable of reward event listeners."""
+
     for reward_event in regexps.reward_event:
 
       def get_reward_event_handler(reward):
-        def _reward_event_handler(event, match):
+
+        def _reward_event_handler(event: re.Pattern[str], match: re.Match[str]):
           del event, match
           with self._lock:
             self._latest_values['reward'] += reward
+
         return _reward_event_handler
 
-      listeners.append(logcat_thread.EventListener(
+      yield logcat_thread.EventListener(
           regexp=re.compile(reward_event.event or 'a^'),
-          handler_fn=get_reward_event_handler(reward_event.reward)))
+          handler_fn=get_reward_event_handler(reward_event.reward),
+      )
 
-    # Score listener
-    def _score_handler(event, match):
+  def _score_listeners(
+      self, regexps: task_pb2.LogParsingConfig.LogRegexps
+  ) -> Iterable[logcat_thread.EventListener]:
+    """Creates an iterable of score listeners."""
+
+    def _score_handler(event: re.Pattern[str], match: re.Match[str]):
       del event
       current_score = float(match.group(1))
       with self._lock:
@@ -306,23 +329,47 @@ class TaskManager:
         self._latest_values['score'] = current_score
         self._latest_values['reward'] += current_reward
 
-    listeners.append(logcat_thread.EventListener(
-        regexp=re.compile(regexps.score or 'a^'),
-        handler_fn=_score_handler))
+    yield logcat_thread.EventListener(
+        regexp=re.compile(regexps.score or 'a^'), handler_fn=_score_handler
+    )
 
-    # Episode end listeners
-    def _episode_end_handler(event, match):
+  def _episode_end_listeners(
+      self, regexps: task_pb2.LogParsingConfig.LogRegexps
+  ) -> Iterable[logcat_thread.EventListener]:
+    """Creates an iterable of episode end listeners."""
+
+    def _episode_end_handler(event: re.Pattern[str], match: re.Match[str]):
       del event, match
       with self._lock:
         self._latest_values['episode_end'] = True
 
     for regexp in regexps.episode_end:
-      listeners.append(logcat_thread.EventListener(
-          regexp=re.compile(regexp or 'a^'),
-          handler_fn=_episode_end_handler))
+      yield logcat_thread.EventListener(
+          regexp=re.compile(regexp or 'a^'), handler_fn=_episode_end_handler
+      )
 
-    # Extra listeners
-    def _extras_handler(event, match):
+  def _process_extra(self, extra_name: str, extra: Sequence[int | float]):
+    extra = np.array(extra)
+    with self._lock:
+      latest_extras = self._latest_values['extra']
+      if extra_name in latest_extras:
+        # If latest extra is not flushed, append.
+        if (
+            len(latest_extras[extra_name])
+            >= self._config.extras_max_buffer_size
+        ):
+          latest_extras[extra_name].pop(0)
+        latest_extras[extra_name].append(extra)
+      else:
+        latest_extras[extra_name] = [extra]
+      self._latest_values['extra'] = latest_extras
+
+  def _extras_listeners(
+      self, regexps: task_pb2.LogParsingConfig.LogRegexps
+  ) -> Iterable[logcat_thread.EventListener]:
+    """Creates an iterable of extras listeners."""
+
+    def _extras_handler(event: re.Pattern[str], match: re.Match[str]):
       del event
       extra_name = match.group('name')
       extra = match.group('extra')
@@ -342,15 +389,19 @@ class TaskManager:
       else:
         # No extra value provided for boolean extra. Setting value to True.
         extra = 1
-      _process_extra(extra_name, extra)
+      self._process_extra(extra_name, extra)
 
     for regexp in regexps.extra:
-      listeners.append(logcat_thread.EventListener(
-          regexp=re.compile(regexp or 'a^'),
-          handler_fn=_extras_handler))
+      yield logcat_thread.EventListener(
+          regexp=re.compile(regexp or 'a^'), handler_fn=_extras_handler
+      )
 
-    # JSON extra listeners
-    def _json_extras_handler(event, match):
+  def _json_extras_listeners(
+      self, regexps: task_pb2.LogParsingConfig.LogRegexps
+  ) -> Iterable[logcat_thread.EventListener]:
+    """Creates an iterable of JSON extras listeners."""
+
+    def _json_extras_handler(event: re.Pattern[str], match: re.Match[str]):
       del event
       extra_data = match.group('json_extra')
       try:
@@ -359,27 +410,9 @@ class TaskManager:
         logging.error('JSON string could not be parsed: %s', extra_data)
         return
       for extra_name, extra_value in extra.items():
-        _process_extra(extra_name, extra_value)
+        self._process_extra(extra_name, extra_value)
 
     for regexp in regexps.json_extra:
-      listeners.append(logcat_thread.EventListener(
-          regexp=re.compile(regexp or 'a^'),
-          handler_fn=_json_extras_handler))
-
-    def _process_extra(extra_name, extra):
-      extra = np.array(extra)
-      with self._lock:
-        latest_extras = self._latest_values['extra']
-        if extra_name in latest_extras:
-          # If latest extra is not flushed, append.
-          if (
-              len(latest_extras[extra_name])
-              >= self._config.extras_max_buffer_size
-          ):
-            latest_extras[extra_name].pop(0)
-          latest_extras[extra_name].append(extra)
-        else:
-          latest_extras[extra_name] = [extra]
-        self._latest_values['extra'] = latest_extras
-
-    return listeners
+      yield logcat_thread.EventListener(
+          regexp=re.compile(regexp or 'a^'), handler_fn=_json_extras_handler
+      )
