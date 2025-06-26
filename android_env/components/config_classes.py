@@ -16,6 +16,7 @@
 """Dataclass definitions used for instantiating AndroidEnv components."""
 
 import dataclasses
+import enum
 
 
 @dataclasses.dataclass
@@ -79,6 +80,15 @@ class SimulatorConfig:
   interaction_rate_sec: float = 0.0
 
 
+@enum.unique
+class GPUMode(enum.Enum):
+  """Emulator GPU Mode."""
+
+  HOST = 'host'
+  SWANGLE_INDIRECT = 'swangle_indirect'
+  SWIFTSHADER_INDIRECT = 'swiftshader_indirect'
+
+
 @dataclasses.dataclass
 class EmulatorLauncherConfig:
   """Config class for EmulatorLauncher."""
@@ -104,7 +114,7 @@ class EmulatorLauncherConfig:
   # GPU mode override.
   # Please see
   # https://developer.android.com/studio/run/emulator-acceleration#accel-graphics.
-  gpu_mode: str = 'swangle_indirect'  # Alternative: swiftshader_indirect, host
+  gpu_mode: str = GPUMode.SWANGLE_INDIRECT.value
   # Whether to run in headless mode (i.e. without a graphical window).
   run_headless: bool = True
   # Whether to restrict network access.
