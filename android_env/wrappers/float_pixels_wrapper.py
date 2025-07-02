@@ -15,7 +15,6 @@
 
 """Converts pixel observation to from int to float32 between 0.0 and 1.0."""
 
-from android_env import env_interface
 from android_env.components import pixel_fns
 from android_env.wrappers import base_wrapper
 import dm_env
@@ -26,7 +25,7 @@ import numpy as np
 class FloatPixelsWrapper(base_wrapper.BaseWrapper):
   """Wraps AndroidEnv for Panultimate agent."""
 
-  def __init__(self, env: env_interface.AndroidEnvInterface) -> None:
+  def __init__(self, env: dm_env.Environment):
     super().__init__(env)
     self._input_spec = self._env.observation_spec()['pixels']
     self._should_convert_int_to_float = np.issubdtype(self._input_spec.dtype,

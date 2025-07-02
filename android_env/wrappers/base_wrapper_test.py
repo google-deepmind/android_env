@@ -101,7 +101,7 @@ class BaseWrapperTest(absltest.TestCase):
     base_env.close.assert_called_once()
 
   def test_raw_env(self):
-    base_env = mock.create_autospec(env_interface.AndroidEnvInterface)
+    base_env = 'fake_env'
     wrapped_env_1 = base_wrapper.BaseWrapper(base_env)
     wrapped_env_2 = base_wrapper.BaseWrapper(wrapped_env_1)
     self.assertEqual(base_env, wrapped_env_2.raw_env)

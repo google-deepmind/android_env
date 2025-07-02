@@ -16,9 +16,7 @@
 """Wraps the AndroidEnv environment to provide discrete actions."""
 
 from collections.abc import Sequence
-from typing import cast
 
-from android_env import env_interface
 from android_env.components import action_type
 from android_env.wrappers import base_wrapper
 import dm_env
@@ -34,24 +32,21 @@ class DiscreteActionWrapper(base_wrapper.BaseWrapper):
 
   def __init__(
       self,
-      env: env_interface.AndroidEnvInterface,
+      env: dm_env.Environment,
       action_grid: Sequence[int] = (10, 10),
       redundant_actions: bool = True,
       noise: float = 0.1,
-  ) -> None:
+  ):
     super().__init__(env)
     self._parent_action_spec = self._env.action_spec()
     self._assert_base_env()
     self._action_grid = action_grid  # [height, width]
     self._grid_size = np.prod(self._action_grid)
-    action_types = cast(
-        specs.DiscreteArray, self._parent_action_spec['action_type']
-    )
-    self._num_action_types = action_types.num_values
+    self._num_action_types = self._parent_action_spec['action_type'].num_values
     self._redundant_actions = redundant_actions
     self._noise = noise
 
-  def _assert_base_env(self) -> None:
+  def _assert_base_env(self):
     """Checks that the wrapped env has the right action spec format."""
 
     assert len(self._parent_action_spec) == 2
@@ -147,12 +142,8 @@ class DiscreteActionWrapper(base_wrapper.BaseWrapper):
 
     # Project action space to action_spec ranges. For the default case of
     # minimum = [0, 0] and maximum = [1, 1], this will not do anything.
-    x_min, y_min = cast(
-        specs.BoundedArray, self._parent_action_spec['touch_position']
-    ).minimum
-    x_max, y_max = cast(
-        specs.BoundedArray, self._parent_action_spec['touch_position']
-    ).maximum
+    x_min, y_min = self._parent_action_spec['touch_position'].minimum
+    x_max, y_max = self._parent_action_spec['touch_position'].maximum
 
     x_pos = x_min + x_pos * (x_max - x_min)
     y_pos = y_min + y_pos * (y_max - y_min)

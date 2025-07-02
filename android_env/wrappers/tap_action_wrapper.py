@@ -16,9 +16,7 @@
 """Wraps the AndroidEnv environment to provide tap actions of a given duration."""
 
 from collections.abc import Sequence
-from typing import Any
 
-from android_env import env_interface
 from android_env.components import action_type
 from android_env.wrappers import base_wrapper
 import dm_env
@@ -29,16 +27,16 @@ class TapActionWrapper(base_wrapper.BaseWrapper):
   """AndroidEnv with tap actions."""
 
   def __init__(self,
-               env: env_interface.AndroidEnvInterface,
+               env: dm_env.Environment,
                num_frames: int = 5,
-               touch_only: bool = False) -> None:
+               touch_only: bool = False):
     super().__init__(env)
     assert 'action_type' in env.action_spec()
     self._touch_only = touch_only
     self._num_frames = num_frames
     self._env_steps = 0
 
-  def stats(self) -> dict[str, Any]:
+  def stats(self):
     """Returns a dictionary of metrics logged by the environment."""
     logs = self._env.stats()
     logs.update({'env_steps': self._env_steps})

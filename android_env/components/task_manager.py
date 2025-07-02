@@ -23,7 +23,6 @@ import itertools
 import json
 import re
 import threading
-import time
 from typing import Any
 
 from absl import logging
@@ -102,22 +101,12 @@ class TaskManager:
 
   def stop(self) -> None:
     """Suspends task processing."""
-    n_tries = 3
-    for i in range(n_tries):
-      try:
-        self._stop_logcat_thread()
-        break
-      except:  # pylint: disable=bare-except
-        logging.exception(
-            'Failed to stop logcat thread [%d/%d]. Continuing.', i + 1, n_tries
-        )
-        time.sleep(1)
+    self._stop_logcat_thread()
 
   def start(
       self,
       adb_call_parser_factory: Callable[[], adb_call_parser_lib.AdbCallParser],
-      log_stream: log_stream_lib.LogStream,
-  ) -> None:
+      log_stream: log_stream_lib.LogStream) -> None:
     """Starts task processing."""
 
     self._start_logcat_thread(log_stream=log_stream)
@@ -161,8 +150,7 @@ class TaskManager:
         step_type=dm_env.StepType.FIRST,
         reward=0.0,
         discount=0.0,
-        observation=observation,
-    )
+        observation=observation)
 
   def rl_step(self, observation: dict[str, Any]) -> dm_env.TimeStep:
     """Performs one RL step."""
@@ -214,10 +202,8 @@ class TaskManager:
     if self._task.max_episode_steps > 0:
       if self._stats['episode_steps'] > self._task.max_episode_steps:
         self._stats['reset_count_max_duration_reached'] += 1
-        logging.info(
-            'Maximum task duration (%r steps) reached. Truncating the episode.',
-            self._task.max_episode_steps,
-        )
+        logging.info('Maximum task duration (%r steps) reached. '
+                     'Truncating the episode.', self._task.max_episode_steps)
         return dm_env.truncation
 
     if self._task.max_episode_sec > 0.0:
@@ -225,20 +211,16 @@ class TaskManager:
       max_episode_sec = self._task.max_episode_sec
       if task_duration > datetime.timedelta(seconds=int(max_episode_sec)):
         self._stats['reset_count_max_duration_reached'] += 1
-        logging.info(
-            'Maximum task duration (%r sec) reached. Truncating the episode.',
-            max_episode_sec,
-        )
+        logging.info('Maximum task duration (%r sec) reached. '
+                     'Truncating the episode.', max_episode_sec)
         return dm_env.truncation
 
     return dm_env.transition
 
   def _start_setup_step_interpreter(
-      self, adb_call_parser: adb_call_parser_lib.AdbCallParser
-  ):
+      self, adb_call_parser: adb_call_parser_lib.AdbCallParser):
     self._setup_step_interpreter = setup_step_interpreter.SetupStepInterpreter(
-        adb_call_parser=adb_call_parser
-    )
+        adb_call_parser=adb_call_parser)
 
   def _start_logcat_thread(self, log_stream: log_stream_lib.LogStream):
     log_stream.set_log_filters(list(self._task.log_parsing_config.filters))
@@ -247,9 +229,8 @@ class TaskManager:
     for event_listener in self._logcat_listeners():
       self._logcat_thread.add_event_listener(event_listener)
 
-  def _start_dumpsys_thread(
-      self, adb_call_parser: adb_call_parser_lib.AdbCallParser
-  ):
+  def _start_dumpsys_thread(self,
+                            adb_call_parser: adb_call_parser_lib.AdbCallParser):
     self._dumpsys_thread = dumpsys_thread.DumpsysThread(
         app_screen_checker=app_screen_checker.AppScreenChecker(
             adb_call_parser=adb_call_parser,

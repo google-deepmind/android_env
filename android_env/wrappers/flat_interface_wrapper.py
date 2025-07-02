@@ -15,9 +15,8 @@
 
 """Wraps the AndroidEnv environment to make its interface flat."""
 
-from typing import Any, cast
+from typing import Any
 
-from android_env import env_interface
 from android_env.wrappers import base_wrapper
 import dm_env
 from dm_env import specs
@@ -26,7 +25,7 @@ import numpy as np
 RGB_CHANNELS = (0, 1, 2)
 
 
-def _extract_screen_pixels(obs: np.ndarray) -> np.ndarray:
+def _extract_screen_pixels(obs: np.ndarray):
   """Get only screen pixels by removing previous action layer."""
   is_grayscale_image = obs.shape[-1] == 2
   if is_grayscale_image:
@@ -34,9 +33,7 @@ def _extract_screen_pixels(obs: np.ndarray) -> np.ndarray:
   return obs[..., RGB_CHANNELS]
 
 
-def _get_no_action_observation_spec(
-    obs_spec: specs.BoundedArray,
-) -> specs.BoundedArray:
+def _get_no_action_observation_spec(obs_spec: specs.BoundedArray):
   """Create an observation spec without the action layer."""
   shape = np.array(obs_spec.shape)
   shape[2] -= 1
@@ -59,13 +56,11 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
   space.
   """
 
-  def __init__(
-      self,
-      env: env_interface.AndroidEnvInterface,
-      flat_actions: bool = True,
-      flat_observations: bool = True,
-      keep_action_layer: bool = True,
-  ) -> None:
+  def __init__(self,
+               env: dm_env.Environment,
+               flat_actions: bool = True,
+               flat_observations: bool = True,
+               keep_action_layer: bool = True):
     super().__init__(env)
     self._flat_actions = flat_actions
     self._flat_observations = flat_observations
@@ -73,15 +68,13 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
     self._action_name = list(self._env.action_spec())[0]
     self._assert_base_env()
 
-  def _assert_base_env(self) -> None:
+  def _assert_base_env(self):
     base_action_spec = self._env.action_spec()
     assert len(base_action_spec) == 1, self._env.action_spec()
     assert isinstance(base_action_spec, dict)
     assert isinstance(base_action_spec[self._action_name], specs.BoundedArray)
 
-  def _process_action(
-      self, action: int | np.ndarray | dict[str, Any]
-  ) -> int | np.ndarray | dict[str, Any]:
+  def _process_action(self, action: int | np.ndarray | dict[str, Any]):
     if self._flat_actions:
       return {self._action_name: action}
     else:
@@ -92,15 +85,13 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
       step_type, reward, discount, observation = timestep
       # Keep only the pixels.
       pixels = observation['pixels']
-      pixels = (
-          pixels if self._keep_action_layer else _extract_screen_pixels(pixels)
-      )
+      pixels = pixels if self._keep_action_layer else _extract_screen_pixels(
+          pixels)
       return dm_env.TimeStep(
           step_type=step_type,
           reward=reward,
           discount=discount,
-          observation=pixels,
-      )
+          observation=pixels)
     else:
       return timestep
 
@@ -114,9 +105,7 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
 
   def observation_spec(self) -> specs.Array | dict[str, specs.Array]:  # pytype: disable=signature-mismatch  # overriding-return-type-checks
     if self._flat_observations:
-      pixels_spec = cast(
-          specs.BoundedArray, self._env.observation_spec()['pixels']
-      )
+      pixels_spec = self._env.observation_spec()['pixels']
       if not self._keep_action_layer:
         return _get_no_action_observation_spec(pixels_spec)
       return pixels_spec
@@ -125,6 +114,6 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
 
   def action_spec(self) -> specs.BoundedArray | dict[str, specs.Array]:  # pytype: disable=signature-mismatch  # overriding-return-type-checks
     if self._flat_actions:
-      return self._env.action_spec()[self._action_name]  # pytype: disable=bad-return-type
+      return self._env.action_spec()[self._action_name]
     else:
       return self._env.action_spec()
