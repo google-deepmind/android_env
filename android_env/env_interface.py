@@ -25,6 +25,7 @@ from typing import Any
 from android_env.proto import adb_pb2
 from android_env.proto import state_pb2
 import dm_env
+from dm_env import specs
 import numpy as np
 
 
@@ -34,11 +35,11 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
   # Methods required by dm_env.Environment.
 
   @abc.abstractmethod
-  def action_spec(self) -> dict[str, dm_env.specs.Array]:
+  def action_spec(self) -> dict[str, specs.Array]:
     """Returns the action specification."""
 
   @abc.abstractmethod
-  def observation_spec(self) -> dict[str, dm_env.specs.Array]:
+  def observation_spec(self) -> dict[str, specs.Array]:
     """Returns the observation specification."""
 
   @abc.abstractmethod
@@ -61,11 +62,11 @@ class AndroidEnvInterface(dm_env.Environment, metaclass=abc.ABCMeta):
     return {}
 
   @property
-  def raw_action(self):
+  def raw_action(self) -> Any:
     """Returns the latest action."""
 
   @property
-  def raw_observation(self):
+  def raw_observation(self) -> Any:
     """Returns the latest observation."""
 
   def stats(self) -> dict[str, Any]:
