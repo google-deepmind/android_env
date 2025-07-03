@@ -16,7 +16,9 @@
 """Wraps the AndroidEnv environment to rescale the observations."""
 
 from collections.abc import Sequence
+from typing import cast
 
+from android_env import env_interface
 from android_env.wrappers import base_wrapper
 import dm_env
 from dm_env import specs
@@ -36,14 +38,16 @@ class ImageRescaleWrapper(base_wrapper.BaseWrapper):
 
   def __init__(
       self,
-      env: dm_env.Environment,
+      env: env_interface.AndroidEnvInterface,
       zoom_factors: Sequence[float] | None = (0.5, 0.5),
       grayscale: bool = False,
-  ):
+  ) -> None:
     super().__init__(env)
     assert 'pixels' in self._env.observation_spec()
-    assert self._env.observation_spec()['pixels'].shape[-1] in [1, 3], (
-        'Number of pixel channels should be 1 or 3.')
+    assert self._env.observation_spec()['pixels'].shape[-1] in [
+        1,
+        3,
+    ], 'Number of pixel channels should be 1 or 3.'
     self._grayscale = grayscale
     if zoom_factors is None:
       zoom_factors = (1.0, 1.0)
@@ -55,14 +59,16 @@ class ImageRescaleWrapper(base_wrapper.BaseWrapper):
     observation = timestep.observation
     processed_observation = observation.copy()
     processed_observation['pixels'] = self._process_pixels(
-        observation['pixels'])
+        observation['pixels']
+    )
     return timestep._replace(observation=processed_observation)
 
   def _process_pixels(self, raw_observation: np.ndarray) -> np.ndarray:
     # We expect `raw_observation` to have shape (W, H, 3) - 3 for RGB
     new_shape = np.array(
         self._zoom_factors[0:2] * np.array(raw_observation.shape[0:2]),
-        dtype=np.int32)[::-1]
+        dtype=np.int32,
+    )[::-1]
     if self._grayscale:
       # When self._grayscale == True, we squash the RGB into a single layer
       image = np.dot(raw_observation, RGB_TO_GRAYSCALE_COEFFICIENTS)
@@ -95,15 +101,18 @@ class ImageRescaleWrapper(base_wrapper.BaseWrapper):
 
   def observation_spec(self) -> dict[str, specs.Array]:
     parent_spec = self._env.observation_spec().copy()
-    out_shape = np.multiply(parent_spec['pixels'].shape,
-                            self._zoom_factors).astype(np.int32)
+    parent_pixels = cast(specs.BoundedArray, parent_spec['pixels'])
+    out_shape = np.multiply(parent_pixels.shape, self._zoom_factors).astype(
+        np.int32
+    )
     if self._grayscale:
       # In grayscale mode we want the output shape to be [W, H, 1]
       out_shape[-1] = 1
     parent_spec['pixels'] = specs.BoundedArray(
         shape=out_shape,
-        dtype=parent_spec['pixels'].dtype,
-        name=parent_spec['pixels'].name,
-        minimum=parent_spec['pixels'].minimum,
-        maximum=parent_spec['pixels'].maximum)
+        dtype=parent_pixels.dtype,
+        name=parent_pixels.name,
+        minimum=parent_pixels.minimum,
+        maximum=parent_pixels.maximum,
+    )
     return parent_spec
