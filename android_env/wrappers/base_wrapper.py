@@ -29,7 +29,7 @@ import numpy as np
 class BaseWrapper(env_interface.AndroidEnvInterface):
   """AndroidEnv wrapper."""
 
-  def __init__(self, env):
+  def __init__(self, env: env_interface.AndroidEnvInterface) -> None:
     self._env = env
     logging.info('Wrapping with %s', self.__class__.__name__)
 
@@ -96,29 +96,30 @@ class BaseWrapper(env_interface.AndroidEnvInterface):
     """
     return self._env.save_state(request)
 
-  def execute_adb_call(self,
-                       adb_call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
+  def execute_adb_call(
+      self, adb_call: adb_pb2.AdbRequest
+  ) -> adb_pb2.AdbResponse:
     return self._env.execute_adb_call(adb_call)
 
   @property
-  def raw_action(self):
+  def raw_action(self) -> Any:
     return self._env.raw_action
 
   @property
-  def raw_observation(self):
+  def raw_observation(self) -> Any:
     return self._env.raw_observation
 
   @property
-  def raw_env(self):
+  def raw_env(self) -> env_interface.AndroidEnvInterface:
     """Recursively unwrap until we reach the true 'raw' env."""
     wrapped = self._env
     if hasattr(wrapped, 'raw_env'):
       return wrapped.raw_env
     return wrapped
 
-  def __getattr__(self, attr):
+  def __getattr__(self, attr) -> Any:
     """Delegate attribute access to underlying environment."""
     return getattr(self._env, attr)
 
-  def close(self):
+  def close(self) -> None:
     self._env.close()
