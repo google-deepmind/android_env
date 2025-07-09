@@ -53,8 +53,7 @@ class AccessibilityForwarder(
         Runnable {
           while (LogFlags.a11yTreePeriodMs > 0) {
             try {
-              val windows = this.windows
-              logAccessibilityTree(windows)
+              logAccessibilityTree()
             } catch (e: ConcurrentModificationException) {
               continue
             }
@@ -99,9 +98,16 @@ class AccessibilityForwarder(
     }
   }
 
-  private fun logAccessibilityTree(windows: List<AccessibilityWindowInfo>) {
+  private fun logAccessibilityTree() {
     if (!LogFlags.logAccessibilityTree) {
       Log.i(TAG, "Not logging accessibility tree")
+      return
+    }
+
+    val windows = getWindowsOrNull()
+
+    if (windows == null) {
+      Log.i(TAG, "windows is null.")
       return
     }
 
@@ -134,6 +140,13 @@ class AccessibilityForwarder(
       resetGrpcStub()
     }
   }
+
+  private fun getWindowsOrNull(): List<AccessibilityWindowInfo>? =
+    try {
+      windows
+    } catch (e: NullPointerException) {
+      null
+    }
 
   /** Logs extras for all event types. */
   private fun logExtrasForEvent(event: AccessibilityEvent) {
