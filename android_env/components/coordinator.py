@@ -21,12 +21,10 @@ from typing import Any
 
 from absl import logging
 from android_env.components import action_fns
-from android_env.components import action_type as action_type_lib
 from android_env.components import adb_call_parser
 from android_env.components import config_classes
 from android_env.components import device_settings as device_settings_lib
 from android_env.components import errors
-from android_env.components import pixel_fns
 from android_env.components import specs
 from android_env.components import task_manager as task_manager_lib
 from android_env.components.simulators import base_simulator
@@ -277,6 +275,12 @@ class Coordinator:
     """Cleans up the state of this Coordinator."""
 
     if hasattr(self, '_task_manager'):
-      self._task_manager.stop()
+      try:
+        self._task_manager.stop()
+      except:  # pylint: disable=bare-except
+        logging.exception('Failed to stop task manager. Continuing.')
     if hasattr(self, '_simulator'):
-      self._simulator.close()
+      try:
+        self._simulator.close()
+      except:  # pylint: disable=bare-except
+        logging.exception('Failed to close simulator. Continuing.')

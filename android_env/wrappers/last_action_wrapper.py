@@ -15,6 +15,8 @@
 
 """Extends Android observation with the latest action taken."""
 
+from typing import cast
+from android_env import env_interface
 from android_env.components import action_type
 from android_env.components import pixel_fns
 from android_env.wrappers import base_wrapper
@@ -35,8 +37,8 @@ class LastActionWrapper(base_wrapper.BaseWrapper):
   """
 
   def __init__(self,
-               env: dm_env.Environment,
-               concat_to_pixels: bool = True):
+               env: env_interface.AndroidEnvInterface,
+               concat_to_pixels: bool = True) -> None:
     """Initializes the internal state of this wrapper.
 
     Args:
@@ -93,22 +95,23 @@ class LastActionWrapper(base_wrapper.BaseWrapper):
 
   def observation_spec(self) -> dict[str, specs.Array]:
     parent_spec = self._env.observation_spec().copy()
-    shape = parent_spec['pixels'].shape
+    parent_pixels = cast(specs.BoundedArray, parent_spec['pixels'])
+    shape = parent_pixels.shape
     if self._concat_to_pixels:
       parent_spec['pixels'] = specs.BoundedArray(
           shape=(shape[0], shape[1], shape[2] + 1),
-          dtype=parent_spec['pixels'].dtype,
-          name=parent_spec['pixels'].name,
-          minimum=parent_spec['pixels'].minimum,
-          maximum=parent_spec['pixels'].maximum)
+          dtype=parent_pixels.dtype,
+          name=parent_pixels.name,
+          minimum=parent_pixels.minimum,
+          maximum=parent_pixels.maximum)
     else:
       parent_spec.update({
           'last_action':
               specs.BoundedArray(
                   shape=(shape[0], shape[1]),
-                  dtype=parent_spec['pixels'].dtype,
+                  dtype=parent_pixels.dtype,
                   name='last_action',
-                  minimum=parent_spec['pixels'].minimum,
-                  maximum=parent_spec['pixels'].maximum)
+                  minimum=parent_pixels.minimum,
+                  maximum=parent_pixels.maximum)
       })
     return parent_spec
