@@ -25,6 +25,7 @@ from android_env.components import device_settings as device_settings_lib
 from android_env.components import task_manager as task_manager_lib
 from android_env.components.simulators.emulator import emulator_simulator
 from android_env.components.simulators.fake import fake_simulator
+from android_env.components.simulators.real_device import real_device_simulator
 from android_env.proto import task_pb2
 
 from google.protobuf import text_format
@@ -56,6 +57,10 @@ def load(config: config_classes.AndroidEnvConfig) -> environment.AndroidEnv:
       simulator = emulator_simulator.EmulatorSimulator(config=config.simulator)
     case config_classes.FakeSimulatorConfig():
       simulator = fake_simulator.FakeSimulator(config=config.simulator)
+    case config_classes.RealDeviceConfig():
+      simulator = real_device_simulator.RealDeviceSimulator(
+          config=config.simulator
+      )
     case _:
       raise ValueError('Unsupported simulator config: {config.simulator}')
 
