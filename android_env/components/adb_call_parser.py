@@ -509,9 +509,11 @@ class AdbCallParser:
       physical_width = re.match(r'\s+PhysicalWidth:\s+(-?\d+)px', line)
       if physical_width:
         skip_next = int(physical_width.group(1)) < 0
-
+      # Depending on the device type, the orientation could take these forms:
+      # SurfaceOrientation: 0
+      # InputDeviceOrientation: Rotation0
       surface_orientation = re.match(
-          r'\s+(SurfaceOrientation|InputDeviceOrientation):\s+(\d)', line
+          r'\s+(SurfaceOrientation|InputDeviceOrientation):\s+.*(\d)', line
       )
 
       if surface_orientation is not None:
@@ -664,7 +666,10 @@ class AdbCallParser:
     request = request.settings
     response = adb_pb2.AdbResponse()
     # Every SettingsRequest should have a namespace.
-    if request.name_space == adb_pb2.AdbRequest.SettingsRequest.Namespace.UNKNOWN:
+    if (
+        request.name_space
+        == adb_pb2.AdbRequest.SettingsRequest.Namespace.UNKNOWN
+    ):
       response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
       response.error_message = (
           f'Unknown SettingsRequest.name_space. Got: {request}.')
@@ -883,7 +888,10 @@ class AdbCallParser:
       cmd.append('-T')
       cmd.append(str(request.timeout_ms))
 
-    if request.priority != adb_pb2.AdbRequest.DumpsysRequest.PriorityLevel.UNSET:
+    if (
+        request.priority
+        != adb_pb2.AdbRequest.DumpsysRequest.PriorityLevel.UNSET
+    ):
       cmd.append('--priority')
       cmd.append(adb_pb2.AdbRequest.DumpsysRequest.PriorityLevel.Name(
           request.priority))
