@@ -34,17 +34,17 @@ class AdbControllerTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
-    # Set two env vars.
+    # Set env vars.
     os.environ['MY_ENV_VAR'] = '/some/path/'
     os.environ['HOME'] = '$MY_ENV_VAR'
-    self._env_before = os.environ
-    self._adb_controller = adb_controller_lib.AdbController(
-        config_classes.AdbControllerConfig(
-            adb_path='my_adb',
-            device_name='awesome_device',
-            adb_server_port=9999,
-        )
-    )
+    self._env_before = os.environ.copy()
+
+  def tearDown(self):
+    super().tearDown()
+    if 'ANDROID_HOME' in os.environ:
+      del os.environ['ANDROID_HOME']
+    if 'ANDROID_ADB_SERVER_PORT' in os.environ:
+      del os.environ['ANDROID_ADB_SERVER_PORT']
 
   @mock.patch.object(subprocess, 'check_output', autospec=True)
   @mock.patch.object(time, 'sleep', autospec=True)
@@ -66,6 +66,41 @@ class AdbControllerTest(absltest.TestCase):
     expected_env['HOME'] = '/some/path/'
     mock_check_output.assert_called_once_with(
         ['my_adb', '-P', '9999', 'devices'],
+        stderr=subprocess.STDOUT,
+        timeout=_TIMEOUT,
+        env=expected_env,
+    )
+    mock_sleep.assert_called_once()
+
+  @mock.patch.object(subprocess, 'check_output', autospec=True)
+  @mock.patch.object(time, 'sleep', autospec=True)
+  def test_init_server_with_adb_server_port_from_os_env(
+      self, mock_sleep, mock_check_output
+  ):
+    # Arrange.
+    # Set the ADB server port to 1234 in the OS environment.
+    os.environ['ANDROID_ADB_SERVER_PORT'] = '1234'
+    os.environ['ANDROID_HOME'] = '/some/path/to/android'
+    adb_controller = adb_controller_lib.AdbController(
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            adb_server_port=9999,
+            use_adb_server_port_from_os_env=True,
+        )
+    )
+
+    # Act.
+    adb_controller.init_server(timeout=_TIMEOUT)
+
+    # Assert.
+    expected_env = self._env_before
+    expected_env['HOME'] = '/some/path/'
+    expected_env['ANDROID_HOME'] = '/some/path/to/android'
+    expected_env['ANDROID_ADB_SERVER_PORT'] = '1234'
+
+    mock_check_output.assert_called_once_with(
+        ['my_adb', 'devices'],
         stderr=subprocess.STDOUT,
         timeout=_TIMEOUT,
         env=expected_env,
@@ -126,7 +161,8 @@ class AdbControllerTest(absltest.TestCase):
         ),
     ])
     mock_sleep.assert_has_calls(
-        [mock.call(0.2), mock.call(2.0), mock.call(0.2)])
+        [mock.call(0.2), mock.call(2.0), mock.call(0.2)]
+    )
 
   @mock.patch.object(subprocess, 'check_output', autospec=True)
   @mock.patch.object(time, 'sleep', autospec=True)
@@ -200,7 +236,8 @@ class AdbControllerTest(absltest.TestCase):
   def test_avoid_infinite_recursion(self, mock_sleep, mock_check_output):
     del mock_sleep
     mock_check_output.side_effect = subprocess.CalledProcessError(
-        returncode=1, cmd='blah')
+        returncode=1, cmd='blah'
+    )
     adb_controller = adb_controller_lib.AdbController(
         config_classes.AdbControllerConfig(
             adb_path='my_adb',
@@ -210,7 +247,10 @@ class AdbControllerTest(absltest.TestCase):
     )
     self.assertRaises(
         errors.AdbControllerError,
-        adb_controller.execute_command, ['my_command'], timeout=_TIMEOUT)
+        adb_controller.execute_command,
+        ['my_command'],
+        timeout=_TIMEOUT,
+    )
 
 
 class AdbControllerInitTest(absltest.TestCase):
@@ -228,6 +268,23 @@ class AdbControllerInitTest(absltest.TestCase):
     )
     self.assertNotIn('ANDROID_HOME', os.environ)
     self.assertNotIn('ANDROID_ADB_SERVER_PORT', os.environ)
+
+  def test_use_adb_server_port_from_os_env_retains_os_env_vars(self):
+    os.environ['ANDROID_HOME'] = '/usr/local/Android/Sdk'
+    os.environ['ANDROID_ADB_SERVER_PORT'] = '1337'
+    adb_controller_lib.AdbController(
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            adb_server_port=9999,
+            default_timeout=_TIMEOUT,
+            use_adb_server_port_from_os_env=True,
+        )
+    )
+    self.assertIn('ANDROID_ADB_SERVER_PORT', os.environ)
+    self.assertEqual(os.environ['ANDROID_ADB_SERVER_PORT'], '1337')
+    self.assertIn('ANDROID_HOME', os.environ)
+    self.assertEqual(os.environ['ANDROID_HOME'], '/usr/local/Android/Sdk')
 
 
 if __name__ == '__main__':

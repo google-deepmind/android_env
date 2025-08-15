@@ -34,6 +34,13 @@ class AdbControllerConfig:
   default_timeout: float = 120.0
   # Name of the device to communicate with.
   device_name: str = ''
+  # Whether to use adb server port set in OS Environment variables.
+  # When True, adb will use the ANDROID_ADB_SERVER_PORT OS environment variable
+  # for selecting its server port if available (or the default 5037 if not set).
+  # When False, the ANDROID_ADB_SERVER_PORT OS environment var will be unset
+  # and adb_server_port will be used and supplied as an argument to all adb
+  # commands.
+  use_adb_server_port_from_os_env: bool = False
 
 
 @dataclasses.dataclass

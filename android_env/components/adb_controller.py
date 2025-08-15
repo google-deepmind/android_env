@@ -33,12 +33,15 @@ class AdbController:
     self._config = config
     logging.info('config: %r', self._config)
 
-    # Unset problematic environment variables. ADB commands will fail if these
-    # are set. They are normally exported by AndroidStudio.
-    if 'ANDROID_HOME' in os.environ:
-      del os.environ['ANDROID_HOME']
-    if 'ANDROID_ADB_SERVER_PORT' in os.environ:
-      del os.environ['ANDROID_ADB_SERVER_PORT']
+    if not self._config.use_adb_server_port_from_os_env:
+      # Unset problematic environment variables. ADB commands will fail if these
+      # are set. They are normally exported by AndroidStudio.
+      if 'ANDROID_HOME' in os.environ:
+        logging.info('Removing ANDROID_HOME from os.environ')
+        del os.environ['ANDROID_HOME']
+      if 'ANDROID_ADB_SERVER_PORT' in os.environ:
+        logging.info('Removing ANDROID_ADB_SERVER_PORT from os.environ')
+        del os.environ['ANDROID_ADB_SERVER_PORT']
 
     # Explicitly expand the $HOME environment variable.
     self._os_env_vars = dict(os.environ).copy()
@@ -49,10 +52,17 @@ class AdbController:
 
   def command_prefix(self, include_device_name: bool = True) -> list[str]:
     """The command for instantiating an adb client to this server."""
+    if self._config.use_adb_server_port_from_os_env:
+      # When using the adb server port set from the OS environment, we don't
+      # need to pass the port explicitly.
+      adb_port_args = []
+    else:
+      # When using the adb server port set from the config, we need to pass the
+      # port explicitly.
+      adb_port_args = ['-P', str(self._config.adb_server_port)]
     command_prefix = [
         self._config.adb_path,
-        '-P',
-        str(self._config.adb_server_port),
+        *adb_port_args,
     ]
     if include_device_name:
       command_prefix.extend(['-s', self._config.device_name])
@@ -81,14 +91,15 @@ class AdbController:
     """
     logging.info('Restarting adb server.')
     self.execute_command(
-        ['kill-server'], timeout=timeout, device_specific=False)
+        ['kill-server'], timeout=timeout, device_specific=False
+    )
     time.sleep(0.2)
     cmd_output = self.execute_command(
-        ['start-server'], timeout=timeout, device_specific=False)
+        ['start-server'], timeout=timeout, device_specific=False
+    )
     logging.info('start-server output: %r', cmd_output.decode('utf-8'))
     time.sleep(2.0)
-    self.execute_command(
-        ['devices'], timeout=timeout, device_specific=False)
+    self.execute_command(['devices'], timeout=timeout, device_specific=False)
     time.sleep(0.2)
 
   def execute_command(
@@ -100,8 +111,8 @@ class AdbController:
     """Executes an adb command.
 
     Args:
-      args: A list of strings representing each adb argument.
-          For example: ['install', '/my/app.apk']
+      args: A list of strings representing each adb argument. For example:
+        ['install', '/my/app.apk']
       timeout: A timeout to use for this operation. If not set the default
         timeout set on the constructor will be used.
       device_specific: Whether the call is device-specific or independent.
@@ -130,7 +141,9 @@ class AdbController:
       except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         logging.exception(
             'Failed to execute ADB command (try %r of 3): [%s]',
-            n_tries, command_str)
+            n_tries,
+            command_str,
+        )
         if e.stdout is not None:
           logging.error('**stdout**:')
           for line in e.stdout.splitlines():
@@ -148,4 +161,5 @@ class AdbController:
         f'Error executing adb command: [{command_str}]\n'
         f'Caused by: {latest_error}\n'
         f'adb stdout: [{latest_error.stdout}]\n'
-        f'adb stderr: [{latest_error.stderr}]') from latest_error
+        f'adb stderr: [{latest_error.stderr}]'
+    ) from latest_error
