@@ -15,6 +15,7 @@
 
 """Processes adb_pb2.AdbRequest commands."""
 
+import base64
 import os
 import re
 import subprocess
@@ -616,8 +617,28 @@ class AdbCallParser:
           status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
           error_message='InputText.text is empty.')
 
-    response, _ = self._execute_command(['shell', 'input', 'text', text],
-                                        timeout=timeout)
+    is_ascii = text.isascii()
+
+    if is_ascii:
+      response, _ = self._execute_command(
+          ['shell', 'input', 'text', text], timeout=timeout
+      )
+    else:
+      # text = text.replace('%s', ' ')
+      b64_text = base64.b64encode(text.encode('utf-8')).decode('ascii')
+      response, _ = self._execute_command(
+          [
+              'shell',
+              'am',
+              'broadcast',
+              '-a',
+              'ADB_INPUT_B64',
+              '--es',
+              'msg',
+              b64_text,
+          ],
+          timeout=timeout,
+      )
     return response
 
   def _tap(
