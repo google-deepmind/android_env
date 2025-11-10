@@ -1,0 +1,82 @@
+# Copyright 2025 DeepMind Technologies Limited.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Unit tests for Sprites in Catch.
+load("@rules_kotlin//kotlin:android.bzl", "kt_android_local_test")
+load("@rules_kotlin//kotlin:core.bzl", "kt_kotlinc_options")
+
+kt_kotlinc_options(
+    name = "kt_kotlinc_options",
+    jvm_target = "11",  # Need to override default 1.8.
+    x_no_param_assertions = True,
+)
+
+kt_android_local_test(
+    name = "BackgroundTest",
+    srcs = ["BackgroundTest.kt"],
+    kotlinc_opts = ":kt_kotlinc_options",
+    deps = [
+        "//java/com/google/androidenv/catch/sprite:Background",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_testparameterinjector_test_parameter_injector",
+        "@maven//:org_mockito_kotlin_mockito_kotlin",
+        "@maven//:org_yaml_snakeyaml",
+    ],
+)
+
+kt_android_local_test(
+    name = "BallTest",
+    srcs = ["BallTest.kt"],
+    kotlinc_opts = ":kt_kotlinc_options",
+    tags = ["robolectric"],
+    deps = [
+        "//java/com/google/androidenv/catch/sprite:Ball",
+        "//java/com/google/androidenv/catch/sprite:LineSegment",
+        "//java/com/google/androidenv/catch/sprite:Point",
+        "@maven//:androidx_test_ext_junit",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_mockito_kotlin_mockito_kotlin",
+        "@maven//:org_robolectric_robolectric",
+        "@robolectric//bazel:android-all",
+    ],
+)
+
+kt_android_local_test(
+    name = "PaddleTest",
+    srcs = ["PaddleTest.kt"],
+    kotlinc_opts = ":kt_kotlinc_options",
+    tags = ["robolectric"],
+    deps = [
+        "//java/com/google/androidenv/catch/sprite:Paddle",
+        "//java/com/google/androidenv/catch/sprite:Point",
+        "@maven//:androidx_test_ext_junit",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_mockito_kotlin_mockito_kotlin",
+        "@maven//:org_robolectric_robolectric",
+        "@robolectric//bazel:android-all",
+    ],
+)
+
+kt_android_local_test(
+    name = "SpriteTest",
+    srcs = ["SpriteTest.kt"],
+    kotlinc_opts = ":kt_kotlinc_options",
+    deps = [
+        "//java/com/google/androidenv/catch/sprite:Sprite",
+        "@maven//:org_mockito_kotlin_mockito_kotlin",
+        "@maven//:org_mockito_mockito_core",
+    ],
+)
