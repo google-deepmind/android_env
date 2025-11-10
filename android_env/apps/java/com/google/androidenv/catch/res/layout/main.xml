@@ -14,11 +14,14 @@
  limitations under the License.-->
 
 
-
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.google.androidenv.accessibilityforwarder">
-
-  <uses-sdk
-      android:minSdkVersion="28"
-      android:targetSdkVersion="36" />
-</manifest>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+    <SurfaceView
+        android:id="@+id/surfaceView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+</RelativeLayout>
