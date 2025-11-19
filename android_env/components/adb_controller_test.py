@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for android_env.components.adb_controller."""
-
 import os
 import subprocess
 import time
@@ -110,6 +108,8 @@ class AdbControllerTest(absltest.TestCase):
   @mock.patch.object(subprocess, 'check_output', autospec=True)
   @mock.patch.object(time, 'sleep', autospec=True)
   def test_restart_server(self, mock_sleep, mock_check_output):
+    """When an adb command fails, we expect the server to be restarted."""
+
     # Arrange.
     mock_check_output.side_effect = [
         subprocess.CalledProcessError(returncode=1, cmd='blah'),
@@ -118,7 +118,7 @@ class AdbControllerTest(absltest.TestCase):
         config_classes.AdbControllerConfig(
             adb_path='my_adb',
             device_name='awesome_device',
-            adb_server_port=9999,
+            use_adb_server_port_from_os_env=True,
         )
     )
 
@@ -130,31 +130,31 @@ class AdbControllerTest(absltest.TestCase):
     expected_env['HOME'] = '/some/path/'
     mock_check_output.assert_has_calls([
         mock.call(
-            ['my_adb', '-P', '9999', '-s', 'awesome_device', 'my_command'],
+            ['my_adb', '-s', 'awesome_device', 'my_command'],
             stderr=subprocess.STDOUT,
             timeout=_TIMEOUT,
             env=expected_env,
         ),
         mock.call(
-            ['my_adb', '-P', '9999', 'kill-server'],
+            ['my_adb', 'kill-server'],
             stderr=subprocess.STDOUT,
             timeout=_TIMEOUT,
             env=expected_env,
         ),
         mock.call(
-            ['my_adb', '-P', '9999', 'start-server'],
+            ['my_adb', 'start-server'],
             stderr=subprocess.STDOUT,
             timeout=_TIMEOUT,
             env=expected_env,
         ),
         mock.call(
-            ['my_adb', '-P', '9999', 'devices'],
+            ['my_adb', 'devices'],
             stderr=subprocess.STDOUT,
             timeout=_TIMEOUT,
             env=expected_env,
         ),
         mock.call(
-            ['my_adb', '-P', '9999', '-s', 'awesome_device', 'my_command'],
+            ['my_adb', '-s', 'awesome_device', 'my_command'],
             stderr=subprocess.STDOUT,
             timeout=_TIMEOUT,
             env=expected_env,
