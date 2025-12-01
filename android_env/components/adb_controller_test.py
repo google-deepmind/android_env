@@ -77,6 +77,8 @@ class AdbControllerTest(absltest.TestCase):
   def test_init_server_with_adb_server_port_from_os_env(
       self, mock_sleep, mock_check_output
   ):
+    """Us OS env vars if `use_adb_server_port_from_os_env` is True."""
+
     # Arrange.
     # Set the ADB server port to 1234 in the OS environment.
     os.environ['ANDROID_ADB_SERVER_PORT'] = '1234'
@@ -169,7 +171,7 @@ class AdbControllerTest(absltest.TestCase):
   @mock.patch.object(subprocess, 'check_output', autospec=True)
   @mock.patch.object(time, 'sleep', autospec=True)
   def test_invalid_command(self, mock_sleep, mock_check_output):
-    """When an adb command fails, we expect the server to be restarted."""
+    """Restart the server when given an invalid command."""
 
     # Arrange.
     restart_sequence = ['fake_output'.encode('utf-8')] * 3
@@ -238,7 +240,7 @@ class AdbControllerTest(absltest.TestCase):
   @mock.patch.object(subprocess, 'check_output', autospec=True)
   @mock.patch.object(time, 'sleep', autospec=True)
   def test_avoid_infinite_recursion(self, mock_sleep, mock_check_output):
-    """When an adb command fails, we expect the server to be restarted."""
+    """Raise an error if the command fails even after restarts."""
 
     del mock_sleep
     mock_check_output.side_effect = subprocess.CalledProcessError(
