@@ -16,6 +16,7 @@ package com.google.androidenv.catch.sprite
 
 import android.graphics.Canvas
 import android.graphics.Color
+import com.google.testing.junit.testparameterinjector.KotlinTestParameters.testValues
 import com.google.testing.junit.testparameterinjector.TestParameter
 import com.google.testing.junit.testparameterinjector.TestParameterInjector
 import org.junit.Test
@@ -41,7 +42,9 @@ class BackgroundTest {
   }
 
   @Test
-  fun draw_customColors(@TestParameter("0", "255", "13579", "2468", "12384173") colorInt: Int) {
+  fun draw_customColors(
+    @TestParameter colorInt: Int = testValues(0, 255, 13_579, 2_468, 12_384_173)
+  ) {
     // Arrange.
     val mockCanvas: Canvas = mock()
     val background: Background = Background(color = colorInt)
