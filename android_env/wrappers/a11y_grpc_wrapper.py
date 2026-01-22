@@ -19,7 +19,7 @@ from concurrent import futures
 import time
 from typing import Any
 
-import urllib
+import urllib.request
 
 from absl import logging
 from android_env import env_interface
