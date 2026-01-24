@@ -26,7 +26,7 @@ option java_package = "com.google.androidenv.accessibilityforwarder";
 // Next index: 12
 message AndroidAccessibilityWindowInfo {
   // Type of the window.
-  // Next index: 6
+  // Next index: 8
   enum WindowType {
     // The window type is an unknown value.
     UNKNOWN_TYPE = 0;
@@ -46,6 +46,12 @@ message AndroidAccessibilityWindowInfo {
     // A system window used to divide the screen in split-screen mode. This type
     // of window is present only in split-screen mode.
     TYPE_SPLIT_SCREEN_DIVIDER = 5;
+
+    // Used to show the UI for window-based magnification.
+    TYPE_MAGNIFICATION_OVERLAY = 6;
+
+    // System window that has the function to control an associated window.
+    TYPE_WINDOW_CONTROL = 7;
   }
 
   // Bounds of this window in the device's screen.
