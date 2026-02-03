@@ -42,6 +42,9 @@ class FakeStream:
   def kill(self):
     self._kill = True
 
+  def reset(self):
+    self._kill = False
+
   def __iter__(self):
     while True:
       if self._kill:
@@ -73,6 +76,10 @@ class FakeLogStream(log_stream.LogStream):
   def stop_stream(self):
     self.stream_is_alive = False
     self.logs.kill()
+
+  def reset(self):
+    self.stream_is_alive = True
+    self.logs.reset()
 
 
 class LogcatThreadTest(absltest.TestCase):
@@ -134,6 +141,27 @@ class LogcatThreadTest(absltest.TestCase):
     self.fake_log_stream.logs.send_value(make_stdout('Hello world'))
     some_state.wait(timeout=1.0)
     self.assertFalse(some_state.is_set())
+
+  def test_resume_does_not_recreate_alive_thread(self):
+    logcat = logcat_thread.LogcatThread(log_stream=self.fake_log_stream)
+    thread_before = logcat._thread
+    self.assertTrue(thread_before.is_alive())
+    logcat.resume()
+    thread_after = logcat._thread
+    self.assertTrue(thread_after.is_alive())
+    self.assertIs(thread_before, thread_after)
+
+  def test_resume_recreates_thread(self):
+    logcat = logcat_thread.LogcatThread(log_stream=self.fake_log_stream)
+    self.assertTrue(logcat._thread.is_alive())
+    logcat.kill()
+    self.assertFalse(logcat._thread.is_alive())
+    self.assertTrue(logcat._should_stop.is_set())
+    self.fake_log_stream.reset()
+    logcat.resume()
+    self.assertTrue(logcat._thread.is_alive())
+    self.assertFalse(logcat._should_stop.is_set())
+    self.assertTrue(logcat._thread.daemon)
 
 
 if __name__ == '__main__':

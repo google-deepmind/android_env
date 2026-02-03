@@ -77,6 +77,12 @@ class LogcatThread:
     self._log_stream.pause_stream()
 
   def resume(self):
+    """Resume or restart the thread if it's dead after resetting environment."""
+    if not self._thread.is_alive():
+      self._should_stop.clear()
+      self._thread = threading.Thread(target=self._process_logs)
+      self._thread.daemon = True
+      self._thread.start()
     self._log_stream.resume_stream()
 
   def kill(self):
