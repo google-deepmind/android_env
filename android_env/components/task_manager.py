@@ -261,7 +261,10 @@ class TaskManager:
 
   def _stop_logcat_thread(self):
     if self._logcat_thread is not None:
-      self._logcat_thread.kill()
+      try:
+        self._logcat_thread.kill()
+      except Exception as e:  # pylint: disable=broad-except
+        logging.warning('Failed to kill logcat thread: %r', e)
       self._logcat_thread = None
 
   def _increment_bad_state(self) -> None:
