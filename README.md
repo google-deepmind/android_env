@@ -21,11 +21,11 @@ research purpose and how the user configures the task.
 
 ## Index
 
-*   [Environment details](docs/environment.md)
-*   [Running AndroidEnv](docs/instructions.md)
-*   [Setting up a virtual Android device](docs/emulator_guide.md)
-*   [Defining a task in AndroidEnv](docs/tasks_guide.md)
-*   [Example tasks available for download](docs/example_tasks.md)
+*   [Environment details](android_env/g3doc/public/docs/environment.md)
+*   [Running AndroidEnv](android_env/g3doc/public/docs/instructions.md)
+*   [Setting up a virtual Android device](android_env/g3doc/public/docs/emulator_guide.md)
+*   [Defining a task in AndroidEnv](android_env/g3doc/public/docs/tasks_guide.md)
+*   [Example tasks available for download](android_env/g3doc/public/docs/example_tasks.md)
 
 ## Environment features
 
