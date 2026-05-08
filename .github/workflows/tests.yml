@@ -30,7 +30,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip setuptools
-          python setup.py install
           pip install .[testing]
 
       - name: Run tests

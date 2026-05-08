@@ -105,7 +105,7 @@ Alternatively, you can clone the repository from git's `main` branch:
 ```shell
 $ git clone https://github.com/deepmind/android_env/
 $ cd android_env
-$ python3 setup.py install
+$ python3 -m pip install .
 ```
 
 Update: the environment now runs on Windows, but please keep in mind that this
