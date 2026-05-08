@@ -28,7 +28,6 @@ from android_env.components import device_settings as device_settings_lib
 from android_env.components import task_manager as task_manager_lib
 from android_env.components.simulators.emulator import emulator_simulator
 from android_env.components.simulators.fake import fake_simulator
-from android_env.proto import task_pb2
 
 
 class LoaderTest(absltest.TestCase):
@@ -92,7 +91,8 @@ class LoaderTest(absltest.TestCase):
     mock_coordinator.assert_called_with(
         mock_simulator_class.return_value,
         mock_task_manager.return_value,
-        mock_device_settings.return_value,
+        device_settings=mock_device_settings.return_value,
+        config=config.coordinator,
     )
 
   @mock.patch.object(task_manager_lib, 'TaskManager', autospec=True)
@@ -132,7 +132,8 @@ class LoaderTest(absltest.TestCase):
     mock_coordinator.assert_called_with(
         mock_simulator_class.return_value,
         mock_task_manager.return_value,
-        mock_device_settings.return_value,
+        device_settings=mock_device_settings.return_value,
+        config=config.coordinator,
     )
 
   @mock.patch.object(task_manager_lib, 'TaskManager', autospec=True)
@@ -174,7 +175,9 @@ max_episode_sec: 0
     expected_task.description = 'Task for testing loader.'
     expected_task.max_episode_sec = 0
 
-    mock_task_manager.assert_called_with(expected_task)
+    mock_task_manager.assert_called_with(
+        expected_task, config=config.task_manager
+    )
     self.assertIsInstance(env, env_interface.AndroidEnvInterface)
 
 

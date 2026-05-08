@@ -25,7 +25,6 @@ from android_env.components import device_settings as device_settings_lib
 from android_env.components import task_manager as task_manager_lib
 from android_env.components.simulators.emulator import emulator_simulator
 from android_env.components.simulators.fake import fake_simulator
-from android_env.proto import task_pb2
 
 from google.protobuf import text_format
 
@@ -48,7 +47,7 @@ def load(config: config_classes.AndroidEnvConfig) -> environment.AndroidEnv:
   """Loads an AndroidEnv instance."""
 
   task = _load_task(config.task)
-  task_manager = task_manager_lib.TaskManager(task)
+  task_manager = task_manager_lib.TaskManager(task, config=config.task_manager)
 
   match config.simulator:
     case config_classes.EmulatorConfig():
@@ -57,11 +56,14 @@ def load(config: config_classes.AndroidEnvConfig) -> environment.AndroidEnv:
     case config_classes.FakeSimulatorConfig():
       simulator = fake_simulator.FakeSimulator(config=config.simulator)
     case _:
-      raise ValueError('Unsupported simulator config: {config.simulator}')
+      raise ValueError(f'Unsupported simulator config: {config.simulator}')
 
   device_settings = device_settings_lib.DeviceSettings(simulator)
   coordinator = coordinator_lib.Coordinator(
-      simulator, task_manager, device_settings
+      simulator,
+      task_manager,
+      device_settings=device_settings,
+      config=config.coordinator,
   )
   return environment.AndroidEnv(
       simulator=simulator, coordinator=coordinator, task_manager=task_manager
