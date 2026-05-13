@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for loader."""
+
 
 import builtins
 import os
@@ -28,6 +28,7 @@ from android_env.components import device_settings as device_settings_lib
 from android_env.components import task_manager as task_manager_lib
 from android_env.components.simulators.emulator import emulator_simulator
 from android_env.components.simulators.fake import fake_simulator
+from android_env.proto import task_pb2
 
 
 class LoaderTest(absltest.TestCase):
