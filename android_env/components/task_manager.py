@@ -298,6 +298,17 @@ class TaskManager:
         self._json_extras_listeners(regexps),
     )
 
+  def _create_listeners(
+      self,
+      regexps: Iterable[str],
+      handler_fn: Callable[[re.Pattern[str], re.Match[str]], None],
+  ) -> Iterable[logcat_thread.EventListener]:
+    """Creates an iterable of event listeners."""
+    for regexp in regexps:
+      yield logcat_thread.EventListener(
+          regexp=re.compile(regexp or 'a^'), handler_fn=handler_fn
+      )
+
   def _reward_listeners(
       self, regexps: task_pb2.LogParsingConfig.LogRegexps
   ) -> Iterable[logcat_thread.EventListener]:
@@ -309,31 +320,27 @@ class TaskManager:
       with self._lock:
         self._latest_values['reward'] += reward
 
-    for regexp in regexps.reward:
-      yield logcat_thread.EventListener(
-          regexp=re.compile(regexp or 'a^'), handler_fn=_reward_handler
-      )
+    return self._create_listeners(regexps.reward, _reward_handler)
 
   def _reward_event_listeners(
       self, regexps: task_pb2.LogParsingConfig.LogRegexps
   ) -> Iterable[logcat_thread.EventListener]:
     """Creates an iterable of reward event listeners."""
 
-    for reward_event in regexps.reward_event:
+    def get_reward_event_handler(reward):
+      def _reward_event_handler(event: re.Pattern[str], match: re.Match[str]):
+        del event, match
+        with self._lock:
+          self._latest_values['reward'] += reward
+      return _reward_event_handler
 
-      def get_reward_event_handler(reward):
-
-        def _reward_event_handler(event: re.Pattern[str], match: re.Match[str]):
-          del event, match
-          with self._lock:
-            self._latest_values['reward'] += reward
-
-        return _reward_event_handler
-
-      yield logcat_thread.EventListener(
-          regexp=re.compile(reward_event.event or 'a^'),
-          handler_fn=get_reward_event_handler(reward_event.reward),
-      )
+    return (
+        logcat_thread.EventListener(
+            regexp=re.compile(reward_event.event or 'a^'),
+            handler_fn=get_reward_event_handler(reward_event.reward),
+        )
+        for reward_event in regexps.reward_event
+    )
 
   def _score_listeners(
       self, regexps: task_pb2.LogParsingConfig.LogRegexps
@@ -362,10 +369,7 @@ class TaskManager:
       with self._lock:
         self._latest_values['episode_end'] = True
 
-    for regexp in regexps.episode_end:
-      yield logcat_thread.EventListener(
-          regexp=re.compile(regexp or 'a^'), handler_fn=_episode_end_handler
-      )
+    return self._create_listeners(regexps.episode_end, _episode_end_handler)
 
   def _process_extra(self, extra_name: str, extra: Sequence[int | float]):
     extra = np.array(extra)
@@ -410,10 +414,7 @@ class TaskManager:
         extra = 1
       self._process_extra(extra_name, extra)
 
-    for regexp in regexps.extra:
-      yield logcat_thread.EventListener(
-          regexp=re.compile(regexp or 'a^'), handler_fn=_extras_handler
-      )
+    return self._create_listeners(regexps.extra, _extras_handler)
 
   def _json_extras_listeners(
       self, regexps: task_pb2.LogParsingConfig.LogRegexps
@@ -431,7 +432,4 @@ class TaskManager:
       for extra_name, extra_value in extra.items():
         self._process_extra(extra_name, extra_value)
 
-    for regexp in regexps.json_extra:
-      yield logcat_thread.EventListener(
-          regexp=re.compile(regexp or 'a^'), handler_fn=_json_extras_handler
-      )
+    return self._create_listeners(regexps.json_extra, _json_extras_handler)
