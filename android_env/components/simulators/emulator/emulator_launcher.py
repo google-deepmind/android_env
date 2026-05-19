@@ -155,8 +155,11 @@ class EmulatorLauncher:
             self._emulator.returncode)
         self._emulator.kill()
       self._emulator = None
+
+    if self._emulator_output is not None:
       self._emulator_output.close()
-      logging.info('The emulator process has finished.')
+      self._emulator_output = None
+    logging.info('The emulator process has finished.')
 
   def close(self):
     """Clean up launcher files and processes."""

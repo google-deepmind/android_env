@@ -30,21 +30,21 @@ import dm_env
 import numpy as np
 
 
-def _create_mock_coordinator() -> coordinator_lib.Coordinator:
-  coordinator = mock.create_autospec(coordinator_lib.Coordinator)
-  coordinator.action_spec.return_value = {
-      'action_type':
-          dm_env.specs.DiscreteArray(num_values=3),
-      'touch_position':
-          dm_env.specs.BoundedArray(
-              shape=(2,), dtype=np.float32, minimum=0.0, maximum=1.0),
+def _get_fake_action_spec() -> dict[str, dm_env.specs.Array]:
+  return {
+      'action_type': dm_env.specs.DiscreteArray(num_values=3),
+      'touch_position': dm_env.specs.BoundedArray(
+          shape=(2,), dtype=np.float32, minimum=0.0, maximum=1.0
+      ),
   }
-  coordinator.observation_spec.return_value = {
+
+
+def _get_fake_observation_spec() -> dict[str, dm_env.specs.Array]:
+  return {
       'pixels': dm_env.specs.Array(shape=(123, 456, 3), dtype=np.uint8),
       'timedelta': dm_env.specs.Array(shape=(), dtype=np.int64),
       'orientation': dm_env.specs.Array(shape=(4,), dtype=np.uint8),
   }
-  return coordinator
 
 
 def _create_fake_simulator() -> fake_simulator.FakeSimulator:
@@ -57,7 +57,9 @@ class AndroidEnvTest(absltest.TestCase):
 
   def test_specs(self):
     simulator = _create_fake_simulator()
-    coordinator = _create_mock_coordinator()
+    coordinator = mock.create_autospec(coordinator_lib.Coordinator)
+    coordinator.action_spec.return_value = _get_fake_action_spec()
+    coordinator.observation_spec.return_value = _get_fake_observation_spec()
     task_manager = mock.create_autospec(task_manager_lib.TaskManager)
     env = environment.AndroidEnv(
         simulator=simulator, coordinator=coordinator, task_manager=task_manager
@@ -92,7 +94,7 @@ class AndroidEnvTest(absltest.TestCase):
 
   def test_reset_and_step(self):
     simulator = _create_fake_simulator()
-    coordinator = _create_mock_coordinator()
+    coordinator = mock.create_autospec(coordinator_lib.Coordinator)
     task_manager = mock.create_autospec(task_manager_lib.TaskManager)
     coordinator.action_spec.return_value = {
         'action_type':
@@ -161,7 +163,10 @@ class AndroidEnvTest(absltest.TestCase):
         discount=0.0,
         observation=latest_observation,
     )
-    ts = env.step({'action_type': 1, 'touch_position': (10, 20)})
+    ts = env.step({
+        'action_type': np.array(1),
+        'touch_position': np.array((10, 20)),
+    })
     self.assertIsInstance(ts, dm_env.TimeStep)
     # The StepType now should NOT be FIRST.
     self.assertFalse(ts.first())
@@ -192,7 +197,10 @@ class AndroidEnvTest(absltest.TestCase):
         reward=0.0,
         observation=None,
     )
-    ts = env.step({'action_type': 1, 'touch_position': (10, 20)})
+    ts = env.step({
+        'action_type': np.array(1),
+        'touch_position': np.array((10, 20)),
+    })
     self.assertIsInstance(ts, dm_env.TimeStep)
     # Assert the observation matches the latest observation.
     obs = ts.observation
@@ -207,7 +215,9 @@ class AndroidEnvTest(absltest.TestCase):
 
   def test_adb_call(self):
     simulator = _create_fake_simulator()
-    coordinator = _create_mock_coordinator()
+    coordinator = mock.create_autospec(coordinator_lib.Coordinator)
+    coordinator.action_spec.return_value = _get_fake_action_spec()
+    coordinator.observation_spec.return_value = _get_fake_observation_spec()
     task_manager = mock.create_autospec(task_manager_lib.TaskManager)
     env = environment.AndroidEnv(
         simulator=simulator, coordinator=coordinator, task_manager=task_manager
@@ -225,7 +235,9 @@ class AndroidEnvTest(absltest.TestCase):
 
   def test_load_state(self):
     simulator = mock.create_autospec(base_simulator.BaseSimulator)
-    coordinator = _create_mock_coordinator()
+    coordinator = mock.create_autospec(coordinator_lib.Coordinator)
+    coordinator.action_spec.return_value = _get_fake_action_spec()
+    coordinator.observation_spec.return_value = _get_fake_observation_spec()
     task_manager = mock.create_autospec(task_manager_lib.TaskManager)
     env = environment.AndroidEnv(
         simulator=simulator, coordinator=coordinator, task_manager=task_manager
@@ -243,7 +255,9 @@ class AndroidEnvTest(absltest.TestCase):
 
   def test_save_state(self):
     simulator = mock.create_autospec(base_simulator.BaseSimulator)
-    coordinator = _create_mock_coordinator()
+    coordinator = mock.create_autospec(coordinator_lib.Coordinator)
+    coordinator.action_spec.return_value = _get_fake_action_spec()
+    coordinator.observation_spec.return_value = _get_fake_observation_spec()
     task_manager = mock.create_autospec(task_manager_lib.TaskManager)
     env = environment.AndroidEnv(
         simulator=simulator, coordinator=coordinator, task_manager=task_manager
@@ -259,7 +273,9 @@ class AndroidEnvTest(absltest.TestCase):
 
   def test_double_close(self):
     simulator = _create_fake_simulator()
-    coordinator = _create_mock_coordinator()
+    coordinator = mock.create_autospec(coordinator_lib.Coordinator)
+    coordinator.action_spec.return_value = _get_fake_action_spec()
+    coordinator.observation_spec.return_value = _get_fake_observation_spec()
     task_manager = mock.create_autospec(task_manager_lib.TaskManager)
     env = environment.AndroidEnv(
         simulator=simulator, coordinator=coordinator, task_manager=task_manager
