@@ -26,7 +26,7 @@ class LogStream(metaclass=abc.ABCMeta):
 
   def __init__(self, verbose: bool = False):
     self._verbose = verbose
-    self._filters = []
+    self._filters: list[str] = []
     self._should_stream = threading.Event()
 
   def get_stream_output(self) -> Generator[str, None, None]:

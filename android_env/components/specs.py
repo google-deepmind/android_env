@@ -65,36 +65,37 @@ def base_action_spec(
 
   num_actions = len(action_type.ActionType) if enable_key_events else 3
 
-  action_spec = {
-      'action_type':
-          specs.DiscreteArray(num_values=num_actions, name='action_type'),
-      'touch_position':
-          specs.BoundedArray(
-              shape=(2,),
-              dtype=np.float32,
-              minimum=[0.0, 0.0],
-              maximum=[1.0, 1.0],
-              name='touch_position'),
+  action_spec: dict[str, specs.Array] = {
+      'action_type': specs.DiscreteArray(
+          num_values=num_actions, name='action_type'
+      ),
+      'touch_position': specs.BoundedArray(
+          shape=(2,),
+          dtype=np.float32,
+          minimum=[0.0, 0.0],
+          maximum=[1.0, 1.0],
+          name='touch_position',
+      ),
   }
 
+  # Add specs for additional fingers.
   for i in range(2, num_fingers + 1):
-    action_spec.update({
-        f'action_type_{i}':
-            specs.DiscreteArray(
-                num_values=len(action_type.ActionType),
-                name=f'action_type_{i}'),
-        f'touch_position_{i}':
-            specs.BoundedArray(
-                shape=(2,),
-                dtype=np.float32,
-                minimum=[0.0, 0.0],
-                maximum=[1.0, 1.0],
-                name=f'touch_position_{i}'),
-    })
+    action_spec[f'action_type_{i}'] = specs.DiscreteArray(
+        num_values=len(action_type.ActionType), name=f'action_type_{i}'
+    )
+    action_spec[f'touch_position_{i}'] = specs.BoundedArray(
+        shape=(2,),
+        dtype=np.float32,
+        minimum=[0.0, 0.0],
+        maximum=[1.0, 1.0],
+        name=f'touch_position_{i}',
+    )
 
+  # Add keycode spec if enabled.
   if enable_key_events:
     action_spec['keycode'] = specs.DiscreteArray(
-        num_values=(1 << 16) - 1, name='keycode')
+        num_values=(1 << 16) - 1, name='keycode'
+    )
 
   return action_spec
 
