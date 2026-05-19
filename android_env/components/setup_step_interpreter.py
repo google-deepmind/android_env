@@ -43,7 +43,7 @@ class SetupStepInterpreter:
         'error_count_wait_for_app_screen': 0,
         'error_count_check_install': 0,
         'error_count_wait_for_message': 0,
-        'total_time_waiting_for_app_screen': 0
+        'total_time_waiting_for_app_screen': 0.0,
     }
 
   def stats(self) -> dict[str, Any]:
