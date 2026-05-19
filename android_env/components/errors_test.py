@@ -95,12 +95,17 @@ class ErrorsTest(parameterized.TestCase):
       (8, errors.WaitForAppScreenError, 'Waited for too long!'),
       (9, errors.CheckInstallError, 'App did not install correctly.'),
   ])
-  def test_from_code(self, code: int, expected_class: errors.AndroidEnvError,
-                     msg: str):
+  def test_from_code(
+      self,
+      code: int,
+      expected_class: type[errors.AndroidEnvError] | None,
+      msg: str,
+  ):
     """`from_code` should produce consistent outputs for known errors."""
 
     error = errors.from_code(code, msg)
     if error is not None:
+      assert expected_class is not None
       self.assertIsInstance(error, expected_class)
       self.assertEqual(error.ERROR_CODE, code)
       self.assertEqual(str(error), msg)

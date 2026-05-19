@@ -230,7 +230,7 @@ class AdbCallParserTest(parameterized.TestCase):
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
-    request.press_button.button = 99999
+    request.press_button.button = 99999  # pyrefly: ignore[bad-assignment]
     response = parser.parse(request)
     self.assertEqual(response.status,
                      adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)

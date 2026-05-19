@@ -663,74 +663,85 @@ class AdbCallParser:
       An AdbResponse
     """
 
-    request = request.settings
-    response = adb_pb2.AdbResponse()
+    settings_request = request.settings
     # Every SettingsRequest should have a namespace.
     if (
-        request.name_space
+        settings_request.name_space
         == adb_pb2.AdbRequest.SettingsRequest.Namespace.UNKNOWN
     ):
-      response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-      response.error_message = (
-          f'Unknown SettingsRequest.name_space. Got: {request}.')
-      return response
+      return adb_pb2.AdbResponse(
+          status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+          error_message=(
+              f'Unknown SettingsRequest.name_space. Got: {settings_request}.'
+          ),
+      )
 
     namespace = adb_pb2.AdbRequest.SettingsRequest.Namespace.Name(
-        request.name_space).lower()
+        settings_request.name_space
+    ).lower()
 
-    match request.WhichOneof('verb'):
+    match settings_request.WhichOneof('verb'):
       case 'get':
-        get = request.get
+        get = settings_request.get
         if not get.key:
-          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-          response.error_message = (
-              f'Empty SettingsRequest.get.key. Got: {request}.'
+          return adb_pb2.AdbResponse(
+              status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+              error_message=(
+                  f'Empty SettingsRequest.get.key. Got: {settings_request}.'
+              ),
           )
-          return response
         response, command_output = self._execute_command(
             ['shell', 'settings', 'get', namespace, get.key], timeout=timeout
         )
         response.settings.output = command_output
+        return response
       case 'put':
-        put = request.put
+        put = settings_request.put
         if not put.key or not put.value:
-          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-          response.error_message = (
-              f'Empty SettingsRequest.put key or value. Got: {request}.'
+          return adb_pb2.AdbResponse(
+              status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+              error_message=(
+                  'Empty SettingsRequest.put key or value. Got:'
+                  f' {settings_request}.'
+              ),
           )
-          return response
         response, command_output = self._execute_command(
             ['shell', 'settings', 'put', namespace, put.key, put.value],
             timeout=timeout,
         )
         response.settings.output = command_output
+        return response
       case 'delete_key':
-        delete = request.delete_key
+        delete = settings_request.delete_key
         if not delete.key:
-          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-          response.error_message = (
-              f'Empty SettingsRequest.delete_key.key. Got: {request}.'
+          return adb_pb2.AdbResponse(
+              status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+              error_message=(
+                  'Empty SettingsRequest.delete_key.key. Got:'
+                  f' {settings_request}.'
+              ),
           )
-          return response
         response, command_output = self._execute_command(
             ['shell', 'settings', 'delete', namespace, delete.key],
             timeout=timeout,
         )
         response.settings.output = command_output
+        return response
       case 'reset':
-        reset = request.reset
+        reset = settings_request.reset
         # At least one of `package_name` or `mode` should be given.
         if (
             not reset.package_name
             and reset.mode
             == adb_pb2.AdbRequest.SettingsRequest.Reset.Mode.UNKNOWN
         ):
-          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-          response.error_message = (
-              'At least one of SettingsRequest.reset package_name or mode'
-              f' should be given. Got: {request}.'
+          return adb_pb2.AdbResponse(
+              status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+              error_message=(
+                  'At least one of SettingsRequest.reset package_name or mode'
+                  f' should be given. Got: {settings_request}.'
+              ),
           )
-          return response
 
         mode = adb_pb2.AdbRequest.SettingsRequest.Reset.Mode.Name(
             reset.mode
@@ -740,18 +751,20 @@ class AdbCallParser:
             ['shell', 'settings', 'reset', namespace, arg], timeout=timeout
         )
         response.settings.output = command_output
+        return response
       case 'list':
         response, command_output = self._execute_command(
             ['shell', 'settings', 'list', namespace], timeout=timeout
         )
         response.settings.output = command_output
+        return response
       case _:
-        response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-        response.error_message = (
-            f'Unknown SettingsRequest.verb. Got: {request}.'
+        return adb_pb2.AdbResponse(
+            status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+            error_message=(
+                f'Unknown SettingsRequest.verb. Got: {settings_request}.'
+            ),
         )
-
-    return response
 
   def _handle_generic(
       self, request: adb_pb2.AdbRequest, timeout: float | None = None
@@ -786,12 +799,11 @@ class AdbCallParser:
       An AdbResponse.
     """
 
-    request = request.package_manager
-    response = adb_pb2.AdbResponse()
+    pm_request = request.package_manager
 
-    match request.WhichOneof('verb'):
+    match pm_request.WhichOneof('verb'):
       case 'list':
-        what = request.list.WhichOneof('what')
+        what = pm_request.list.WhichOneof('what')
         response, output = self._execute_command(
             ['shell', 'pm', 'list', what], timeout=timeout
         )
@@ -807,42 +819,65 @@ class AdbCallParser:
           items = [x[len(prefix) :] for x in items if x.startswith(prefix)]
           response.package_manager.list.items.extend(items)
         response.package_manager.output = output
+        return response
       case 'clear':
-        package_name = request.clear.package_name
+        package_name = pm_request.clear.package_name
         if not package_name:
-          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-          response.error_message = (
-              f'Empty PackageManagerRequest.clear.package_name. Got: {request}.'
+          return adb_pb2.AdbResponse(
+              status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+              error_message=(
+                  'Empty PackageManagerRequest.clear.package_name. Got:'
+                  f' {pm_request}.'
+              ),
           )
-          return response
 
-        args = ['shell', 'pm', 'clear', package_name]
-        if request.clear.user_id:
-          args.insert(3, '-f')
-          args.insert(4, request.clear.user_id)
-        response, response.package_manager.output = self._execute_command(
-            args, timeout=timeout
-        )
+        args = [
+            'shell',
+            'pm',
+            'clear',
+            *(
+                ['-f', pm_request.clear.user_id]
+                if pm_request.clear.user_id
+                else []
+            ),
+            package_name,
+        ]
+        response, output = self._execute_command(args, timeout=timeout)
+        response.package_manager.output = output
+        return response
       case 'grant':
-        grant = request.grant
+        grant = pm_request.grant
         if not grant.package_name:
-          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-          response.error_message = '`grant.package_name` cannot be empty.'
-          return response
+          return adb_pb2.AdbResponse(
+              status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+              error_message='`grant.package_name` cannot be empty.',
+          )
 
         if not grant.permissions:
-          response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-          response.error_message = '`grant.permissions` cannot be empty.'
-          return response
+          return adb_pb2.AdbResponse(
+              status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+              error_message='`grant.permissions` cannot be empty.',
+          )
 
+        response = adb_pb2.AdbResponse(status=adb_pb2.AdbResponse.Status.OK)
         for permission in grant.permissions:
           logging.info('Granting permission: %r', permission)
-          response, response.package_manager.output = self._execute_command(
+          current_response, output = self._execute_command(
               ['shell', 'pm', 'grant', grant.package_name, permission],
               timeout=timeout,
           )
-
-    return response
+          if current_response.status != adb_pb2.AdbResponse.Status.OK:
+            return current_response
+          response = current_response
+          response.package_manager.output = output
+        return response
+      case _:
+        return adb_pb2.AdbResponse(
+            status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+            error_message=(
+                f'Unknown PackageManagerRequest.verb. Got: {pm_request}.'
+            ),
+        )
 
   def _handle_dumpsys(
       self, request: adb_pb2.AdbRequest, timeout: float | None = None
@@ -850,74 +885,84 @@ class AdbCallParser:
     """Handles DumpsysRequest messages.
 
     Args:
-      request: The request with the `.dumpsys` field set containing
-        sub-commands to `adb dumpsys` shell command..
+      request: The request with the `.dumpsys` field set containing sub-commands
+        to `adb dumpsys` shell command.
       timeout: Optional time limit in seconds.
 
     Returns:
       An AdbResponse.
     """
 
-    request = request.dumpsys
+    dumpsys_request = request.dumpsys
     cmd = ['shell', 'dumpsys']
 
-    if request.timeout_sec < 0 or request.timeout_ms < 0:
-      response = adb_pb2.AdbResponse()
-      response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-      response.error_message = (
-          'DumpsysRequest.timeout_{sec, ms} should be non-negative. '
-          f'Got: {request}.')
-      return response
+    if dumpsys_request.timeout_sec < 0 or dumpsys_request.timeout_ms < 0:
+      return adb_pb2.AdbResponse(
+          status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+          error_message=(
+              'DumpsysRequest.timeout_{sec, ms} should be non-negative. '
+              f'Got: {dumpsys_request}.'
+          ),
+      )
 
-    if request.list_only:
+    if dumpsys_request.list_only:
       # `-l` cannot be combined with the following options.
-      if request.service or request.args or request.skip_services:
-        response = adb_pb2.AdbResponse()
-        response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-        response.error_message = (
-            'DumpsysRequest.list_only cannot be combined with other options. '
-            f'Got: {request}.')
-        return response
+      if (
+          dumpsys_request.service
+          or dumpsys_request.args
+          or dumpsys_request.skip_services
+      ):
+        return adb_pb2.AdbResponse(
+            status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+            error_message=(
+                'DumpsysRequest.list_only cannot be combined with other'
+                f' options. Got: {dumpsys_request}.'
+            ),
+        )
 
       cmd.append('-l')
 
-    if request.timeout_sec > 0:
+    if dumpsys_request.timeout_sec > 0:
       cmd.append('-t')
-      cmd.append(str(request.timeout_sec))
-    elif request.timeout_ms > 0:
+      cmd.append(str(dumpsys_request.timeout_sec))
+    elif dumpsys_request.timeout_ms > 0:
       cmd.append('-T')
-      cmd.append(str(request.timeout_ms))
+      cmd.append(str(dumpsys_request.timeout_ms))
 
     if (
-        request.priority
+        dumpsys_request.priority
         != adb_pb2.AdbRequest.DumpsysRequest.PriorityLevel.UNSET
     ):
       cmd.append('--priority')
-      cmd.append(adb_pb2.AdbRequest.DumpsysRequest.PriorityLevel.Name(
-          request.priority))
+      cmd.append(
+          adb_pb2.AdbRequest.DumpsysRequest.PriorityLevel.Name(
+              dumpsys_request.priority
+          )
+      )
 
-    if request.skip_services:
-      if request.service:
-        response = adb_pb2.AdbResponse()
-        response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
-        response.error_message = (
-            'DumpsysRequest.skip_services cannot be combined with `service`. '
-            f'Got: {request}.')
-        return response
+    if dumpsys_request.skip_services:
+      if dumpsys_request.service:
+        return adb_pb2.AdbResponse(
+            status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
+            error_message=(
+                'DumpsysRequest.skip_services cannot be combined with'
+                f' `service`. Got: {dumpsys_request}.'
+            ),
+        )
 
       cmd.append('--skip')
-      cmd.append(','.join(request.skip_services))
+      cmd.append(','.join(dumpsys_request.skip_services))
 
-    if request.service:
-      cmd.append(request.service)
+    if dumpsys_request.service:
+      cmd.append(dumpsys_request.service)
 
-    if request.args:
-      cmd += list(request.args)
+    if dumpsys_request.args:
+      cmd += list(dumpsys_request.args)
 
-    if request.proto:
+    if dumpsys_request.proto:
       cmd.append('--proto')
 
-    response, response.dumpsys.output = self._execute_command(
-        cmd, timeout=timeout)
+    response, command_output = self._execute_command(cmd, timeout=timeout)
+    response.dumpsys.output = command_output
 
     return response
