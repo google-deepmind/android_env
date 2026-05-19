@@ -16,7 +16,8 @@
 """TaskManager handles all events and information related to the task."""
 
 import ast
-from collections.abc import Callable, Iterable, Sequence
+import collections
+from collections.abc import Callable, Iterable
 import copy
 import datetime
 import itertools
@@ -57,9 +58,11 @@ class TaskManager:
     self._task = task
     self._config = config or config_classes.TaskManagerConfig()
     self._lock = threading.Lock()
-    self._logcat_thread = None
-    self._dumpsys_thread = None
-    self._setup_step_interpreter = None
+    self._logcat_thread: logcat_thread.LogcatThread | None = None
+    self._dumpsys_thread: dumpsys_thread.DumpsysThread | None = None
+    self._setup_step_interpreter: (
+        setup_step_interpreter.SetupStepInterpreter | None
+    ) = None
 
     # Initialize stats.
     self._stats = {
@@ -73,14 +76,14 @@ class TaskManager:
     }
 
     # Initialize internal state
-    self._task_start_time = None
+    self._task_start_time: datetime.datetime | None = None
     self._bad_state_counter = 0
     self._is_bad_episode = False
 
     self._latest_values = {
         'reward': 0.0,
         'score': 0.0,
-        'extra': {},
+        'extra': collections.defaultdict(list),
         'episode_end': False,
     }
 
@@ -98,6 +101,10 @@ class TaskManager:
 
   def setup_task(self) -> None:
     """Performs one-off task setup.."""
+    assert self._setup_step_interpreter is not None, (
+        'setup_step_interpreter is None. `start()` must be called before '
+        '`setup_task()`.'
+    )
     self._setup_step_interpreter.interpret(self._task.setup_steps)
 
   def stop(self) -> None:
@@ -121,6 +128,9 @@ class TaskManager:
     """Starts task processing."""
 
     self._start_logcat_thread(log_stream=log_stream)
+    assert (
+        self._logcat_thread is not None
+    ), 'LogcatThread is None after _start_logcat_thread().'
     self._logcat_thread.resume()
     self._start_dumpsys_thread(adb_call_parser_factory())
     self._start_setup_step_interpreter(adb_call_parser_factory())
@@ -128,6 +138,13 @@ class TaskManager:
   def reset_task(self) -> None:
     """Resets a task for a new run."""
 
+    assert (
+        self._logcat_thread is not None
+    ), 'LogcatThread is None. `start()` must be called before `reset_task()`.'
+    assert self._setup_step_interpreter is not None, (
+        'setup_step_interpreter is None. `start()` must be called before '
+        '`reset_task()`.'
+    )
     self._logcat_thread.pause()
     self._setup_step_interpreter.interpret(self._task.reset_steps)
     self._logcat_thread.resume()
@@ -142,7 +159,7 @@ class TaskManager:
       self._latest_values = {
           'reward': 0.0,
           'score': 0.0,
-          'extra': {},
+          'extra': collections.defaultdict(list),
           'episode_end': False,
       }
 
@@ -151,6 +168,9 @@ class TaskManager:
 
     self._stats['episode_steps'] = 0
 
+    assert (
+        self._logcat_thread is not None
+    ), 'LogcatThread is None. `start()` must be called before `rl_reset()`.'
     self._logcat_thread.line_ready().wait()
     with self._lock:
       extras = self._get_current_extras()
@@ -169,6 +189,9 @@ class TaskManager:
 
     self._stats['episode_steps'] += 1
 
+    assert (
+        self._logcat_thread is not None
+    ), 'LogcatThread is None. `start()` must be called before `rl_step()`.'
     self._logcat_thread.line_ready().wait()
     with self._lock:
       reward = self._get_current_reward()
@@ -187,14 +210,20 @@ class TaskManager:
 
   def _get_current_extras(self) -> dict[str, Any]:
     """Returns task extras accumulated since the last step."""
-    extras = {}
-    for name, values in self._latest_values['extra'].items():
-      extras[name] = np.stack(values)
-    self._latest_values['extra'] = {}
+    extras = {
+        name: np.stack(values)
+        for name, values in self._latest_values['extra'].items()
+    }
+    self._latest_values['extra'] = collections.defaultdict(list)
     return extras
 
   def _determine_transition_fn(self) -> Callable[..., dm_env.TimeStep]:
     """Determines the type of RL transition will be used."""
+
+    assert self._dumpsys_thread is not None, (
+        'DumpsysThread is None. `start()` must be called before determining '
+        'the transition function.'
+    )
 
     # Check if user existed the task
     if self._dumpsys_thread.check_user_exited():
@@ -221,6 +250,10 @@ class TaskManager:
         return dm_env.truncation
 
     if self._task.max_episode_sec > 0.0:
+      assert self._task_start_time is not None, (
+          'Task start time is None. `reset_task()` must be called to set the '
+          'start time before checking episode duration.'
+      )
       task_duration = datetime.datetime.now() - self._task_start_time
       max_episode_sec = self._task.max_episode_sec
       if task_duration > datetime.timedelta(seconds=int(max_episode_sec)):
@@ -371,21 +404,19 @@ class TaskManager:
 
     return self._create_listeners(regexps.episode_end, _episode_end_handler)
 
-  def _process_extra(self, extra_name: str, extra: Sequence[int | float]):
-    extra = np.array(extra)
+  def _process_extra(self, extra_name: str, extra: Any) -> None:
+    """Processes a single extra value and stores it in _latest_values."""
+    extra_arr = np.array(extra)
     with self._lock:
       latest_extras = self._latest_values['extra']
-      if extra_name in latest_extras:
-        # If latest extra is not flushed, append.
-        if (
-            len(latest_extras[extra_name])
-            >= self._config.extras_max_buffer_size
-        ):
-          latest_extras[extra_name].pop(0)
-        latest_extras[extra_name].append(extra)
-      else:
-        latest_extras[extra_name] = [extra]
-      self._latest_values['extra'] = latest_extras
+      # If latest extra is not flushed, append.
+      if (
+          latest_extras[extra_name]
+          and len(latest_extras[extra_name])
+          >= self._config.extras_max_buffer_size
+      ):
+        latest_extras[extra_name].pop(0)
+      latest_extras[extra_name].append(extra_arr)
 
   def _extras_listeners(
       self, regexps: task_pb2.LogParsingConfig.LogRegexps

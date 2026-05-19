@@ -16,10 +16,13 @@
 """Tests for android_env.components.task_manager.py."""
 
 import json
+import re
 from unittest import mock
 
 from absl.testing import absltest
+from absl.testing import parameterized
 from android_env.components import adb_call_parser as adb_call_parser_lib
+from android_env.components import config_classes
 from android_env.components import dumpsys_thread
 from android_env.components import log_stream
 from android_env.components import logcat_thread
@@ -29,7 +32,7 @@ from android_env.proto import task_pb2
 import numpy as np
 
 
-class TaskManagerTest(absltest.TestCase):
+class TaskManagerTest(parameterized.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -54,6 +57,12 @@ class TaskManagerTest(absltest.TestCase):
     mock.patch.object(
         log_stream, 'LogStream',
         return_value=self._log_stream).start()
+
+  def _assert_match(self, event: re.Pattern[str], text: str) -> re.Match[str]:
+    self.assertRegex(text, event)
+    match = event.fullmatch(text)
+    self.assertIsNotNone(match)
+    return match
 
   def test_start(self):
     task_mgr = task_manager.TaskManager(task=task_pb2.Task())
@@ -89,7 +98,7 @@ class TaskManagerTest(absltest.TestCase):
     # right away.
     def my_add_ev_listener(event_listener: logcat_thread.EventListener):
       # Check that the event matches what's expected.
-      match = event_listener.regexp.match('Reward: 123.0')
+      match = event_listener.regexp.fullmatch('Reward: 123.0')
       if match is None:  # Ignore events that are not rewards.
         return
 
@@ -118,7 +127,7 @@ class TaskManagerTest(absltest.TestCase):
       # Check that the event matches what's expected.
       match_1 = event_listener.regexp.match('foo_1')
       match_2 = event_listener.regexp.match('foo_2')
-      match_3 = event_listener.regexp.match('Reward: 2.0')
+      match_3 = event_listener.regexp.fullmatch('Reward: 2.0')
       if match_1:
         event_listener.handler_fn(event_listener.regexp, match_1)
       if match_2:
@@ -152,7 +161,7 @@ class TaskManagerTest(absltest.TestCase):
     def my_add_ev_listener(event_listener: logcat_thread.EventListener):
       # Check that the event matches what's expected.
       event = event_listener.regexp
-      match = event.match('score: 200.0')
+      match = event.fullmatch('score: 200.0')
       if match is None:  # Ignore events that are not scores.
         return
 
@@ -160,8 +169,8 @@ class TaskManagerTest(absltest.TestCase):
 
       # Scores are accumulated by their differences, so a subsequent lower score
       # means that the final reward decreases.
-      match = event.match('score: 185')
-      event_listener.handler_fn(event, match)
+      match2 = self._assert_match(event, 'score: 185')
+      event_listener.handler_fn(event, match2)
 
     task = task_pb2.Task()
     task.log_parsing_config.log_regexps.score = (
@@ -183,17 +192,22 @@ class TaskManagerTest(absltest.TestCase):
     def my_add_ev_listener(event_listener: logcat_thread.EventListener):
       # Check that the event matches what's expected.
       event = event_listener.regexp
-      match = event.match('extra: some_extra [1, 2]')
+      match = event.fullmatch('extra: some_extra [1, 2]')
       if match is None:  # Ignore events that are not extras.
         return
 
       # Emit events.
       fn = event_listener.handler_fn
-      fn(event, event.match('extra: an_extra [1, 2, 3]'))
-      fn(event, event.match('extra: an_extra [4, 5, 6]'))
-      fn(event, event.match('extra: another_extra 0.5'))
-      fn(event, event.match('extra: multi_dimension_extra [[9,8,7],[6,5,4]]'))
-      fn(event, event.match('extra: boolean_extra'))
+      fn(event, self._assert_match(event, 'extra: an_extra [1, 2, 3]'))
+      fn(event, self._assert_match(event, 'extra: an_extra [4, 5, 6]'))
+      fn(event, self._assert_match(event, 'extra: another_extra 0.5'))
+      fn(
+          event,
+          self._assert_match(
+              event, 'extra: multi_dimension_extra [[9,8,7],[6,5,4]]'
+          ),
+      )
+      fn(event, self._assert_match(event, 'extra: boolean_extra'))
 
     # Setup the task and trigger the listener.
     task = task_pb2.Task()
@@ -227,7 +241,7 @@ class TaskManagerTest(absltest.TestCase):
     def my_add_ev_listener(event_listener: logcat_thread.EventListener):
       # Check that the event matches what's expected.
       event = event_listener.regexp
-      match = event.match('json_extra: {}')
+      match = event.fullmatch('json_extra: {}')
       if match is None:  # Ignore events that are not extras.
         return
 
@@ -242,8 +256,11 @@ class TaskManagerTest(absltest.TestCase):
       }
       extra_update = {'extra_string': 'a_new_string', 'extra_float': 0.6}
       fn = event_listener.handler_fn
-      fn(event, event.match(f'json_extra: {json.dumps(extra)}'))
-      fn(event, event.match(f'json_extra: {json.dumps(extra_update)}'))
+      fn(event, self._assert_match(event, f'json_extra: {json.dumps(extra)}'))
+      fn(
+          event,
+          self._assert_match(event, f'json_extra: {json.dumps(extra_update)}'),
+      )
 
     # Setup the task and trigger the listener.
     task = task_pb2.Task()
@@ -273,16 +290,26 @@ class TaskManagerTest(absltest.TestCase):
         'extra_string': ['a_string', 'a_new_string'],
         'extra_float': [0.6]
     }
-    np.testing.assert_almost_equal(
-        expected_extra.get('extra_scalar'), extras.get('extra_scalar'))
-    np.testing.assert_almost_equal(
-        expected_extra.get('extra_list'), extras.get('extra_list'))
-    np.testing.assert_equal(
-        expected_extra.get('extra_string'), extras.get('extra_string'))
-    np.testing.assert_almost_equal(
-        expected_extra.get('extra_float'), extras.get('extra_float'))
-    np.testing.assert_equal(
-        expected_extra.get('extra_dict'), extras.get('extra_dict'))
+    with self.subTest(name='extra_scalar'):
+      np.testing.assert_almost_equal(
+          expected_extra['extra_scalar'], extras['extra_scalar']
+      )
+    with self.subTest(name='extra_list'):
+      np.testing.assert_almost_equal(
+          expected_extra['extra_list'], extras['extra_list']
+      )
+    with self.subTest(name='extra_string'):
+      np.testing.assert_equal(
+          expected_extra['extra_string'], extras['extra_string']
+      )
+    with self.subTest(name='extra_float'):
+      np.testing.assert_almost_equal(
+          expected_extra['extra_float'], extras['extra_float']
+      )
+    with self.subTest(name='extra_dict'):
+      np.testing.assert_equal(
+          expected_extra['extra_dict'], extras['extra_dict']
+      )
 
   def test_get_current_extras_failed_to_parse(self):
     # Replace `LogcatThread.add_event_listener` with one that simply calls `fn`
@@ -290,18 +317,33 @@ class TaskManagerTest(absltest.TestCase):
     def my_add_ev_listener(event_listener: logcat_thread.EventListener):
       # Check that the event matches what's expected.
       event = event_listener.regexp
-      match = event.match('extra: some_extra [1, 2]')
+      match = event.fullmatch('extra: some_extra [1, 2]')
       if match is None:  # Ignore events that are not extras.
         return
 
       # Emit events.
       fn = event_listener.handler_fn
-      fn(event, event.match('extra: extra_with_malformed_1 [1]'))
-      fn(event, event.match('extra: extra_with_malformed_1 [\'this is \\ bad]'))
-      fn(event, event.match('extra: extra_with_malformed_1 [2]'))
-      fn(event, event.match('extra: extra_with_malformed_2 [\'this is bad]'))
-      fn(event, event.match('extra: extra_with_malformed_2 [1]'))
-      fn(event, event.match('extra: extra_malformed_only [_very_bad_news]'))
+      fn(event, self._assert_match(event, 'extra: extra_with_malformed_1 [1]'))
+      fn(
+          event,
+          self._assert_match(
+              event, "extra: extra_with_malformed_1 ['this is \\ bad]"
+          ),
+      )
+      fn(event, self._assert_match(event, 'extra: extra_with_malformed_1 [2]'))
+      fn(
+          event,
+          self._assert_match(
+              event, "extra: extra_with_malformed_2 ['this is bad]"
+          ),
+      )
+      fn(event, self._assert_match(event, 'extra: extra_with_malformed_2 [1]'))
+      fn(
+          event,
+          self._assert_match(
+              event, 'extra: extra_malformed_only [_very_bad_news]'
+          ),
+      )
 
     # Setup the task and trigger the listener.
     task = task_pb2.Task()
@@ -332,7 +374,7 @@ class TaskManagerTest(absltest.TestCase):
     # right away.
     def my_add_ev_listener(event_listener: logcat_thread.EventListener):
       # Check that the event matches what's expected.
-      match = event_listener.regexp.match('Reward_2: 123.0')
+      match = event_listener.regexp.fullmatch('Reward_2: 123.0')
       if match is None:  # Ignore events that are not rewards.
         return
 
@@ -360,8 +402,8 @@ class TaskManagerTest(absltest.TestCase):
 
     def my_add_ev_listener(event_listener: logcat_thread.EventListener):
       # Check that the event matches what's expected.
-      match_1 = event_listener.regexp.match('Reward_1: 5.0')
-      match_2 = event_listener.regexp.match('Reward_2: 10.0')
+      match_1 = event_listener.regexp.fullmatch('Reward_1: 5.0')
+      match_2 = event_listener.regexp.fullmatch('Reward_2: 10.0')
 
       if match_1:
         event_listener.handler_fn(event_listener.regexp, match_1)
@@ -409,6 +451,84 @@ class TaskManagerTest(absltest.TestCase):
             'pixels': np.array([1, 2, 3]),
         })
     self.assertTrue(timestep.last())
+
+  def test_setup_task_before_start_raises_assertion(self):
+    task_mgr = task_manager.TaskManager(task=task_pb2.Task())
+    with self.assertRaisesRegex(
+        AssertionError, 'setup_step_interpreter is None'
+    ):
+      task_mgr.setup_task()
+
+  def test_reset_task_before_start_raises_assertion(self):
+    task_mgr = task_manager.TaskManager(task=task_pb2.Task())
+    with self.assertRaisesRegex(AssertionError, 'LogcatThread is None'):
+      task_mgr.reset_task()
+
+  @parameterized.named_parameters(
+      dict(testcase_name='rl_reset', method_name='rl_reset'),
+      dict(testcase_name='rl_step', method_name='rl_step'),
+  )
+  def test_rl_methods_before_start_raise_assertion(self, method_name):
+    task_mgr = task_manager.TaskManager(task=task_pb2.Task())
+    method = getattr(task_mgr, method_name)
+    with self.assertRaisesRegex(AssertionError, 'LogcatThread is None'):
+      method(observation={})
+
+  def test_rl_step_raises_if_dumpsys_missing(self):
+    # Setup a task manager with mocked logcat but no dumpsys.
+    task_mgr = task_manager.TaskManager(task=task_pb2.Task())
+    task_mgr._logcat_thread = self._logcat_thread
+
+    # rl_step calls _determine_transition_fn, triggering dumpsys assertion.
+    with self.assertRaisesRegex(AssertionError, 'DumpsysThread is None'):
+      task_mgr.rl_step(observation={})
+
+  def test_rl_step_raises_if_start_time_missing(self):
+    # Now mock dumpsys too, but no task_start_time, and set max_episode_sec.
+    task = task_pb2.Task(max_episode_sec=10.0)
+    task_mgr = task_manager.TaskManager(task=task)
+    task_mgr._logcat_thread = self._logcat_thread
+    task_mgr._dumpsys_thread = self._dumpsys_thread
+    self._dumpsys_thread.check_user_exited.return_value = False
+
+    # rl_step will check max_episode_sec, triggering start time assertion.
+    with self.assertRaisesRegex(AssertionError, 'Task start time is None'):
+      task_mgr.rl_step(observation={})
+
+  def test_extras_buffer_overflow(self):
+    # Setup TaskManagerConfig with a small buffer size of 2.
+    config = config_classes.TaskManagerConfig(extras_max_buffer_size=2)
+
+    # Replace `LogcatThread.add_event_listener` with one that pushes 3 values.
+    def my_add_ev_listener(event_listener: logcat_thread.EventListener):
+      event = event_listener.regexp
+      match = event.fullmatch('extra: some_extra [1, 2]')
+      if match is None:
+        return
+      fn = event_listener.handler_fn
+      fn(event, self._assert_match(event, 'extra: overflow_extra 1'))
+      fn(event, self._assert_match(event, 'extra: overflow_extra 2'))
+      fn(event, self._assert_match(event, 'extra: overflow_extra 3'))
+
+    task = task_pb2.Task(
+        log_parsing_config=task_pb2.LogParsingConfig(
+            log_regexps=task_pb2.LogParsingConfig.LogRegexps(
+                extra=['^extra: (?P<name>[^ ]*)[ ]?(?P<extra>.*)$']
+            )
+        )
+    )
+    task_mgr = task_manager.TaskManager(task=task, config=config)
+    self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
+    adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
+    task_mgr.start(lambda: adb_call_parser, log_stream=self._log_stream)
+    task_mgr.setup_task()
+
+    timestep = task_mgr.rl_step(observation={'pixels': np.array([1, 2, 3])})
+
+    # Verify buffer overflow popped the first value (1) and kept only (2, 3).
+    self.assertIn('extras', timestep.observation)
+    extras = timestep.observation['extras']
+    np.testing.assert_almost_equal([2, 3], extras['overflow_extra'])
 
 
 if __name__ == '__main__':
