@@ -51,7 +51,7 @@ class ActionFnsTest(parameterized.TestCase):
     simulator = mock.create_autospec(base_simulator.BaseSimulator)
     simulator.send_touch.side_effect = errors.SendActionError('oops!')
     action = {
-        'action_type': action_type_lib.ActionType.TOUCH,
+        'action_type': np.array(action_type_lib.ActionType.TOUCH),
         'touch_position': np.array([0.3, 0.5], np.float32),
     }
 
@@ -74,7 +74,7 @@ class ActionFnsTest(parameterized.TestCase):
     # Arrange.
     simulator = mock.create_autospec(base_simulator.BaseSimulator)
     action = {
-        'action_type': action_type_lib.ActionType.TOUCH,
+        'action_type': np.array(action_type_lib.ActionType.TOUCH),
         'touch_position': np.array([0.2, 0.5], np.float32),
     }
 
@@ -99,11 +99,11 @@ class ActionFnsTest(parameterized.TestCase):
     # Arrange.
     simulator = mock.create_autospec(base_simulator.BaseSimulator)
     action = {
-        'action_type': action_type_lib.ActionType.TOUCH,
+        'action_type': np.array(action_type_lib.ActionType.TOUCH),
         'touch_position': np.array([0.2, 0.5], np.float32),
-        'action_type_2': action_type_lib.ActionType.LIFT,
+        'action_type_2': np.array(action_type_lib.ActionType.LIFT),
         'touch_position_2': np.array([0.1, 0.2], np.float32),
-        'action_type_3': action_type_lib.ActionType.TOUCH,
+        'action_type_3': np.array(action_type_lib.ActionType.TOUCH),
         'touch_position_3': np.array([0.5, 0.2], np.float32),
     }
 
@@ -124,14 +124,20 @@ class ActionFnsTest(parameterized.TestCase):
         (np.int32(400), np.int32(120), True, 2),
     ])
 
-  def test_send_action_to_simulator_keydown_success(self):
-    """Returns `True` with a proper keydown action."""
+  @parameterized.named_parameters(
+      ('keydown', action_type_lib.ActionType.KEYDOWN, 21, 'keydown'),
+      ('keyup', action_type_lib.ActionType.KEYUP, 42, 'keyup'),
+      ('keypress', action_type_lib.ActionType.KEYPRESS, 96, 'keypress'),
+  )
+  def test_send_action_to_simulator_key_event_success(
+      self, action_type, keycode, event_type
+  ):
 
     # Arrange.
     simulator = mock.create_autospec(base_simulator.BaseSimulator)
     action = {
-        'action_type': action_type_lib.ActionType.KEYDOWN,
-        'keycode': np.array([21], np.int32),
+        'action_type': np.array(action_type),
+        'keycode': np.array([keycode], np.int32),
     }
 
     # Act.
@@ -145,53 +151,7 @@ class ActionFnsTest(parameterized.TestCase):
 
     # Assert.
     self.assertTrue(output)
-    simulator.send_key.assert_called_once_with(21, event_type='keydown')
-
-  def test_send_action_to_simulator_keyup_success(self):
-    """Returns `True` with a proper keyup action."""
-
-    # Arrange.
-    simulator = mock.create_autospec(base_simulator.BaseSimulator)
-    action = {
-        'action_type': action_type_lib.ActionType.KEYUP,
-        'keycode': np.array([42], np.int32),
-    }
-
-    # Act.
-    output = action_fns.send_action_to_simulator(
-        action,
-        simulator,
-        800,
-        600,
-        1,
-    )
-
-    # Assert.
-    self.assertTrue(output)
-    simulator.send_key.assert_called_once_with(42, event_type='keyup')
-
-  def test_send_action_to_simulator_keypress_success(self):
-    """Returns `True` with a proper keypress action."""
-
-    # Arrange.
-    simulator = mock.create_autospec(base_simulator.BaseSimulator)
-    action = {
-        'action_type': action_type_lib.ActionType.KEYPRESS,
-        'keycode': np.array([96], np.int32),
-    }
-
-    # Act.
-    output = action_fns.send_action_to_simulator(
-        action,
-        simulator,
-        800,
-        600,
-        1,
-    )
-
-    # Assert.
-    self.assertTrue(output)
-    simulator.send_key.assert_called_once_with(96, event_type='keypress')
+    simulator.send_key.assert_called_once_with(keycode, event_type=event_type)
 
   @parameterized.named_parameters(
       (

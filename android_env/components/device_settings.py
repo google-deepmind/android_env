@@ -25,7 +25,6 @@ from android_env.components.simulators import base_simulator
 from android_env.proto import adb_pb2
 import numpy as np
 
-
 # The internal `AdbCallParser` instance is lazily instantiated within
 # `DeviceSettings`. If we make it optional (i.e. `| None`), pytype will think
 # that it could be `None`, requiring either explicit runtime checks or escape
