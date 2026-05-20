@@ -15,6 +15,8 @@
 
 """A class that manages an Android Emulator."""
 
+from collections.abc import Callable
+import functools
 import os
 import time
 from typing import Any
@@ -94,6 +96,34 @@ class EmulatorCrashError(errors.SimulatorError):
   """Raised when a simulator crashed."""
 
 
+def _reconnect_on_grpc_error(
+    func: Callable[..., Any],
+) -> Callable[..., Any]:
+  """Decorates a function to reconnect to the emulator upon gRPC errors."""
+
+  @functools.wraps(func)
+  def wrapper(self: 'EmulatorSimulator', *args: Any, **kwargs: Any) -> Any:
+    try:
+      return func(self, *args, **kwargs)
+    except grpc.RpcError as error:
+      logging.exception(
+          'RpcError caught while calling %s with args=%s, kwargs=%s. '
+          'Error details: %s. Reconnecting to emulator...',
+          func.__name__,
+          args,
+          kwargs,
+          error,
+      )
+      # pylint: disable=protected-access
+      self._emulator_stub, self._snapshot_stub = self._connect_to_emulator(
+          self._config.emulator_launcher.grpc_port
+      )
+      # pylint: enable=protected-access
+      return func(self, *args, **kwargs)
+
+  return wrapper
+
+
 class EmulatorSimulator(base_simulator.BaseSimulator):
   """Controls an Android Emulator."""
 
@@ -101,7 +131,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     """Instantiates an EmulatorSimulator."""
 
     super().__init__(config)
-    self._config = config
+    self._config: config_classes.EmulatorConfig = config
 
     # If adb_port, console_port and grpc_port are all already provided,
     # we assume the emulator already exists and there's no need to launch.
@@ -162,21 +192,6 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._logfile_path = (
           self._config.logfile_path or self._launcher.logfile_path()
       )
-
-  def _reconnect_on_grpc_error(func):
-    """Decorator function for reconnecting to emulator upon grpc errors."""
-
-    def wrapper(self, *args, **kwargs):
-      try:
-        return func(self, *args, **kwargs)
-      except grpc.RpcError:
-        logging.exception('RpcError caught. Reconnecting to emulator...')
-        self._emulator_stub, self._snapshot_stub = self._connect_to_emulator(
-            self._config.emulator_launcher.grpc_port
-        )
-        return func(self, *args, **kwargs)
-
-    return wrapper
 
   def get_logs(self) -> str:
     """Returns logs recorded by the emulator."""
@@ -337,6 +352,11 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       snapshot_service_pb2_grpc.SnapshotServiceStub,
   ]:
     """Connects to an emulator and returns a corresponsing stub."""
+
+    if hasattr(self, '_channel') and self._channel is not None:
+      logging.info('Closing previous gRPC channel before reconnecting.')
+      self._channel.close()
+      self._channel = None
 
     logging.info('Creating gRPC channel to the emulator on port %r', grpc_port)
     port = f'localhost:{grpc_port}'

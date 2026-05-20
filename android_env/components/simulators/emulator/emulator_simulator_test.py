@@ -305,10 +305,11 @@ class EmulatorSimulatorTest(absltest.TestCase):
         ),
     )
     simulator = emulator_simulator.EmulatorSimulator(config)
+    self.addCleanup(simulator.close)
 
     # The simulator should launch and not crash.
     simulator.launch()
-
+    self.assertIsNotNone(simulator._emulator_stub)
     simulator._emulator_stub.getScreenshot = mock.MagicMock(
         return_value=emulator_controller_pb2.Image(
             format=emulator_controller_pb2.ImageFormat(width=5678, height=1234),
@@ -319,6 +320,53 @@ class EmulatorSimulatorTest(absltest.TestCase):
     # The screenshot should have the same screen dimensions as reported by ADB
     # and it should have 3 channels (RGB).
     self.assertEqual(screenshot.shape, (1234, 5678, 3))
+
+  def test_get_screenshot_reconnects_on_grpc_error(self):
+    config = config_classes.EmulatorConfig(
+        interaction_rate_sec=0.0,
+        emulator_launcher=config_classes.EmulatorLauncherConfig(
+            grpc_port=1234, tmp_dir=self.create_tempdir().full_path
+        ),
+        adb_controller=config_classes.AdbControllerConfig(
+            adb_path='/my/adb',
+            adb_server_port=5037,
+        ),
+    )
+    simulator = emulator_simulator.EmulatorSimulator(config)
+    self.addCleanup(simulator.close)
+    simulator.launch()
+    self.assertIsNotNone(simulator._emulator_stub)
+
+    # Mock first call to raise grpc.RpcError, second call to succeed.
+    side_effect = [
+        grpc.RpcError('gRPC error'),
+        emulator_controller_pb2.Image(
+            format=emulator_controller_pb2.ImageFormat(width=5678, height=1234),
+            image=Image.new('RGBA', (1234, 5678)).tobytes(),
+            timestampUs=123,
+        ),
+    ]
+    get_screenshot_mock = mock.MagicMock(side_effect=side_effect)
+    simulator._emulator_stub.getScreenshot = get_screenshot_mock
+
+    # Mock _connect_to_emulator to return the same mock stub on reconnect.
+    mock_connect = self.enter_context(
+        mock.patch.object(simulator, '_connect_to_emulator', autospec=True)
+    )
+    mock_connect.return_value = (
+        simulator._emulator_stub,
+        simulator._snapshot_stub,
+    )
+
+    screenshot = simulator.get_screenshot()
+
+    # Assertions:
+    self.assertEqual(screenshot.shape, (1234, 5678, 3))
+    mock_connect.assert_called_once_with(
+        simulator._config.emulator_launcher.grpc_port
+    )
+    # Verify getScreenshot was called twice (first failed, second succeeded).
+    self.assertEqual(simulator._emulator_stub.getScreenshot.call_count, 2)
 
   def test_load_state(self):
     config = config_classes.EmulatorConfig(
@@ -430,7 +478,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
 
     # The simulator should launch and not crash.
     simulator.launch()
-
+    self.assertIsNotNone(simulator._emulator_stub)
     simulator._emulator_stub.sendTouch = mock.MagicMock(return_value=None)
 
     simulator.send_touch([(123, 456, True, 0), (135, 246, True, 1)])
@@ -487,7 +535,7 @@ class EmulatorSimulatorTest(absltest.TestCase):
 
     # The simulator should launch and not crash.
     simulator.launch()
-
+    self.assertIsNotNone(simulator._emulator_stub)
     simulator._emulator_stub.sendTouch = mock.MagicMock(return_value=None)
 
     simulator.send_key(123, 'keydown')
