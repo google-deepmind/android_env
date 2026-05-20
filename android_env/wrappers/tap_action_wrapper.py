@@ -89,6 +89,9 @@ class TapActionWrapper(base_wrapper.BaseWrapper):
     """Takes a step in the environment."""
     actions = self._process_action(action)
     total_reward = 0.0
+    step_type = dm_env.StepType.MID
+    discount = None
+    observation = None
     for action in actions:
       step_type, reward, discount, observation = self._env.step(action)
       self._env_steps += 1
