@@ -104,7 +104,7 @@ class DiscreteActionWrapper(base_wrapper.BaseWrapper):
 
     if self._redundant_actions:
       assert action_id < self._num_action_types * self._grid_size
-      return action_id // self._grid_size
+      return action_type.ActionType(action_id // self._grid_size)
 
     else:
       assert action_id <= self._grid_size + 1
