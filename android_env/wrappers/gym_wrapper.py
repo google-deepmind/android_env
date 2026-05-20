@@ -87,7 +87,7 @@ class GymInterfaceWrapper(gym.Env):
     timestep = self._env.reset()
     return timestep.observation
 
-  def step(self, action: dict[str, int]) -> tuple[Any, ...]:
+  def step(self, action: Any) -> tuple[Any, ...]:
     """Take a step in the base environment."""
     timestep = self._env.step(action)
     observation = timestep.observation

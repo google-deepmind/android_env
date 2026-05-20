@@ -109,8 +109,11 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
     return self._process_timestep(timestep)
 
   def step(self, action: int) -> dm_env.TimeStep:
-    timestep = self._env.step(self._process_action(action))
-    return self._process_timestep(timestep)
+    return self._process_timestep(
+        self._env.step(
+            cast(dict[str, np.ndarray], self._process_action(action))
+        )
+    )
 
   def observation_spec(self) -> specs.Array | dict[str, specs.Array]:  # pytype: disable=signature-mismatch  # overriding-return-type-checks
     if self._flat_observations:
