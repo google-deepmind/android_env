@@ -149,7 +149,7 @@ def main(_):
 
     # Reset environment.
     first_timestep = env.reset()
-    orientation = np.argmax(first_timestep.observation['orientation'])
+    orientation = int(np.argmax(first_timestep.observation['orientation']))
 
     # Create pygame canvas.
     screen_size = list(map(int, FLAGS.screen_size))  # (W x H)
