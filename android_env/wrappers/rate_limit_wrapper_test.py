@@ -126,6 +126,7 @@ class RateLimitWrapperTest(parameterized.TestCase):
 
     mock_sleep.side_effect = _sleep_fn
 
+    @_with_timestamp
     def _step_fn(action):
       self.assertEqual(
           action['action_type'],
@@ -165,6 +166,7 @@ class RateLimitWrapperTest(parameterized.TestCase):
 
     mock_sleep.side_effect = _sleep_fn
 
+    @_with_timestamp
     def _step_fn(action):
       self.assertEqual(
           action['action_type'],
