@@ -32,8 +32,7 @@ def package_forests_to_task_extras(
 ) -> Mapping[str, np.ndarray]:
   if not forests:
     return {}
-  forests = np.stack(forests, axis=0)
-  return {_A11Y_FORESTS_KEY: forests}
+  return {_A11Y_FORESTS_KEY: np.array(forests, dtype=object)}
 
 
 def task_extras_has_forests(task_extras: Mapping[str, Any]) -> bool:

@@ -156,7 +156,7 @@ class A11YForestsTest(parameterized.TestCase):
   def test_task_extras(self, task_extras, expected_forests, convert_to_np):
     for k in convert_to_np:
       if task_extras[k]:
-        task_extras[k] = np.stack(task_extras[k], axis=0)
+        task_extras[k] = np.array(task_extras[k], dtype=object)
       else:
         task_extras[k] = np.array([])
     forests = a11y_forests.extract_forests_from_task_extras(task_extras)
@@ -215,8 +215,8 @@ class A11YForestsTest(parameterized.TestCase):
   def test_keep_latest_only(self, task_extras, expected_extras):
     if 'accessibility_tree' in task_extras:
       if task_extras['accessibility_tree']:
-        task_extras['accessibility_tree'] = np.stack(
-            task_extras['accessibility_tree'], axis=0
+        task_extras['accessibility_tree'] = np.array(
+            task_extras['accessibility_tree'], dtype=object
         )
       else:
         task_extras['accessibility_tree'] = np.array([])

@@ -75,7 +75,7 @@ class A11yEventsTest(parameterized.TestCase):
   )
   def test_task_extras(self, task_extras, expected_events):
     event_requests = [_event_request(e) for e in task_extras['full_event']]
-    task_extras['full_event'] = np.stack(event_requests, axis=0)
+    task_extras['full_event'] = np.array(event_requests, dtype=object)
     events = a11y_events.extract_events_from_task_extras(task_extras)
     self.assertEqual(len(events), len(expected_events))
     for i, event in enumerate(expected_events):
@@ -95,7 +95,7 @@ class A11yEventsTest(parameterized.TestCase):
         {'2': '2'},
         {'3': '3'},
     ]
-    task_extras = {'full_event': np.stack(event_requests, axis=0)}
+    task_extras = {'full_event': np.array(event_requests, dtype=object)}
     events = a11y_events.extract_events_from_task_extras(task_extras)
     self.assertEqual(len(events), len(expected_events))
     for i, event in enumerate(expected_events):
@@ -115,7 +115,7 @@ class A11yEventsTest(parameterized.TestCase):
         {'2': '2'},
         {'3': '3'},
     ]
-    task_extras = {'full_event': np.stack(event_requests, axis=0)}
+    task_extras = {'full_event': np.array(event_requests, dtype=object)}
     events = a11y_events.extract_events_from_task_extras(task_extras)
     self.assertEqual(len(events), len(expected_events))
     for i, event in enumerate(expected_events):
@@ -130,7 +130,7 @@ class A11yEventsTest(parameterized.TestCase):
         3,  # Not an even and not a dict.
         _event_request({'3': '3'}),
     ]
-    task_extras = {'full_event': np.stack(event_requests, axis=0)}
+    task_extras = {'full_event': np.array(event_requests, dtype=object)}
     with self.assertRaises(TypeError):
       _ = a11y_events.extract_events_from_task_extras(task_extras)
 

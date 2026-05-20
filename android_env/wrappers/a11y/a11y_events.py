@@ -33,8 +33,7 @@ def package_events_to_task_extras(
 ) -> Mapping[str, np.ndarray]:
   if not events:
     return {}
-  events = np.stack(events, axis=0)
-  return {_A11Y_EVENT_KEY: events}
+  return {_A11Y_EVENT_KEY: np.array(events, dtype=object)}
 
 
 def extract_events_from_task_extras(
