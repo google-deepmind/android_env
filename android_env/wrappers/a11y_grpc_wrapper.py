@@ -425,6 +425,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
   def accumulate_new_extras(self) -> dict[str, Any]:
     new_extras = self._fetch_task_extras()
     if self._should_accumulate:
+      assert self._accumulated_extras is not None
       for key in new_extras:
         if key in self._accumulated_extras:
           self._accumulated_extras[key] = np.concatenate(
