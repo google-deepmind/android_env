@@ -1,31 +1,32 @@
 
 # AndroidEnv - The Android Learning Environment
 
-<img align="right" src="docs/images/device_control.gif" width="160" height="240">
+<img align="right" src="https://github.com/google-deepmind/android_env/raw/gh-pages/docs/images/device_control.gif" width="160" height="240">
 
-[AndroidEnv](https://github.com/deepmind/android_env) is a Python library that
-exposes an [Android](https://www.android.com/) device as a Reinforcement
+[AndroidEnv](https://github.com/google-deepmind/android_env) is a Python library
+that exposes an [Android](https://www.android.com/) device as a Reinforcement
 Learning (RL) environment. The library provides a flexible platform for defining
 custom tasks on top of the Android Operating System, including any Android
 application. Agents interact with the device through a universal action
 interface - the touchscreen - by sending localized touch and lift events to the
 system. The library processes these events and returns pixel observations and
-rewards as provided by specific [task definitions](docs/tasks_guide.md). For
-example, rewards might be given for events such as successfully scrolling down a
-page, sending an email, or achieving some score in a game, depending on the
-research purpose and how the user configures the task.
+rewards as provided by specific
+[task definitions](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md).
+For example, rewards might be given for events such as successfully scrolling
+down a page, sending an email, or achieving some score in a game, depending on
+the research purpose and how the user configures the task.
 
-[![tests](https://github.com/deepmind/android_env/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/deepmind/android_env/actions/workflows/tests.yml)
+[![tests](https://github.com/google-deepmind/android_env/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/google-deepmind/android_env/actions/workflows/tests.yml)
 [![PyPI version](https://badge.fury.io/py/android-env.svg)](https://badge.fury.io/py/android-env)
 [![Downloads](https://pepy.tech/badge/android-env)](https://pepy.tech/project/android-env)
 
 ## Index
 
-*   [Environment details](docs/environment.md)
-*   [Running AndroidEnv](docs/instructions.md)
-*   [Setting up a virtual Android device](docs/emulator_guide.md)
-*   [Defining a task in AndroidEnv](docs/tasks_guide.md)
-*   [Example tasks available for download](docs/example_tasks.md)
+*   [Environment details](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/environment.md)
+*   [Running AndroidEnv](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/instructions.md)
+*   [Setting up a virtual Android device](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/emulator_guide.md)
+*   [Defining a task in AndroidEnv](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md)
+*   [Example tasks available for download](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md)
 
 ## Environment features
 
@@ -103,7 +104,7 @@ Please note that `/examples` are not included in this package.
 Alternatively, you can clone the repository from git's `main` branch:
 
 ```shell
-$ git clone https://github.com/deepmind/android_env/
+$ git clone https://github.com/google-deepmind/android_env/
 $ cd android_env
 $ python3 -m pip install .
 ```
@@ -116,22 +117,26 @@ primary target platforms of this project.
 
 Before running the environment, you will need access to an emulated Android
 device. For instructions on creating a virtual Android device, see the
-[Emulator guide](docs/emulator_guide.md).
+[Emulator guide](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/emulator_guide.md).
 
 ### Define a task
 
 Then, you will want to define what the agent's *task* is. At this point, the
 agent will be able to communicate with the emulated device, but it will not yet
 have an objective, or access to signals such as rewards or RL episode ends.
-Learn [how to define an RL task](docs/tasks_guide.md) of your own, or use one of
-the [existing task definitions](docs/example_tasks.md) for training.
+Learn
+[how to define an RL task](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md)
+of your own, or use one of the
+[existing task definitions](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md)
+for training.
 
 ### Load and run
 
 To find out how to run and train agents on AndroidEnv, see these
-[detailed instructions](docs/instructions.md). Here you can also find example
-scripts demonstrating how to run a random agent, an
-[acme](https://github.com/deepmind/acme) agent, or a human agent on AndroidEnv.
+[detailed instructions](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/instructions.md).
+Here you can also find example scripts demonstrating how to run a random agent,
+an [acme](https://github.com/google-deepmind/acme) agent, or a human agent on
+AndroidEnv.
 
 ## About
 
