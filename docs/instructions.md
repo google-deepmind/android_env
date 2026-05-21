@@ -36,7 +36,7 @@ into a `Task()` proto message, which gets passed passed to AndroidEnv.
 ### Create the environment
 
 After setting up the simulator and creating a task, you may find the
-[`loader.load()`](https://github.com/deepmind/android_env/blob/main/android_env/loader.py)
+[`loader.load()`](https://github.com/google-deepmind/android_env/blob/main/android_env/loader.py)
 function handy for creating an environment instance by providing relevant
 arguments, such as:
 
@@ -83,24 +83,24 @@ env = loader.load(
 
 The `examples` directory contains a few simple example agent setups, such as:
 
-*   [`run_random_agent.py`](https://github.com/deepmind/android_env/blob/main/examples/run_random_agent.py):
+*   [`run_random_agent.py`](https://github.com/google-deepmind/android_env/blob/main/examples/run_random_agent.py):
     Runs a simple loop performing randomly selected actions in the environment.
-*   [`run_acme_agent.py`](https://github.com/deepmind/android_env/blob/main/examples/run_acme_agent.py):
+*   [`run_acme_agent.py`](https://github.com/google-deepmind/android_env/blob/main/examples/run_acme_agent.py):
     Runs a training loop with an
     [Acme](https://deepmind.com/research/publications/Acme) DQN agent,
     implemented in the popular DeepMind RL framework. This will require to
-    install the [`acme`](https://github.com/deepmind/acme) dependency.
-*   [`run_human_agent.py`](https://github.com/deepmind/android_env/blob/main/examples/run_human_agent.py):
+    install the [`acme`](https://github.com/google-deepmind/acme) dependency.
+*   [`run_human_agent.py`](https://github.com/google-deepmind/android_env/blob/main/examples/run_human_agent.py):
     Creates a [`pygame`](https://www.pygame.org) instance that lets a human user
     interact with the environment and observe environment mechanics, such as
     rewards or task extras. You will need to install the [PyGame] dependency.
 
 For instance, here is how you can run
-[`run_random_agent.py`](https://github.com/8bitmp3/android_env/blob/main/examples/run_random_agent.py)
+[`run_random_agent.py`](https://github.com/google-deepmind/android_env/blob/main/examples/run_random_agent.py)
 in a folder where you have your APK file, such as
-[Apple Flinger](https://github.com/deepmind/android_env/blob/main/docs/example_tasks.md#apple-flinger)
+[Apple Flinger](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md#apple-flinger)
 from
-[Example tasks](https://github.com/deepmind/android_env/blob/main/docs/example_tasks.md).
+[Example tasks](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md).
 (The downloaded TAR file contains the APK file and `.textproto` definitions.)
 
 ```shell
