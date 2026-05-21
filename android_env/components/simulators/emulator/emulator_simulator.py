@@ -15,9 +15,10 @@
 
 """A class that manages an Android Emulator."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 import functools
 import os
+import platform
 import time
 from typing import Any
 
@@ -31,6 +32,7 @@ from android_env.components.simulators import base_simulator
 from android_env.components.simulators.emulator import emulator_launcher
 from android_env.proto import state_pb2
 import grpc
+import immutabledict
 import numpy as np
 import portpicker
 
@@ -42,6 +44,14 @@ from google.protobuf import empty_pb2
 
 
 _DEFAULT_SNAPSHOT_NAME: str = 'default_snapshot'
+
+_KEYCODE_TYPE_BY_SYSTEM: Mapping[
+    str, emulator_controller_pb2.KeyboardEvent.KeyCodeType
+] = immutabledict.immutabledict({
+    'Linux': emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
+    'Windows': emulator_controller_pb2.KeyboardEvent.KeyCodeType.Win,
+    'Darwin': emulator_controller_pb2.KeyboardEvent.KeyCodeType.Mac,
+})
 
 
 def _is_existing_emulator_provided(
@@ -127,11 +137,25 @@ def _reconnect_on_grpc_error(
 class EmulatorSimulator(base_simulator.BaseSimulator):
   """Controls an Android Emulator."""
 
-  def __init__(self, config: config_classes.EmulatorConfig):
-    """Instantiates an EmulatorSimulator."""
+  def __init__(
+      self,
+      config: config_classes.EmulatorConfig,
+      *,
+      platform_system: str | None = None,
+  ):
+    """Initializes the instance.
+
+    Args:
+      config: Configuration for the EmulatorSimulator.
+      platform_system: The name of the host operating system, as returned by
+        `platform.system()` (e.g., 'Linux', 'Windows', 'Darwin'). This is used
+        to determine the correct keycode type for `send_key`. If None,
+        `platform.system()` is called to get the current system.
+    """
 
     super().__init__(config)
     self._config: config_classes.EmulatorConfig = config
+    self._platform_system: str = platform_system or platform.system()
 
     # If adb_port, console_port and grpc_port are all already provided,
     # we assume the emulator already exists and there's no need to launch.
@@ -439,8 +463,10 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     """Sends a key event to the emulator.
 
     Args:
-      keycode: Code representing the desired key press in XKB format.
-        See the emulator_controller_pb2 for details.
+      keycode: Code representing the desired key press. Format depends on the
+        host platform (using the `KeyCodeType` enum in
+        `emulator_controller_pb2`: `XKB` for Linux, `Win` for Windows, `Mac` for
+        macOS). See the emulator_controller_pb2 for details.
       event_type: Type of key event to be sent.
     """
 
@@ -452,9 +478,19 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     assert (
         self._emulator_stub is not None
     ), 'Emulator stub has not been initialized yet.'
+
+    system_code_type = _KEYCODE_TYPE_BY_SYSTEM.get(self._platform_system)
+    if system_code_type is not None:
+      code_type = system_code_type
+    else:
+      logging.warning(
+          'Unknown system %r, falling back to XKB', self._platform_system
+      )
+      code_type = emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB
+
     self._emulator_stub.sendKey(
         emulator_controller_pb2.KeyboardEvent(
-            codeType=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
+            codeType=code_type,
             eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType.Value(
                 event_type
             ),

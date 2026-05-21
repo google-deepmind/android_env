@@ -21,6 +21,7 @@ import time
 from unittest import mock
 
 from absl.testing import absltest
+from absl.testing import parameterized
 from android_env.components import adb_call_parser
 from android_env.components import adb_controller
 from android_env.components import config_classes
@@ -36,20 +37,36 @@ from android_env.proto import emulator_controller_pb2_grpc
 from android_env.proto import snapshot_service_pb2
 
 
-class EmulatorSimulatorTest(absltest.TestCase):
+class EmulatorSimulatorTest(parameterized.TestCase):
 
   def setUp(self):
     super().setUp()
     self.addCleanup(mock.patch.stopall)  # Disable previous patches.
 
-    self._adb_controller = mock.create_autospec(adb_controller.AdbController)
-    self._adb_call_parser = mock.create_autospec(adb_call_parser.AdbCallParser)
-    self._launcher = mock.create_autospec(emulator_launcher.EmulatorLauncher)
+    self._adb_controller = mock.create_autospec(
+        adb_controller.AdbController, spec_set=True, instance=True
+    )
+    self._adb_call_parser = mock.create_autospec(
+        adb_call_parser.AdbCallParser, spec_set=True, instance=True
+    )
+    self._launcher = mock.create_autospec(
+        emulator_launcher.EmulatorLauncher, spec_set=True, instance=True
+    )
     self._launcher.logfile_path.return_value = 'logfile_path'
     self._emulator_stub = mock.create_autospec(
-        emulator_controller_pb2_grpc.EmulatorControllerStub)
+        emulator_controller_pb2_grpc.EmulatorControllerStub,
+        spec_set=True,
+        instance=True,
+    )
 
-    self._grpc_channel = mock.create_autospec(grpc.Channel)
+    self._grpc_channel = mock.create_autospec(
+        grpc.Channel, spec_set=True, instance=True
+    )
+    self._grpc_channel.unary_unary.side_effect = (
+        lambda *args, **kwargs: mock.create_autospec(
+            grpc.UnaryUnaryMultiCallable, instance=True, spec_set=True
+        )
+    )
     mock.patch.object(
         grpc.aio, 'secure_channel', return_value=self._grpc_channel).start()
     mock.patch.object(
@@ -57,7 +74,9 @@ class EmulatorSimulatorTest(absltest.TestCase):
     mock.patch.object(
         grpc, 'local_channel_credentials',
         return_value=self._grpc_channel).start()
-    self._mock_future = mock.create_autospec(grpc.Future)
+    self._mock_future = mock.create_autospec(
+        grpc.Future, spec_set=True, instance=True
+    )
     mock.patch.object(
         grpc, 'channel_ready_future', return_value=self._mock_future).start()
     mock.patch.object(time, 'time', return_value=12345).start()
@@ -521,7 +540,29 @@ class EmulatorSimulatorTest(absltest.TestCase):
             }])),
     ])
 
-  def test_send_key(self):
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='Linux',
+          os_name='Linux',
+          expected_code_type=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
+      ),
+      dict(
+          testcase_name='Windows',
+          os_name='Windows',
+          expected_code_type=emulator_controller_pb2.KeyboardEvent.KeyCodeType.Win,
+      ),
+      dict(
+          testcase_name='Darwin',
+          os_name='Darwin',
+          expected_code_type=emulator_controller_pb2.KeyboardEvent.KeyCodeType.Mac,
+      ),
+      dict(
+          testcase_name='UnknownOS',
+          os_name='UnknownOS',
+          expected_code_type=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
+      ),
+  )
+  def test_send_key(self, os_name, expected_code_type):
     config = config_classes.EmulatorConfig(
         emulator_launcher=config_classes.EmulatorLauncherConfig(
             grpc_port=1234, tmp_dir=self.create_tempdir().full_path
@@ -531,12 +572,13 @@ class EmulatorSimulatorTest(absltest.TestCase):
             adb_server_port=5037,
         ),
     )
-    simulator = emulator_simulator.EmulatorSimulator(config)
+    simulator = emulator_simulator.EmulatorSimulator(
+        config, platform_system=os_name
+    )
 
     # The simulator should launch and not crash.
     simulator.launch()
     self.assertIsNotNone(simulator._emulator_stub)
-    simulator._emulator_stub.sendTouch = mock.MagicMock(return_value=None)
 
     simulator.send_key(123, 'keydown')
     simulator.send_key(321, 'keydown')
@@ -545,50 +587,53 @@ class EmulatorSimulatorTest(absltest.TestCase):
     simulator.send_key(321, 'keypress')
     simulator.send_key(123, 'keypress')
 
-    simulator._emulator_stub.sendKey.assert_has_calls([
+    expected_calls = [
         mock.call(
             emulator_controller_pb2.KeyboardEvent(
-                codeType=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
-                eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType
-                .keydown,
+                codeType=expected_code_type,
+                eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType.keydown,
                 keyCode=123,
-            )),
+            )
+        ),
         mock.call(
             emulator_controller_pb2.KeyboardEvent(
-                codeType=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
-                eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType
-                .keydown,
+                codeType=expected_code_type,
+                eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType.keydown,
                 keyCode=321,
-            )),
+            )
+        ),
         mock.call(
             emulator_controller_pb2.KeyboardEvent(
-                codeType=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
-                eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType
-                .keyup,
+                codeType=expected_code_type,
+                eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType.keyup,
                 keyCode=321,
-            )),
+            )
+        ),
         mock.call(
             emulator_controller_pb2.KeyboardEvent(
-                codeType=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
-                eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType
-                .keyup,
+                codeType=expected_code_type,
+                eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType.keyup,
                 keyCode=123,
-            )),
+            )
+        ),
         mock.call(
             emulator_controller_pb2.KeyboardEvent(
-                codeType=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
-                eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType
-                .keypress,
+                codeType=expected_code_type,
+                eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType.keypress,
                 keyCode=321,
-            )),
+            )
+        ),
         mock.call(
             emulator_controller_pb2.KeyboardEvent(
-                codeType=emulator_controller_pb2.KeyboardEvent.KeyCodeType.XKB,
-                eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType
-                .keypress,
+                codeType=expected_code_type,
+                eventType=emulator_controller_pb2.KeyboardEvent.KeyEventType.keypress,
                 keyCode=123,
-            ))
-    ])
+            )
+        ),
+    ]
+    self.assertSequenceEqual(
+        expected_calls, simulator._emulator_stub.sendKey.call_args_list
+    )
 
 
 if __name__ == '__main__':
