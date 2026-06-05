@@ -23,7 +23,6 @@ from android_env.components import errors
 from android_env.components import setup_step_interpreter
 from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
-
 from google.protobuf import text_format
 
 
