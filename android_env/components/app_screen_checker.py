@@ -229,11 +229,12 @@ class AppScreenChecker:
       if dumpsys_response.status != adb_pb2.AdbResponse.OK:
         return AppScreenChecker.Outcome.FAILED_ACTIVITY_EXTRACTION
 
-      if dumpsys_response.dumpsys.output:
+      if dumpsys_response.output:
         if not matches_path(
-            dumpsys_response.dumpsys.output.decode('utf-8'),
+            dumpsys_response.output.decode('utf-8'),
             self._expected_view_hierarchy_path,
-            max_levels=3):
+            max_levels=3,
+        ):
           return AppScreenChecker.Outcome.UNEXPECTED_VIEW_HIERARCHY
 
     return AppScreenChecker.Outcome.SUCCESS

@@ -64,7 +64,7 @@ class AdbCallParser:
 
   def _execute_command(
       self, command_args: list[str], timeout: float | None
-  ) -> tuple[adb_pb2.AdbResponse, bytes]:
+  ) -> adb_pb2.AdbResponse:
     """Executes the command, catches errors and populates the response status.
 
     Args:
@@ -72,23 +72,23 @@ class AdbCallParser:
       timeout: Timeout in seconds.
 
     Returns:
-      A tuple of the AdbResponse with the status populated, and the output
-      bytes from the command.
+      The AdbResponse with the status and output populated.
     """
     response = adb_pb2.AdbResponse(status=adb_pb2.AdbResponse.Status.OK)
-    command_output = b''
     try:
       command_output = self._adb_controller.execute_command(
           command_args, timeout=timeout)
+      if isinstance(command_output, bytes):
+        response.output = command_output
     except subprocess.CalledProcessError as adb_error:
+      response.status = adb_pb2.AdbResponse.Status.ADB_ERROR
       if adb_error.stdout is not None:
-        response.status = adb_pb2.AdbResponse.Status.ADB_ERROR
         response.error_message = adb_error.stdout
     except subprocess.TimeoutExpired:
       response.status = adb_pb2.AdbResponse.Status.TIMEOUT
       response.error_message = 'Timeout'
 
-    return response, command_output
+    return response
 
   def parse(self, request: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
     """Executes `request` and returns an appropriate response."""
@@ -108,7 +108,9 @@ class AdbCallParser:
       return response
 
     timeout: float | None = request.timeout_sec or None
-    return self._handlers[command_type](request, timeout)
+    response = self._handlers[command_type](request, timeout)
+    self._populate_compat_fields(request, response)
+    return response
 
   def _force_stop(
       self, request: adb_pb2.AdbRequest, timeout: float | None = None
@@ -130,10 +132,9 @@ class AdbCallParser:
       response.error_message = '`force_stop.package_name` cannot be empty.'
       return response
 
-    response, _ = self._execute_command(
-        ['shell', 'am', 'force-stop', force_stop.package_name], timeout)
-
-    return response
+    return self._execute_command(
+        ['shell', 'am', 'force-stop', force_stop.package_name], timeout
+    )
 
   def _fetch_current_task_id(
       self, full_activity_name: str, timeout: float | None = None
@@ -210,11 +211,9 @@ class AdbCallParser:
                                 f'[{full_activity}]')
       return response
 
-    response, _ = self._execute_command(
-        ['shell', 'am', 'task', 'lock',
-         str(current_task_id)], timeout=timeout)
-
-    return response
+    return self._execute_command(
+        ['shell', 'am', 'task', 'lock', str(current_task_id)], timeout=timeout
+    )
 
   def _send_broadcast(
       self, request: adb_pb2.AdbRequest, timeout: float | None = None
@@ -241,13 +240,11 @@ class AdbCallParser:
     else:
       component_args = []
 
-    response, _ = self._execute_command(
+    return self._execute_command(
         ['shell', 'am', 'broadcast', '-a', send_broadcast.action]
         + component_args,
         timeout=timeout,
     )
-
-    return response
 
   def _install_apk(
       self, request: adb_pb2.AdbRequest, timeout: float | None = None
@@ -276,7 +273,7 @@ class AdbCallParser:
           response.error_message = f'Could not find local_apk_path: {fpath}'
           return response
 
-        response, _ = self._execute_command(
+        response = self._execute_command(
             ['install', '-r', '-t', '-g', fpath], timeout=timeout
         )
       case 'blob':
@@ -292,7 +289,7 @@ class AdbCallParser:
           fpath = f.name
           f.write(install_apk.blob.contents)
 
-          response, _ = self._execute_command(
+          response = self._execute_command(
               ['install', '-r', '-t', '-g', fpath], timeout=timeout
           )
       case _:
@@ -336,20 +333,21 @@ class AdbCallParser:
           error_message='`start_activity.full_activity` cannot be empty.')
 
     force_stop = '-S' if request.start_activity.force_stop else ''
-    response, command_output = self._execute_command(
-        ['shell', 'am', 'start', force_stop, '-W', '-n', activity] +
-        list(request.start_activity.extra_args or []),
-        timeout=timeout)
+    response = self._execute_command(
+        ['shell', 'am', 'start', force_stop, '-W', '-n', activity]
+        + list(request.start_activity.extra_args or []),
+        timeout=timeout,
+    )
 
     # Check command output for potential errors.
     expected_error = re.compile(r""".*Error.*""", re.VERBOSE)
-    if expected_error.match(str(command_output)):
+    if expected_error.match(str(response.output)):
       return adb_pb2.AdbResponse(
           status=adb_pb2.AdbResponse.Status.INTERNAL_ERROR,
-          error_message=f'start_activity failed with error: {command_output}')
+          error_message=f'start_activity failed with error: {response.output}',
+      )
 
     response.start_activity.full_activity = activity
-    response.start_activity.output = command_output
     return response
 
   def _press_button(
@@ -374,10 +372,9 @@ class AdbCallParser:
                          f'Got: {button}. Please see `adb.proto`.'))
 
     keycode = _BUTTON_TO_KEYCODE[button]
-    response, command_output = self._execute_command(
-        ['shell', 'input', 'keyevent', keycode], timeout=timeout)
-    response.press_button.output = command_output
-    return response
+    return self._execute_command(
+        ['shell', 'input', 'keyevent', keycode], timeout=timeout
+    )
 
   def _handle_uninstall_package(
       self, request: adb_pb2.AdbRequest, timeout: float | None = None
@@ -410,7 +407,7 @@ class AdbCallParser:
                     packages=adb_pb2.AdbRequest.PackageManagerRequest.List
                     .Packages()))))
     if package_name in package_response.package_manager.list.items:
-      response, _ = self._execute_command(['uninstall', package_name], timeout)
+      response = self._execute_command(['uninstall', package_name], timeout)
     else:
       msg = (f'Cannot uninstall {package_name} since it is not installed.')
       logging.warning(msg)
@@ -434,19 +431,23 @@ class AdbCallParser:
 
     del request  # Unused.
 
-    response, visible_task = self._execute_command(
+    response = self._execute_command(
         ['shell', 'am', 'stack', 'list', '|', 'grep', '-E', 'visible=true'],
-        timeout=timeout)
+        timeout=timeout,
+    )
 
     if response.status != adb_pb2.AdbResponse.Status.OK:
       return response
 
+    visible_task = response.output
     if not visible_task:
-      _, am_stack_list = self._execute_command(['shell', 'am', 'stack', 'list'],
-                                               timeout=timeout)
+      am_stack_list_resp = self._execute_command(
+          ['shell', 'am', 'stack', 'list'], timeout=timeout
+      )
       response.status = adb_pb2.AdbResponse.Status.INTERNAL_ERROR
-      response.error_message = ('Empty visible_task. `am stack list`: '
-                                f'{am_stack_list}')
+      response.error_message = (
+          f'Empty visible_task. `am stack list`: {am_stack_list_resp.output}'
+      )
       return response
 
     visible_task = visible_task.decode('utf-8')
@@ -461,12 +462,14 @@ class AdbCallParser:
     p = re.compile(r'.*\{(.*)\}')
     matches = p.search(visible_task)
     if matches is None:
-      _, am_stack_list = self._execute_command(['shell', 'am', 'stack', 'list'],
-                                               timeout=timeout)
+      am_stack_list_resp = self._execute_command(
+          ['shell', 'am', 'stack', 'list'], timeout=timeout
+      )
       response.status = adb_pb2.AdbResponse.Status.INTERNAL_ERROR
       response.error_message = (
           'Could not extract current activity. Will return nothing. '
-          f'`am stack list`: {am_stack_list}')
+          f'`am stack list`: {am_stack_list_resp.output}'
+      )
       return response
 
     response.get_current_activity.full_activity = matches.group(1)
@@ -493,7 +496,7 @@ class AdbCallParser:
         adb_pb2.AdbRequest(
             dumpsys=adb_pb2.AdbRequest.DumpsysRequest(service='input')),
         timeout=timeout)
-    output = response.dumpsys.output
+    output = response.output
     if not output:
       logging.error('Empty dumpsys output.')
       response.status = adb_pb2.AdbResponse.Status.INTERNAL_ERROR
@@ -558,7 +561,7 @@ class AdbCallParser:
       f.write(request.push.content)
     # Issue `adb push` command to upload file.
     logging.info('Uploading %r to %r.', fname, path)
-    response, _ = self._execute_command(['push', fname, path], timeout=timeout)
+    response = self._execute_command(['push', fname, path], timeout=timeout)
     # Delete it.
     os.remove(fname)
 
@@ -587,11 +590,11 @@ class AdbCallParser:
     with tempfile.NamedTemporaryFile(delete=False) as f:
       fname = f.name
       logging.debug('Downloading %r to %r.', path, fname)
-      response, _ = self._execute_command(['pull', path, fname],
-                                          timeout=timeout)
+      response = self._execute_command(['pull', path, fname], timeout=timeout)
     # Read the content of the file.
-    with open(fname, 'rb') as f:
-      response.pull.content = f.read()
+    if response.status == adb_pb2.AdbResponse.Status.OK:
+      with open(fname, 'rb') as f:
+        response.output = f.read()
     # Delete it.
     os.remove(fname)
 
@@ -616,9 +619,9 @@ class AdbCallParser:
           status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
           error_message='InputText.text is empty.')
 
-    response, _ = self._execute_command(['shell', 'input', 'text', text],
-                                        timeout=timeout)
-    return response
+    return self._execute_command(
+        ['shell', 'input', 'text', text], timeout=timeout
+    )
 
   def _tap(
       self, request: adb_pb2.AdbRequest, timeout: float | None = None
@@ -644,11 +647,9 @@ class AdbCallParser:
           error_message=(
               f'Tap coordinates must be non-negative. Got: {request.tap}.'))
 
-    response, _ = self._execute_command(
-        ['shell', 'input', 'tap', str(x),
-         str(y)], timeout=timeout)
-
-    return response
+    return self._execute_command(
+        ['shell', 'input', 'tap', str(x), str(y)], timeout=timeout
+    )
 
   def _handle_settings(
       self, request: adb_pb2.AdbRequest, timeout: float | None = None
@@ -690,11 +691,9 @@ class AdbCallParser:
                   f'Empty SettingsRequest.get.key. Got: {settings_request}.'
               ),
           )
-        response, command_output = self._execute_command(
+        return self._execute_command(
             ['shell', 'settings', 'get', namespace, get.key], timeout=timeout
         )
-        response.settings.output = command_output
-        return response
       case 'put':
         put = settings_request.put
         if not put.key or not put.value:
@@ -705,12 +704,10 @@ class AdbCallParser:
                   f' {settings_request}.'
               ),
           )
-        response, command_output = self._execute_command(
+        return self._execute_command(
             ['shell', 'settings', 'put', namespace, put.key, put.value],
             timeout=timeout,
         )
-        response.settings.output = command_output
-        return response
       case 'delete_key':
         delete = settings_request.delete_key
         if not delete.key:
@@ -721,12 +718,10 @@ class AdbCallParser:
                   f' {settings_request}.'
               ),
           )
-        response, command_output = self._execute_command(
+        return self._execute_command(
             ['shell', 'settings', 'delete', namespace, delete.key],
             timeout=timeout,
         )
-        response.settings.output = command_output
-        return response
       case 'reset':
         reset = settings_request.reset
         # At least one of `package_name` or `mode` should be given.
@@ -747,17 +742,13 @@ class AdbCallParser:
             reset.mode
         ).lower()
         arg = reset.package_name or mode
-        response, command_output = self._execute_command(
+        return self._execute_command(
             ['shell', 'settings', 'reset', namespace, arg], timeout=timeout
         )
-        response.settings.output = command_output
-        return response
       case 'list':
-        response, command_output = self._execute_command(
+        return self._execute_command(
             ['shell', 'settings', 'list', namespace], timeout=timeout
         )
-        response.settings.output = command_output
-        return response
       case _:
         return adb_pb2.AdbResponse(
             status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
@@ -780,10 +771,7 @@ class AdbCallParser:
       An AdbResponse
     """
 
-    response, command_output = self._execute_command(
-        list(request.generic.args), timeout)
-    response.generic.output = command_output
-    return response
+    return self._execute_command(list(request.generic.args), timeout)
 
   def _handle_package_manager(
       self, request: adb_pb2.AdbRequest, timeout: float | None = None
@@ -804,12 +792,12 @@ class AdbCallParser:
     match pm_request.WhichOneof('verb'):
       case 'list':
         what = pm_request.list.WhichOneof('what')
-        response, output = self._execute_command(
+        response = self._execute_command(
             ['shell', 'pm', 'list', what], timeout=timeout
         )
 
-        if output:
-          items = output.decode('utf-8').split()
+        if response.output:
+          items = response.output.decode('utf-8').split()
           # Remove prefix for each item.
           prefix = {
               'features': 'feature:',
@@ -818,7 +806,6 @@ class AdbCallParser:
           }[what]
           items = [x[len(prefix) :] for x in items if x.startswith(prefix)]
           response.package_manager.list.items.extend(items)
-        response.package_manager.output = output
         return response
       case 'clear':
         package_name = pm_request.clear.package_name
@@ -842,9 +829,7 @@ class AdbCallParser:
             ),
             package_name,
         ]
-        response, output = self._execute_command(args, timeout=timeout)
-        response.package_manager.output = output
-        return response
+        return self._execute_command(args, timeout=timeout)
       case 'grant':
         grant = pm_request.grant
         if not grant.package_name:
@@ -862,14 +847,13 @@ class AdbCallParser:
         response = adb_pb2.AdbResponse(status=adb_pb2.AdbResponse.Status.OK)
         for permission in grant.permissions:
           logging.info('Granting permission: %r', permission)
-          current_response, output = self._execute_command(
+          current_response = self._execute_command(
               ['shell', 'pm', 'grant', grant.package_name, permission],
               timeout=timeout,
           )
           if current_response.status != adb_pb2.AdbResponse.Status.OK:
             return current_response
           response = current_response
-          response.package_manager.output = output
         return response
       case _:
         return adb_pb2.AdbResponse(
@@ -962,7 +946,27 @@ class AdbCallParser:
     if dumpsys_request.proto:
       cmd.append('--proto')
 
-    response, command_output = self._execute_command(cmd, timeout=timeout)
-    response.dumpsys.output = command_output
+    return self._execute_command(cmd, timeout=timeout)
 
-    return response
+  def _populate_compat_fields(
+      self, request: adb_pb2.AdbRequest, response: adb_pb2.AdbResponse
+  ):
+    """Populates legacy submessage fields from the top-level output field."""
+    if response.status != adb_pb2.AdbResponse.Status.OK:
+      return
+
+    command_type = request.WhichOneof('command')
+    if command_type == 'start_activity':
+      response.start_activity.output = response.output
+    elif command_type == 'press_button':
+      response.press_button.output = response.output
+    elif command_type == 'pull':
+      response.pull.content = response.output
+    elif command_type == 'settings':
+      response.settings.output = response.output
+    elif command_type == 'generic':
+      response.generic.output = response.output
+    elif command_type == 'package_manager':
+      response.package_manager.output = response.output
+    elif command_type == 'dumpsys':
+      response.dumpsys.output = response.output

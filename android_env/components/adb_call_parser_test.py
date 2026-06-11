@@ -545,6 +545,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
     self.assertEmpty(response.error_message)
+    self.assertEqual(response.output, b'S3cR3t. dO nOt TeLl ANYONE')
     self.assertEqual(response.pull.content, b'S3cR3t. dO nOt TeLl ANYONE')
     adb.execute_command.assert_called_once()
     args, kwargs = adb.execute_command.call_args
@@ -659,6 +660,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
     self.assertEmpty(response.error_message)
+    self.assertEqual(response.output, b'here it is!')
     self.assertEqual(response.settings.output, b'here it is!')
     adb.execute_command.assert_called_once_with(
         ['shell', 'settings', 'get', 'system', 'some_key'], None)
@@ -676,6 +678,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
     self.assertEmpty(response.error_message)
+    self.assertEqual(response.output, b'Done for ya!')
     self.assertEqual(response.settings.output, b'Done for ya!')
     adb.execute_command.assert_called_once_with(
         ['shell', 'settings', 'put', 'secure', 'key1', 'val2'], None)
@@ -770,6 +773,7 @@ class AdbCallParserTest(parameterized.TestCase):
 
     self.assertEqual(adb_pb2.AdbResponse.Status.OK, response.status)
     self.assertEmpty(response.error_message)
+    self.assertEqual(response.output, expected_output)
     self.assertEqual(response.generic.output, expected_output)
     adb.execute_command.assert_called_once_with(args, None)
 

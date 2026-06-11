@@ -338,6 +338,9 @@ message AdbResponse {
   // General stats that components may optionally report.
   map<string, float> stats = 3;
 
+  // The output, if any, of the adb command.
+  bytes output = 4;
+
   // Response for GetCurrentActivity requests.
   message GetCurrentActivityResponse {
     // The format of the output is `package/package.ActivityName', for example:
