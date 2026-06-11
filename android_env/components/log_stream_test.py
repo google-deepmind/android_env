@@ -13,45 +13,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for log_stream."""
+"""Unit tests for log_stream, verifying filtering and pause/resume."""
 
 from absl.testing import absltest
-from android_env.components import log_stream
+from android_env.components import fake_log_stream
 
 
-class FakeLogStream(log_stream.LogStream):
+def _create_fake_log_stream(filter_name: str) -> fake_log_stream.FakeLogStream:
+  lines = [
+      f'{filter_name} fake_line_1',
+      'fake_line_2',
+      f'{filter_name} fake_line_3',
+      f'{filter_name} fake_line_4',
+      'fake_line_5',
+      'fake_line_6',
+  ]
 
-  def __init__(self, filter_name: str):
-    super().__init__()
-    self._filter_name = filter_name
+  def filter_fn(filters, line):
+    if f'{filter_name}:V' in filters:
+      return filter_name in line
+    return True
 
-  def _get_stream_output(self):
-    """Starts a log process and returns the stream of logs."""
-    lines = [
-        f'{self._filter_name} fake_line_1',
-        'fake_line_2',
-        f'{self._filter_name} fake_line_3',
-        f'{self._filter_name} fake_line_4',
-        'fake_line_5',
-        'fake_line_6',
-    ]
-    for line in lines:
-      if f'{self._filter_name}:V' in self._filters:
-        if self._filter_name in line:
-          yield line
-      else:
-        yield line
-
-  def stop_stream(self):
-    """Stops the log stream from the simulator."""
-    pass
+  return fake_log_stream.FakeLogStream(log_generator=lines, filter_fn=filter_fn)
 
 
 class LogStreamTest(absltest.TestCase):
 
   def test_get_stream_output(self):
     filter_name = 'AndroidRLTask'
-    stream = FakeLogStream(filter_name=filter_name)
+    stream = _create_fake_log_stream(filter_name=filter_name)
     stream.resume_stream()
     stream_output = stream.get_stream_output()
     expected_lines = [
@@ -67,7 +57,7 @@ class LogStreamTest(absltest.TestCase):
 
   def test_set_log_filters(self):
     filter_name = 'AndroidRLTask'
-    stream = FakeLogStream(filter_name=filter_name)
+    stream = _create_fake_log_stream(filter_name=filter_name)
     stream.set_log_filters([f'{filter_name}:V'])
     stream.resume_stream()
     stream_output = stream.get_stream_output()
@@ -81,7 +71,7 @@ class LogStreamTest(absltest.TestCase):
 
   def test_pause_resume_stream(self):
     filter_name = 'AndroidRLTask'
-    stream = FakeLogStream(filter_name=filter_name)
+    stream = _create_fake_log_stream(filter_name=filter_name)
     stream.resume_stream()
     stream_output = stream.get_stream_output()
     expected_lines = [

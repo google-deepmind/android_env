@@ -13,48 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for android_env.components.logcat_thread."""
+"""Unit tests for LogcatThread, verifying event listener dispatching."""
 
 import re
 import threading
 
 from absl.testing import absltest
-from android_env.components import log_stream
+from android_env.components import fake_log_stream
 from android_env.components import logcat_thread
 from android_env.proto import task_pb2
-
-
-class FakeStream:
-  """This class simulates the logs coming from ADB."""
-
-  def __init__(self):
-    self._values = []
-    self._kill = False
-    self._lock = threading.Lock()
-
-  def send_value(self, value):
-    with self._lock:
-      self._values.append(value)
-
-  def has_next_value(self):
-    return bool(self._values)
-
-  def kill(self):
-    self._kill = True
-
-  def reset(self):
-    self._kill = False
-
-  def __iter__(self):
-    while True:
-      if self._kill:
-        return
-      if not self._values:
-        continue
-      else:
-        with self._lock:
-          next_value = self._values.pop(0)
-        yield next_value
 
 
 def make_stdout(data):
@@ -62,31 +29,11 @@ def make_stdout(data):
   return '         1553110400.424  5583  5658 D Tag: %s' % data
 
 
-class FakeLogStream(log_stream.LogStream):
-  """FakeLogStream class that wraps a FakeStream."""
-
-  def __init__(self):
-    super().__init__(verbose=False)
-    self.logs = FakeStream()
-    self.stream_is_alive = True
-
-  def _get_stream_output(self):
-    return self.logs
-
-  def stop_stream(self):
-    self.stream_is_alive = False
-    self.logs.kill()
-
-  def reset(self):
-    self.stream_is_alive = True
-    self.logs.reset()
-
-
 class LogcatThreadTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
-    self.fake_log_stream = FakeLogStream()
+    self.fake_log_stream = fake_log_stream.FakeLogStream()
 
   def tearDown(self):
     self.fake_log_stream.stop_stream()
@@ -123,22 +70,22 @@ class LogcatThreadTest(absltest.TestCase):
     my_event = re.compile('Hello world')
     listener = logcat_thread.EventListener(my_event, my_handler)
     logcat.add_event_listener(listener)
-    self.fake_log_stream.logs.send_value('Hi there!')  # This should not match.
+    self.fake_log_stream.send_value('Hi there!')  # This should not match.
     self.assertFalse(some_state.is_set())
-    self.fake_log_stream.logs.send_value(make_stdout('Hello world'))
+    self.fake_log_stream.send_value(make_stdout('Hello world'))
     some_state.wait(timeout=1.0)
     self.assertTrue(some_state.is_set())
 
     # Waiting for any events should also trigger the listener.
     some_state.clear()
-    self.fake_log_stream.logs.send_value(make_stdout('Hello world'))
+    self.fake_log_stream.send_value(make_stdout('Hello world'))
     some_state.wait(timeout=1.0)
     self.assertTrue(some_state.is_set())
 
     # After removing the listener, it should not be called anymore.
     some_state.clear()
     logcat.remove_event_listener(listener)
-    self.fake_log_stream.logs.send_value(make_stdout('Hello world'))
+    self.fake_log_stream.send_value(make_stdout('Hello world'))
     some_state.wait(timeout=1.0)
     self.assertFalse(some_state.is_set())
 

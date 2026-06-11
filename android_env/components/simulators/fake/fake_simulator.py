@@ -22,6 +22,7 @@ import time
 from absl import logging
 from android_env.components import adb_controller
 from android_env.components import config_classes
+from android_env.components import fake_log_stream
 from android_env.components import log_stream
 from android_env.components.simulators import base_simulator
 import numpy as np
@@ -58,20 +59,6 @@ class FakeStream:
               self._values, weights=[0.49, 0.15, 0.15, 0.15, 0.01], k=1)[0]
           time.sleep(0.1)
         yield next_value
-
-
-class FakeLogStream(log_stream.LogStream):
-  """FakeLogStream class that wraps a FakeStream."""
-
-  def __init__(self):
-    super().__init__(verbose=False)
-    self.stream = FakeStream()
-
-  def _get_stream_output(self):
-    return self.stream
-
-  def stop_stream(self):
-    self.stream.kill()
 
 
 class FakeAdbController(adb_controller.AdbController):
@@ -122,7 +109,7 @@ class FakeSimulator(base_simulator.BaseSimulator):
     return FakeAdbController(config_classes.AdbControllerConfig())
 
   def create_log_stream(self) -> log_stream.LogStream:
-    return FakeLogStream()
+    return fake_log_stream.FakeLogStream(log_generator=FakeStream())
 
   def _launch_impl(self) -> None:
     pass
