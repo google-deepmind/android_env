@@ -54,7 +54,9 @@ def orient_pixels(frame: np.ndarray, orientation: int) -> np.ndarray:
       )
 
 
-def convert_int_to_float(data: np.ndarray, data_spec: specs.Array):
+def convert_int_to_float(
+    data: np.ndarray, data_spec: specs.Array
+) -> np.ndarray:
   """Converts an array of int values to floats between 0 and 1."""
 
   if not np.issubdtype(data.dtype, np.integer):
@@ -67,4 +69,19 @@ def convert_int_to_float(data: np.ndarray, data_spec: specs.Array):
     iinfo = np.iinfo(data_spec.dtype)
     value_min = iinfo.min
     value_max = iinfo.max
-  return np.float32(1.0 * (data - value_min) / (value_max - value_min))
+  # Optimize performance by:
+  # 1. Performing all calculations in float32 to avoid default float64
+  #    precision overhead.
+  # 2. Reusing the allocated float32 array for in-place operations to
+  #    minimize memory allocation.
+  # 3. Using multiplication instead of division.
+  span = np.float32(value_max - value_min)
+  inv_span = np.float32(1.0) / span
+  out = data.astype(np.float32)  # Allocate output array once
+  if np.all(value_min == 0):
+    # Skip subtraction if minimum is 0 (common for image data).
+    out *= inv_span  # In-place multiplication is faster than division
+  else:
+    out -= np.float32(value_min)  # In-place subtraction
+    out *= inv_span
+  return out
