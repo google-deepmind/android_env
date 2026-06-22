@@ -16,14 +16,22 @@
 """Tests for android_env.components.app_screen_checker."""
 
 import re
+import timeit
 from unittest import mock
 
+from absl import flags
 from absl.testing import absltest
 from android_env.components import adb_call_parser
 from android_env.components import app_screen_checker
 from android_env.components import errors
 from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
+
+# Benchmarks take ~2 minutes to run, so they are disabled by default.
+# Run with --test_arg=--run_benchmarks to enable.
+_RUN_BENCHMARKS = flags.DEFINE_bool(
+    'run_benchmarks', False, 'Whether to run microbenchmarks.'
+)
 
 
 def _flatten_tree(
@@ -260,6 +268,110 @@ TASK
     # The call should not generate an exception and the return value should be
     # less than the timeout given.
     self.assertLess(wait_time, timeout)
+
+
+class AppScreenCheckerBenchmark(absltest.TestCase):
+
+  def setUp(self):
+    super().setUp()
+    if not _RUN_BENCHMARKS.value:
+      self.skipTest('Benchmark disabled. Run with --test_arg=--run_benchmarks')
+
+  def test_build_tree_from_dumpsys_output(self):
+    # A larger synthetic dumpsys output to simulate real-world scenario.
+    # We repeat the tree structure to make it larger.
+    single_tree = """
+    View Hierarchy
+      Node_0
+        Node_0_0
+          Node_0_0_0
+            Node_0_0_0_0
+          Node_0_0_1
+            Node_0_0_1_0
+            Node_0_0_1_1
+            Node_0_0_1_2
+        Node_0_1
+          Node_0_1_0
+          Node_0_1_1
+      Node_1
+        Node_1_0
+        Node_1_1
+    """
+    # Let's repeat it to make it ~1000 lines.
+    dumpsys_output = 'TASK\n  ACTIVITY\n'
+    for i in range(50):
+      dumpsys_output += f'    View Hierarchy {i}\n'
+      for line in single_tree.strip().split('\n'):
+        if line.strip():
+          dumpsys_output += '      ' + line + '\n'
+
+    setup = (
+        'from android_env.components import app_screen_checker; '
+        f'dumpsys_output = """{dumpsys_output}"""'
+    )
+    stmt = 'app_screen_checker.build_tree_from_dumpsys_output(dumpsys_output)'
+    t = timeit.Timer(stmt, setup=setup)
+    number = 100
+    res = t.timeit(number=number)
+    print(
+        '\nbuild_tree_from_dumpsys_output (~1000 lines):'
+        f' {res / number * 1e3:.3f} ms per loop'
+    )
+
+  def test_matches_path(self):
+    # Use a large dumpsys output and match a path.
+    single_tree = """
+    View Hierarchy
+      Node_0
+        Node_0_0
+          Node_0_0_0
+            Node_0_0_0_0
+          Node_0_0_1
+            Node_0_0_1_0
+            Node_0_0_1_1
+            Node_0_0_1_2
+        Node_0_1
+          Node_0_1_0
+          Node_0_1_1
+      Node_1
+        Node_1_0
+        Node_1_1
+    """
+    dumpsys_output = 'TASK\n  ACTIVITY\n'
+    for i in range(50):
+      dumpsys_output += f'    View Hierarchy_{i}\n'
+      for line in single_tree.strip().split('\n'):
+        if line.strip():
+          dumpsys_output += '      ' + line + '\n'
+    # Add target view hierarchy at the end
+    dumpsys_output += """
+    View Hierarchy
+      Hirohito
+        Akihito
+          Naruhito
+            Aiko
+          Fumihito
+            Mako
+            Kako
+            Hisahito
+        Masahito
+    """
+
+    expected_path = ['^Hirohito$', 'Akihito$', 'Fumihito$', 'Kako$']
+    setup = (
+        'from android_env.components import app_screen_checker; import re;'
+        f' dumpsys_output = """{dumpsys_output}"""; expected_path ='
+        f' {expected_path}; expected_view_hierarchy_path = [re.compile(regex)'
+        ' for regex in expected_path]'
+    )
+    stmt = (
+        'app_screen_checker.matches_path(dumpsys_output,'
+        ' expected_view_hierarchy_path, max_levels=100)'
+    )
+    t = timeit.Timer(stmt, setup=setup)
+    number = 100
+    res = t.timeit(number=number)
+    print(f'\nmatches_path (~1000 lines): {res / number * 1e3:.3f} ms per loop')
 
 
 if __name__ == '__main__':

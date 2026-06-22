@@ -59,18 +59,20 @@ class _DumpsysNode:
     if not self.children:
       return None
 
-    try:
-      return next(x for x in self.children if predicate(x))
-    except StopIteration:
-      logging.info('Failed to find child. max_levels: %i.', max_levels)
-      # Search children.
-      if max_levels:
-        for child in self.children:
-          child_result = child.find_child(predicate, max_levels - 1)
-          if child_result is not None:
-            return child_result
+    # Use a simple loop instead of `next(x for x in ...)` to avoid generator
+    # expression overhead and StopIteration exception handling.
+    for x in self.children:
+      if predicate(x):
+        return x
 
-      return None
+    # Search children if not found in direct children.
+    if max_levels > 0:
+      for child in self.children:
+        child_result = child.find_child(predicate, max_levels - 1)
+        if child_result is not None:
+          return child_result
+
+    return None
 
   def __repr__(self):
     return self._data
@@ -93,34 +95,26 @@ def build_tree_from_dumpsys_output(dumpsys_output: str) -> _DumpsysNode:
   Returns:
     _DumpsysNode The root of the tree.
   """
-  lines = dumpsys_output.split('\n')  # Split by lines.
-  lines = [x.rstrip(' \r') for x in lines]
-  lines = [x for x in lines if len(x)]  # Remove empty lines.
-
   root = _DumpsysNode('___root___')  # The root of all nodes.
   parents_stack = [root]
-  for line in lines:
+
+  # Iterate directly over splitlines() to avoid allocating intermediate lists
+  # for stripped/filtered lines.
+  for line in dumpsys_output.splitlines():
+    line = line.rstrip(' \r')
+    if not line:
+      continue
     stripped_line = line.lstrip(' ')
     indent = len(line) - len(stripped_line)  # Number of indent spaces.
     new_node = _DumpsysNode(stripped_line)  # Create a node without indentation.
 
-    parent = parents_stack.pop()
-    if parent.data == '___root___':  # The root is an exception for indentation.
-      parent_indent = -2
-    else:
-      parent_indent = (len(parents_stack) - 1) * 2
-
-    if indent == parent_indent:  # `new_node` is a sibiling.
-      parent = parents_stack.pop()
-    elif indent < parent_indent:  # Indentation reduced (i.e. a block finished)
-      num_levels = (indent // 2) + 1
-      parents_stack = parents_stack[:num_levels]
-      parent = parents_stack.pop()
-    elif indent > parent_indent:  # `new_node` is a child.
-      pass  # No need to change the current parent.
+    # Find parent using direct index calculation from indentation.
+    # We assume 2 spaces indentation. Slicing in-place avoids pop/push loop.
+    parent_idx = indent // 2
+    del parents_stack[parent_idx + 1 :]
+    parent = parents_stack[-1]
 
     parent.children.append(new_node)
-    parents_stack.append(parent)
     parents_stack.append(new_node)
 
   return root
@@ -155,13 +149,14 @@ def matches_path(
     return False
 
   current_node = view_hierarchy
+  # Inline the direct child search to avoid defining a nested function
+  # (regex_predicate) and calling `find_child` in every iteration.
   for i, regex in enumerate(expected_view_hierarchy_path):
-
-    def regex_predicate(node, expr=regex):
-      matches = expr.match(node.data)
-      return matches is not None
-
-    child = current_node.find_child(regex_predicate)
+    child = None
+    for x in current_node.children:
+      if regex.match(x.data) is not None:
+        child = x
+        break
     if child is None:
       logging.error('Mismatched regex (%i, %s). current_node: %s', i,
                     regex.pattern, current_node)
