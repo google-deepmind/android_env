@@ -26,9 +26,11 @@ def touch_position_to_pixel_position(
     width_height: Sequence[int],
 ) -> tuple[int, int]:
   """Maps touch position in [0,1] to the corresponding pixel on the screen."""
-  touch_pixels = (touch_position * width_height).astype(np.int32)
-  cap_idx = lambda v, idx_len: min(v, idx_len - 1)
-  return tuple(map(cap_idx, touch_pixels, width_height))
+  # Unpack and use pure Python math to avoid NumPy overhead for small 2D array.
+  # Also avoids map/lambda overhead.
+  x, y = touch_position
+  w, h = width_height
+  return (min(int(x * w), w - 1), min(int(y * h), h - 1))
 
 
 def transpose_pixels(frame: np.ndarray) -> np.ndarray:

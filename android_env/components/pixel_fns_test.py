@@ -137,8 +137,8 @@ class PixelFnsBenchmark(absltest.TestCase):
     number = 100000
     res = t.timeit(number=number)
     print(
-        f'\ntouch_position_to_pixel_position: {res / number * 1e6:.3f} us per'
-        ' loop'
+        f'BenchmarkTouchPositionToPixelPosition {number}'
+        f' {res / number * 1e9:.0f} ns/op'
     )
 
   def test_transpose_pixels(self):
@@ -151,17 +151,15 @@ class PixelFnsBenchmark(absltest.TestCase):
       t = timeit.Timer(stmt, setup=setup)
       number = 1000
       res = t.timeit(number=number)
-      print(
-          f'\ntranspose_pixels {size} (view): {res / number * 1e3:.3f} ms per'
-          ' loop'
-      )
+      name_view = f'TransposePixels_{size[0]}x{size[1]}_view'
+      print(f'Benchmark{name_view} {number} {res / number * 1e9:.0f} ns/op')
 
       stmt_copy = 'pixel_fns.transpose_pixels(img).copy()'
       t_copy = timeit.Timer(stmt_copy, setup=setup)
       res_copy = t_copy.timeit(number=number)
+      name_copy = f'TransposePixels_{size[0]}x{size[1]}_copy'
       print(
-          f'transpose_pixels {size} (copy): {res_copy / number * 1e3:.3f} ms'
-          ' per loop'
+          f'Benchmark{name_copy} {number} {res_copy / number * 1e9:.0f} ns/op'
       )
 
   def test_orient_pixels(self):
@@ -176,17 +174,15 @@ class PixelFnsBenchmark(absltest.TestCase):
         t = timeit.Timer(stmt, setup=setup)
         number = 1000
         res = t.timeit(number=number)
-        print(
-            f'\norient_pixels {size}, orientation={orientation} (view):'
-            f' {res / number * 1e3:.3f} ms per loop'
-        )
+        name_view = f'OrientPixels_{size[0]}x{size[1]}_rot{orientation}_view'
+        print(f'Benchmark{name_view} {number} {res / number * 1e9:.0f} ns/op')
 
         stmt_copy = 'pixel_fns.orient_pixels(img, orientation).copy()'
         t_copy = timeit.Timer(stmt_copy, setup=setup)
         res_copy = t_copy.timeit(number=number)
+        name_copy = f'OrientPixels_{size[0]}x{size[1]}_rot{orientation}_copy'
         print(
-            f'orient_pixels {size}, orientation={orientation} (copy):'
-            f' {res_copy / number * 1e3:.3f} ms per loop'
+            f'Benchmark{name_copy} {number} {res_copy / number * 1e9:.0f} ns/op'
         )
 
   def test_convert_int_to_float(self):
@@ -203,10 +199,8 @@ class PixelFnsBenchmark(absltest.TestCase):
       t = timeit.Timer(stmt, setup=setup)
       number = 100
       res = t.timeit(number=number)
-      print(
-          f'\nconvert_int_to_float {size} (BoundedArray):'
-          f' {res / number * 1e3:.3f} ms per loop'
-      )
+      name = f'ConvertIntToFloat_{size[0]}x{size[1]}_BoundedArray'
+      print(f'Benchmark{name} {number} {res / number * 1e9:.0f} ns/op')
 
 
 if __name__ == '__main__':
