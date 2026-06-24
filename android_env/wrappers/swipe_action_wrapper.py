@@ -77,13 +77,11 @@ class SwipeActionWrapper(base_wrapper.BaseWrapper):
     end = np.asarray(action['end_position'], dtype=np.float32)
     touch_dtype = self._touch_position_spec.dtype
 
+    alphas = np.linspace(0.0, 1.0, self._num_steps, dtype=np.float32)
+    positions = start + alphas[:, np.newaxis] * (end - start)
+
     actions = []
-    for i in range(self._num_steps):
-      if self._num_steps == 1:
-        position = start
-      else:
-        alpha = i / (self._num_steps - 1)
-        position = start * (1.0 - alpha) + end * alpha
+    for position in positions:
       actions.append({
           'action_type': np.array(action_type.ActionType.TOUCH).astype(
               self._action_type_dtype
