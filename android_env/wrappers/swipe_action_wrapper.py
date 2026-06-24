@@ -101,6 +101,7 @@ class SwipeActionWrapper(base_wrapper.BaseWrapper):
     """Takes a step in the environment."""
     actions = self._process_action(action)
     total_reward = 0.0
+    reward_discount = 1.0
     step_type = dm_env.StepType.MID
     discount = None
     observation = None
@@ -108,7 +109,9 @@ class SwipeActionWrapper(base_wrapper.BaseWrapper):
       step_type, reward, discount, observation = self._env.step(sub_action)
       self._env_steps += 1
       if reward is not None:
-        total_reward += reward
+        total_reward += reward_discount * reward
+      if discount is not None:
+        reward_discount *= discount
       if step_type == dm_env.StepType.LAST:
         return dm_env.TimeStep(
             step_type=step_type,

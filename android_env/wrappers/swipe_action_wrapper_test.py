@@ -180,6 +180,27 @@ class SwipeActionWrapperTest(parameterized.TestCase):
 
     self.assertAlmostEqual(ts.reward, 1.0)
 
+  def test_step_accumulates_discounted_reward(self):
+    num_steps = 3
+    wrapped_env = swipe_action_wrapper.SwipeActionWrapper(
+        self.base_env, num_steps=num_steps
+    )
+    self.base_env.step.side_effect = [
+        dm_env.TimeStep(dm_env.StepType.MID, 1.0, 0.5, 'obs'),
+        dm_env.TimeStep(dm_env.StepType.MID, 1.0, 0.5, 'obs'),
+        dm_env.TimeStep(dm_env.StepType.MID, 1.0, 0.5, 'obs'),
+        dm_env.TimeStep(dm_env.StepType.MID, 1.0, 0.5, 'obs'),
+    ]
+    self.base_env.stats.return_value = {}
+
+    ts = wrapped_env.step({
+        'start_position': np.array([0.0, 0.0], dtype=np.float32),
+        'end_position': np.array([1.0, 0.0], dtype=np.float32),
+    })
+
+    # 1.0 + 0.5 + 0.25 + 0.125 = 1.875
+    self.assertAlmostEqual(ts.reward, 1.875)
+
   def test_observation_spec(self):
     wrapped_env = swipe_action_wrapper.SwipeActionWrapper(
         self.base_env, num_steps=5
