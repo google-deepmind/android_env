@@ -66,9 +66,7 @@ class SwipeActionWrapperTest(parameterized.TestCase):
       np.testing.assert_allclose(
           actions[i]['touch_position'], expected_position, rtol=1e-6
       )
-      self.assertEqual(
-          actions[i]['action_type'], action_type.ActionType.TOUCH
-      )
+      self.assertEqual(actions[i]['action_type'], action_type.ActionType.TOUCH)
 
     self.assertEqual(actions[-1]['action_type'], action_type.ActionType.LIFT)
     np.testing.assert_allclose(actions[-1]['touch_position'], end, rtol=1e-6)

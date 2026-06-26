@@ -83,15 +83,19 @@ class SwipeActionWrapper(base_wrapper.BaseWrapper):
     actions = []
     for position in positions:
       actions.append({
-          'action_type': np.array(action_type.ActionType.TOUCH).astype(
-              self._action_type_dtype
+          'action_type': (
+              np.array(action_type.ActionType.TOUCH).astype(
+                  self._action_type_dtype
+              )
           ),
           'touch_position': position.astype(touch_dtype),
       })
 
     actions.append({
-        'action_type': np.array(action_type.ActionType.LIFT).astype(
-            self._action_type_dtype
+        'action_type': (
+            np.array(action_type.ActionType.LIFT).astype(
+                self._action_type_dtype
+            )
         ),
         'touch_position': end.astype(touch_dtype),
     })
