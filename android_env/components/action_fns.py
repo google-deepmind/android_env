@@ -88,31 +88,25 @@ def _prepare_touch_action(
   """
 
   touch_events = []
-  for i, finger_action in enumerate(_split_touch_action(action, num_fingers)):
-    is_touch = finger_action['action_type'] == action_type_lib.ActionType.TOUCH
-    touch_position = finger_action['touch_position']
+
+  # First finger
+  is_touch = action['action_type'] == action_type_lib.ActionType.TOUCH
+  touch_position = action['touch_position']
+  touch_pixels = pixel_fns.touch_position_to_pixel_position(
+      touch_position, width_height=(screen_width, screen_height)
+  )
+  touch_events.append((touch_pixels[0], touch_pixels[1], is_touch, 0))
+
+  # Subsequent fingers
+  for i in range(2, num_fingers + 1):
+    is_touch = action[f'action_type_{i}'] == action_type_lib.ActionType.TOUCH
+    touch_position = action[f'touch_position_{i}']
     touch_pixels = pixel_fns.touch_position_to_pixel_position(
         touch_position, width_height=(screen_width, screen_height)
     )
-    touch_events.append((touch_pixels[0], touch_pixels[1], is_touch, i))
+    touch_events.append((touch_pixels[0], touch_pixels[1], is_touch, i - 1))
+
   return touch_events
-
-
-def _split_touch_action(
-    action: dict[str, np.ndarray], num_fingers: int
-) -> list[dict[str, np.ndarray]]:
-  """Splits a multitouch action into a list of single-touch actions."""
-
-  single_touch_actions = [{
-      'action_type': action['action_type'],
-      'touch_position': action['touch_position'],
-  }]
-  for i in range(2, num_fingers + 1):
-    single_touch_actions.append({
-        'action_type': action[f'action_type_{i}'],
-        'touch_position': action[f'touch_position_{i}'],
-    })
-  return single_touch_actions
 
 
 def lift_all_fingers_action(num_fingers: int) -> dict[str, np.ndarray]:
