@@ -68,7 +68,7 @@ class AndroidEnv(env_interface.AndroidEnvInterface):
 
     logging.info('Resetting AndroidEnv...')
 
-    # Execute a reset. Timestep will be of type FIRST.
+    # Execute a reset, timestep will be of type FIRST.
     timestep = self._coordinator.rl_reset()
 
     # Process relevant information.
