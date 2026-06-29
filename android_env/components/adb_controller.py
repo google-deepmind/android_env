@@ -48,7 +48,7 @@ class AdbController:
     self._os_env_vars.update(
         {'HOME': os.path.expandvars(self._os_env_vars.get('HOME', ''))}
     )
-    logging.info('self._os_env_vars: %r', self._os_env_vars)
+    # logging.info('self._os_env_vars: %r', self._os_env_vars)
 
   def command_prefix(self, include_device_name: bool = True) -> list[str]:
     """The command for instantiating an adb client to this server."""
@@ -128,7 +128,7 @@ class AdbController:
     latest_error = None
     for i in range(n_tries):
       try:
-        logging.info('Executing ADB command: [%s]', command_str)
+        # logging.info('Executing ADB command: [%s]', command_str)
         cmd_output = subprocess.check_output(
             command,
             stderr=subprocess.STDOUT,
@@ -145,13 +145,31 @@ class AdbController:
             command_str,
         )
         if e.stdout is not None:
-          logging.error('**stdout**:')
-          for line in e.stdout.splitlines():
-            logging.error('    %s', line)
+          logging.error('**stdout** (truncated):')
+          stdout_lines = e.stdout.splitlines()
+          for line in stdout_lines[:10]:
+            if any(b < 32 or b > 126 for b in line if b not in (9, 10, 13)):
+              logging.error('    [binary data, size %d]', len(line))
+              break
+            else:
+              logging.error(
+                  '    %s', line[:200].decode('utf-8', errors='replace')
+              )
+          if len(stdout_lines) > 10:
+            logging.error('    ... and %d more lines', len(stdout_lines) - 10)
         if e.stderr is not None:
-          logging.error('**stderr**:')
-          for line in e.stderr.splitlines():
-            logging.error('    %s', line)
+          logging.error('**stderr** (truncated):')
+          stderr_lines = e.stderr.splitlines()
+          for line in stderr_lines[:10]:
+            if any(b < 32 or b > 126 for b in line if b not in (9, 10, 13)):
+              logging.error('    [binary data, size %d]', len(line))
+              break
+            else:
+              logging.error(
+                  '    %s', line[:200].decode('utf-8', errors='replace')
+              )
+          if len(stderr_lines) > 10:
+            logging.error('    ... and %d more lines', len(stderr_lines) - 10)
         latest_error = e
         if device_specific and i < n_tries - 1:
           self._restart_server(timeout=timeout)

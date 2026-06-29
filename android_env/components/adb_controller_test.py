@@ -260,6 +260,98 @@ class AdbControllerTest(absltest.TestCase):
         timeout=_TIMEOUT,
     )
 
+  @mock.patch.object(subprocess, 'check_output', autospec=True)
+  @mock.patch.object(time, 'sleep', autospec=True)
+  @mock.patch.object(adb_controller_lib.logging, 'error', autospec=True)
+  @mock.patch.object(adb_controller_lib.logging, 'exception', autospec=True)
+  def test_timeout_binary_logging(
+      self,
+      mock_logging_exception,
+      mock_logging_error,
+      mock_sleep,
+      mock_check_output,
+  ):
+    """Verify that binary output from timed out command is truncated in logs."""
+    del mock_sleep, mock_logging_exception
+
+    binary_line = b'\x00\x01\x02\x03\x0a'
+    huge_binary_output = binary_line * 1000
+    mock_check_output.side_effect = subprocess.TimeoutExpired(
+        cmd='screencap', timeout=120.0, output=huge_binary_output
+    )
+
+    adb_controller = adb_controller_lib.AdbController(
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            use_adb_server_port_from_os_env=True,
+        )
+    )
+
+    with self.assertRaises(errors.AdbControllerError):
+      # Pass device_specific=False to avoid server restarts, but it still tries 2 times.
+      adb_controller.execute_command(
+          ['version'], timeout=_TIMEOUT, device_specific=False
+      )
+
+    error_calls = mock_logging_error.call_args_list
+    self.assertLen(error_calls, 6)  # 2 tries * 3 logs per try
+    self.assertEqual(error_calls[0], mock.call('**stdout** (truncated):'))
+    self.assertEqual(error_calls[1], mock.call('    [binary data, size %d]', 4))
+    self.assertEqual(
+        error_calls[2], mock.call('    ... and %d more lines', 990)
+    )
+    self.assertEqual(error_calls[3], mock.call('**stdout** (truncated):'))
+    self.assertEqual(error_calls[4], mock.call('    [binary data, size %d]', 4))
+    self.assertEqual(
+        error_calls[5], mock.call('    ... and %d more lines', 990)
+    )
+
+  @mock.patch.object(subprocess, 'check_output', autospec=True)
+  @mock.patch.object(time, 'sleep', autospec=True)
+  @mock.patch.object(adb_controller_lib.logging, 'error', autospec=True)
+  @mock.patch.object(adb_controller_lib.logging, 'exception', autospec=True)
+  def test_timeout_long_text_logging(
+      self,
+      mock_logging_exception,
+      mock_logging_error,
+      mock_sleep,
+      mock_check_output,
+  ):
+    """Verify that long text output from timed out command is truncated in logs."""
+    del mock_sleep, mock_logging_exception
+
+    text_output = b'line\n' * 20
+    mock_check_output.side_effect = subprocess.TimeoutExpired(
+        cmd='blah', timeout=120.0, output=text_output
+    )
+
+    adb_controller = adb_controller_lib.AdbController(
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            use_adb_server_port_from_os_env=True,
+        )
+    )
+
+    with self.assertRaises(errors.AdbControllerError):
+      # Pass device_specific=False to avoid server restarts, but it still tries 2 times.
+      adb_controller.execute_command(
+          ['version'], timeout=_TIMEOUT, device_specific=False
+      )
+
+    error_calls = mock_logging_error.call_args_list
+    self.assertLen(error_calls, 24)  # 2 tries * 12 logs per try
+    for offset in (0, 12):
+      self.assertEqual(
+          error_calls[offset], mock.call('**stdout** (truncated):')
+      )
+      for i in range(1, 11):
+        self.assertEqual(error_calls[offset + i], mock.call('    %s', 'line'))
+      self.assertEqual(
+          error_calls[offset + 11], mock.call('    ... and %d more lines', 10)
+      )
+
 
 class AdbControllerInitTest(absltest.TestCase):
 
