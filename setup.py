@@ -98,7 +98,7 @@ class _BuildPy(build_py):
 
 setup(
     packages=find_packages(exclude=['examples']),
-    package_data={'': ['proto/*.proto']},  # Copy protobuf files.
+    package_data={'android_env': ['proto/*.proto', 'proto/a11y/*.proto']},
     include_package_data=True,
     setup_requires=['grpcio-tools'],
     cmdclass={
