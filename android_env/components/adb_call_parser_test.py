@@ -25,6 +25,7 @@ from absl.testing import parameterized
 from android_env.components import adb_call_parser
 from android_env.components import adb_controller
 from android_env.proto import adb_pb2
+from google.protobuf import text_format
 
 
 class AdbCallParserTest(parameterized.TestCase):
@@ -229,8 +230,9 @@ class AdbCallParserTest(parameterized.TestCase):
   def test_press_button_invalid_button(self):
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(adb)
-    request = adb_pb2.AdbRequest()
-    request.press_button.button = 99999  # pyrefly: ignore[bad-assignment]
+    request = text_format.Parse(
+        'press_button { button: 99999 }', adb_pb2.AdbRequest()
+    )
     response = parser.parse(request)
     self.assertEqual(response.status,
                      adb_pb2.AdbResponse.Status.FAILED_PRECONDITION)
