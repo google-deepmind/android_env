@@ -16,6 +16,7 @@
 """Tests for android_env.components.emulator_simulator."""
 
 import builtins
+import datetime
 import os
 import time
 from unittest import mock
@@ -342,7 +343,7 @@ class EmulatorSimulatorTest(parameterized.TestCase):
 
   def test_get_screenshot_reconnects_on_grpc_error(self):
     config = config_classes.EmulatorConfig(
-        interaction_rate_sec=0.0,
+        interaction_rate_sec=datetime.timedelta(seconds=0.0),
         emulator_launcher=config_classes.EmulatorLauncherConfig(
             grpc_port=1234, tmp_dir=self.create_tempdir().full_path
         ),

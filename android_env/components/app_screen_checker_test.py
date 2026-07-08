@@ -15,6 +15,7 @@
 
 """Tests for android_env.components.app_screen_checker."""
 
+import datetime
 import re
 import timeit
 from unittest import mock
@@ -249,7 +250,8 @@ TASK
     self.assertRaises(
         errors.WaitForAppScreenError,
         screen_checker.wait_for_app_screen,
-        timeout_sec=0.0)
+        timeout=datetime.timedelta(seconds=0.0),
+    )
 
   def test_wait_for_app_screen_successful(self):
     """Ensures that with the right conditions, the app screen should pop up."""
@@ -262,8 +264,8 @@ TASK
 
     screen_checker = app_screen_checker.AppScreenChecker(
         call_parser, app_screen)
-    timeout = 1.0
-    wait_time = screen_checker.wait_for_app_screen(timeout_sec=timeout)
+    timeout = datetime.timedelta(seconds=1.0)
+    wait_time = screen_checker.wait_for_app_screen(timeout=timeout)
 
     # The call should not generate an exception and the return value should be
     # less than the timeout given.
