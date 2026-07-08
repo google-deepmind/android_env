@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import itertools
 import time
 from unittest import mock
@@ -79,7 +80,9 @@ class BaseSimulatorTest(absltest.TestCase):
         errors.ReadObservationError()
     )
     simulator = fake_simulator.FakeSimulator(
-        config_classes.FakeSimulatorConfig(interaction_rate_sec=0.5)
+        config_classes.FakeSimulatorConfig(
+            interaction_rate_sec=datetime.timedelta(seconds=0.5)
+        )
     )
     with mock.patch.object(
         base_simulator,
@@ -99,7 +102,7 @@ class BaseSimulatorTest(absltest.TestCase):
     """Return same screenshot when step is faster than the interaction rate."""
 
     # Arrange.
-    slow_rate = 0.5
+    slow_rate = datetime.timedelta(seconds=0.5)
     simulator = fake_simulator.FakeSimulator(
         config_classes.FakeSimulatorConfig(interaction_rate_sec=slow_rate)
     )
@@ -126,7 +129,7 @@ class BaseSimulatorTest(absltest.TestCase):
     """Return different screenshots when step slower than the interaction rate."""
 
     # Arrange.
-    fast_rate = 0.01
+    fast_rate = datetime.timedelta(seconds=0.01)
     simulator = fake_simulator.FakeSimulator(
         config_classes.FakeSimulatorConfig(interaction_rate_sec=fast_rate)
     )
@@ -155,7 +158,9 @@ class BaseSimulatorTest(absltest.TestCase):
 
     # Arrange.
     simulator = fake_simulator.FakeSimulator(
-        config_classes.FakeSimulatorConfig(interaction_rate_sec=0.01)
+        config_classes.FakeSimulatorConfig(
+            interaction_rate_sec=datetime.timedelta(seconds=0.01)
+        )
     )
     mock_interaction_thread = mock.create_autospec(
         base_simulator.InteractionThread

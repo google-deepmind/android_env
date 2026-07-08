@@ -15,6 +15,7 @@
 
 """Tests for rate_limit_wrapper."""
 
+import datetime
 import time
 from typing import Any, Protocol
 from unittest import mock
@@ -61,14 +62,14 @@ def _with_timestamp(fn: Any) -> _FnWithTimestamps:
 class RateLimitWrapperTest(parameterized.TestCase):
 
   @parameterized.named_parameters(
-      ('zero_rate', 0),
-      ('negative_rate', -50),
+      ('zero_wait', datetime.timedelta(seconds=0.0)),
+      ('negative_wait', datetime.timedelta(seconds=-1.0)),
   )
   @mock.patch.object(time, 'sleep', autospec=True)
-  def test_disabled(self, rate, mock_sleep):
+  def test_disabled(self, max_wait, mock_sleep):
     """With a non-positive rate, this wrapper should do nothing."""
     env = _get_base_env()
-    wrapper = rate_limit_wrapper.RateLimitWrapper(env, rate=rate)
+    wrapper = rate_limit_wrapper.RateLimitWrapper(env, max_wait=max_wait)
     _ = wrapper.reset()
     mock_sleep.assert_not_called()
     _ = wrapper.step({
@@ -85,7 +86,9 @@ class RateLimitWrapperTest(parameterized.TestCase):
 
     env = _get_base_env()
     env.step.return_value = dm_env.transition(reward=None, observation=None)
-    wrapper = rate_limit_wrapper.RateLimitWrapper(env, rate=1/33.33)
+    wrapper = rate_limit_wrapper.RateLimitWrapper(
+        env, max_wait=datetime.timedelta(seconds=33.33)
+    )
 
     _ = wrapper.reset()
     mock_sleep.assert_not_called()  # It should never sleep during reset().
@@ -113,8 +116,9 @@ class RateLimitWrapperTest(parameterized.TestCase):
     env = _get_base_env()
     wrapper = rate_limit_wrapper.RateLimitWrapper(
         env,
-        rate=1/33.33,
-        sleep_type=rate_limit_wrapper.RateLimitWrapper.SleepType.BEFORE)
+        max_wait=datetime.timedelta(seconds=33.33),
+        sleep_type=rate_limit_wrapper.RateLimitWrapper.SleepType.BEFORE,
+    )
 
     _ = wrapper.reset()
     mock_sleep.assert_not_called()  # It should never sleep during reset().
@@ -154,8 +158,9 @@ class RateLimitWrapperTest(parameterized.TestCase):
     env = _get_base_env()
     wrapper = rate_limit_wrapper.RateLimitWrapper(
         env,
-        rate=1/33.33,
-        sleep_type=rate_limit_wrapper.RateLimitWrapper.SleepType.AFTER)
+        max_wait=datetime.timedelta(seconds=33.33),
+        sleep_type=rate_limit_wrapper.RateLimitWrapper.SleepType.AFTER,
+    )
     _ = wrapper.reset()
     mock_sleep.assert_not_called()  # It should never sleep during reset().
 
@@ -194,9 +199,9 @@ class RateLimitWrapperTest(parameterized.TestCase):
     env = _get_base_env()
     wrapper = rate_limit_wrapper.RateLimitWrapper(
         env,
-        rate=1/33.33,
-        sleep_type=rate_limit_wrapper.RateLimitWrapper.SleepType
-        .AFTER_WITH_REPEAT)
+        max_wait=datetime.timedelta(seconds=33.33),
+        sleep_type=rate_limit_wrapper.RateLimitWrapper.SleepType.AFTER_WITH_REPEAT,
+    )
 
     _ = wrapper.reset()
     mock_sleep.assert_not_called()  # It should never sleep during reset().
@@ -249,9 +254,9 @@ class RateLimitWrapperTest(parameterized.TestCase):
     env = _get_base_env()
     wrapper = rate_limit_wrapper.RateLimitWrapper(
         env,
-        rate=1/33.33,
-        sleep_type=rate_limit_wrapper.RateLimitWrapper.SleepType
-        .AFTER_WITH_REPEAT)
+        max_wait=datetime.timedelta(seconds=33.33),
+        sleep_type=rate_limit_wrapper.RateLimitWrapper.SleepType.AFTER_WITH_REPEAT,
+    )
 
     _ = wrapper.reset()
     mock_sleep.assert_not_called()  # It should never sleep during reset().

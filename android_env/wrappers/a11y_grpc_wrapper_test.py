@@ -15,6 +15,7 @@
 
 """Tests for a11y_grpc_wrapper."""
 
+import datetime
 import time
 from unittest import mock
 
@@ -536,7 +537,9 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         observation={'dummy': 42}, reward=0.0
     )
     wrapped_env = a11y_grpc_wrapper.A11yGrpcWrapper(
-        base_env, add_latest_a11y_info_to_obs=False, a11y_info_timeout=1.0
+        base_env,
+        add_latest_a11y_info_to_obs=False,
+        a11y_info_timeout=datetime.timedelta(seconds=1.0),
     )
     with mock.patch.object(wrapped_env, '_fetch_task_extras'):
       wrapped_env._fetch_task_extras.return_value = {
@@ -569,7 +572,9 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         observation={'dummy': 42}, reward=0.0
     )
     wrapped_env = a11y_grpc_wrapper.A11yGrpcWrapper(
-        base_env, add_latest_a11y_info_to_obs=True, a11y_info_timeout=1.0
+        base_env,
+        add_latest_a11y_info_to_obs=True,
+        a11y_info_timeout=datetime.timedelta(seconds=1.0),
     )
     with mock.patch.object(wrapped_env, '_fetch_task_extras'):
       wrapped_env._fetch_task_extras.side_effect = [{
@@ -600,7 +605,9 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         observation={'dummy': 42}, reward=0.0
     )
     wrapped_env = a11y_grpc_wrapper.A11yGrpcWrapper(
-        base_env, add_latest_a11y_info_to_obs=True, a11y_info_timeout=1.0
+        base_env,
+        add_latest_a11y_info_to_obs=True,
+        a11y_info_timeout=datetime.timedelta(seconds=1.0),
     )
     with mock.patch.object(wrapped_env, '_fetch_task_extras'):
       wrapped_env._fetch_task_extras.side_effect = [
@@ -635,7 +642,9 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         observation={'dummy': 42}, reward=0.0
     )
     wrapped_env = a11y_grpc_wrapper.A11yGrpcWrapper(
-        base_env, add_latest_a11y_info_to_obs=True, a11y_info_timeout=0.0
+        base_env,
+        add_latest_a11y_info_to_obs=True,
+        a11y_info_timeout=datetime.timedelta(seconds=0.0),
     )
     with mock.patch.object(wrapped_env, '_fetch_task_extras'):
       wrapped_env._fetch_task_extras.side_effect = [

@@ -15,6 +15,7 @@
 
 """Limits interactions with the environment to a given rate."""
 
+import datetime
 import enum
 import time
 
@@ -46,15 +47,17 @@ class RateLimitWrapper(base_wrapper.BaseWrapper):
     # because the sleep does not account for the time taken by step().
     AFTER_WITH_REPEAT = 2
 
-  def __init__(self,
-               env: env_interface.AndroidEnvInterface,
-               rate: float,
-               sleep_type: SleepType = SleepType.AFTER_WITH_REPEAT):
+  def __init__(
+      self,
+      env: env_interface.AndroidEnvInterface,
+      max_wait: datetime.timedelta,
+      sleep_type: SleepType = SleepType.AFTER_WITH_REPEAT,
+  ):
     """Initializes this wrapper.
 
     Args:
       env: The underlying environment to which this wrapper is applied.
-      rate: The desired rate in Hz to interact with the environment. If <=0.0,
+      max_wait: The desired maximum wait time between interactions. If <=0.0,
         this wrapper will be disabled.
       sleep_type: This determines how the wrapper will interact with the
         underlying AndroidEnv environment.
@@ -62,7 +65,7 @@ class RateLimitWrapper(base_wrapper.BaseWrapper):
     super().__init__(env)
     self._assert_base_env()
     self._last_step_time = None
-    self._max_wait = 1.0 / rate if rate > 0.0 else 0.0
+    self._max_wait = max_wait
     self._sleep_type = sleep_type
 
   def _assert_base_env(self):
@@ -74,14 +77,14 @@ class RateLimitWrapper(base_wrapper.BaseWrapper):
 
   def reset(self):
     timestep = self._env.reset()
-    self._last_step_time = time.time()
+    self._last_step_time = time.monotonic()
     return timestep
 
   def step(self, action: dict[str, np.ndarray]) -> dm_env.TimeStep:
     """Takes a step while maintaining a steady interaction rate."""
 
     # If max_wait is non-positive, the wrapper has no effect.
-    if self._max_wait <= 0.0:
+    if self._max_wait <= datetime.timedelta(seconds=0.0):
       return self._env.step(action)
 
     if self._sleep_type == RateLimitWrapper.SleepType.BEFORE:
@@ -105,13 +108,18 @@ class RateLimitWrapper(base_wrapper.BaseWrapper):
     elif self._sleep_type == RateLimitWrapper.SleepType.AFTER:
       self._wait()
 
-    self._last_step_time = time.time()
+    self._last_step_time = time.monotonic()
 
     return timestep
 
   def _wait(self) -> None:
-    if self._max_wait > 0.0 and self._last_step_time is not None:
-      time_since_step = time.time() - self._last_step_time
-      sec_to_wait = self._max_wait - time_since_step
-      if sec_to_wait > 0.0:
-        time.sleep(sec_to_wait)
+    if (
+        self._max_wait > datetime.timedelta(seconds=0.0)
+        and self._last_step_time is not None
+    ):
+      time_since_step = datetime.timedelta(
+          seconds=time.monotonic() - self._last_step_time
+      )
+      to_wait = self._max_wait - time_since_step
+      if to_wait > datetime.timedelta(seconds=0.0):
+        time.sleep(to_wait.total_seconds())

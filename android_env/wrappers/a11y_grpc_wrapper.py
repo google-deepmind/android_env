@@ -16,6 +16,7 @@
 """Wraps AndroidEnv to retrieve accessibility messages from gRPC."""
 
 from concurrent import futures
+import datetime
 import time
 from typing import Any
 
@@ -84,7 +85,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
       start_a11y_service: bool = True,
       enable_a11y_tree_info: bool = False,
       add_latest_a11y_info_to_obs: bool = False,
-      a11y_info_timeout: float | None = None,
+      a11y_info_timeout: datetime.timedelta | None = None,
       max_enable_networking_attempts: int = 10,
       latest_a11y_info_only: bool = False,
       grpc_server_ip: str = '10.0.2.2',
@@ -158,7 +159,10 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
     self._add_latest_a11y_info_to_obs = add_latest_a11y_info_to_obs
     self._a11y_info_timeout = a11y_info_timeout
     self._parent_action_spec = self._env.action_spec()
-    if self._a11y_info_timeout is not None and self._a11y_info_timeout > 0.0:
+    if (
+        self._a11y_info_timeout is not None
+        and self._a11y_info_timeout > datetime.timedelta(seconds=0.0)
+    ):
       if 'action_type' not in self._parent_action_spec.keys():
         raise ValueError(
             'action_type not in the parent action spec: '
@@ -344,7 +348,9 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
     )
 
   def _accumulate_and_return_a11y_info(
-      self, timer: float | None = None, get_env_observation: bool = True
+      self,
+      timer: datetime.timedelta | None = None,
+      get_env_observation: bool = True,
   ) -> dict[str, Any]:
     """Accumulates and returns the latest a11y tree info and observation.
 
@@ -358,9 +364,9 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
       a dict with a11y forest under key 'a11y_forest'. All other fields will
       provide the observation, if requested.
     """
-    timer = timer or 0.0
-    if timer > 0.0:
-      time.sleep(timer)
+    timer = timer or datetime.timedelta()
+    if timer > datetime.timedelta(seconds=0.0):
+      time.sleep(timer.total_seconds())
 
     if get_env_observation:
       # Fetch observation.
@@ -383,9 +389,11 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
     return observation
 
   def _fetch_task_extras_and_update_observation(
-      self, observation: dict[str, Any], timeout: float = 0.0
+      self,
+      observation: dict[str, Any],
+      timeout: datetime.timedelta = datetime.timedelta(seconds=0.0),
   ) -> dict[str, Any]:
-    if timeout > 0.0:
+    if timeout > datetime.timedelta(seconds=0.0):
       observation = self._accumulate_and_return_a11y_info(
           timeout, get_env_observation=True
       )
@@ -406,7 +414,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
       self._configure_grpc()
       self._relaunch_count = self._env.stats()['relaunch_count']
     self._accumulated_extras = {}
-    timeout = self._a11y_info_timeout or 0.0
+    timeout = self._a11y_info_timeout or datetime.timedelta()
     new_observation = self._fetch_task_extras_and_update_observation(
         timestep.observation, timeout
     )
@@ -414,7 +422,11 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
     return timestep
 
   def step(self, action: Any) -> dm_env.TimeStep:
-    timeout = float(action.pop('wait_time', self._a11y_info_timeout or 0.0))
+    wait_time = action.pop('wait_time', None)
+    if wait_time is not None:
+      timeout = datetime.timedelta(seconds=float(wait_time))
+    else:
+      timeout = self._a11y_info_timeout or datetime.timedelta()
     timestep = self._env.step(action)
     new_observation = self._fetch_task_extras_and_update_observation(
         timestep.observation, timeout=timeout
