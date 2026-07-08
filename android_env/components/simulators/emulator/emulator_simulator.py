@@ -16,6 +16,7 @@
 """A class that manages an Android Emulator."""
 
 from collections.abc import Callable, Mapping
+import datetime
 import functools
 import os
 import platform
@@ -172,9 +173,9 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
       self._config.emulator_launcher.grpc_port = _pick_emulator_grpc_port()
 
     self._channel = None
-    self._emulator_stub: emulator_controller_pb2_grpc.EmulatorControllerStub | None = (
-        None
-    )
+    self._emulator_stub: (
+        emulator_controller_pb2_grpc.EmulatorControllerStub | None
+    ) = None
     self._snapshot_stub = None
     # Set the image format to RGBA. The width and height of the returned
     # screenshots will use the device's width and height.
@@ -370,7 +371,7 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
   def _connect_to_emulator(
       self,
       grpc_port: int,
-      timeout_sec: int = 100,
+      timeout: datetime.timedelta = datetime.timedelta(seconds=100),
   ) -> tuple[
       emulator_controller_pb2_grpc.EmulatorControllerStub,
       snapshot_service_pb2_grpc.SnapshotServiceStub,
@@ -390,7 +391,9 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
     try:
       self._channel = grpc.secure_channel(port, creds, options=options)
-      grpc.channel_ready_future(self._channel).result(timeout=timeout_sec)
+      grpc.channel_ready_future(self._channel).result(
+          timeout=timeout.total_seconds()
+      )
     except (grpc.RpcError, grpc.FutureTimeoutError) as grpc_error:
       logging.exception('Failed to connect to the emulator.')
       raise EmulatorBootError(
@@ -404,16 +407,19 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
     return emulator_controller_stub, snapshot_stub
 
   @_reconnect_on_grpc_error
-  def _confirm_booted(self, startup_wait_time_sec: int = 300):
+  def _confirm_booted(
+      self,
+      startup_wait_time: datetime.timedelta = datetime.timedelta(seconds=300),
+  ):
     """Waits until the emulator is fully booted."""
 
     assert (
         self._emulator_stub is not None
     ), 'Emulator stub has not been initialized yet.'
-    start_time = time.time()
-    deadline = start_time + startup_wait_time_sec
+    start_time = time.monotonic()
+    deadline = start_time + startup_wait_time.total_seconds()
     success = False
-    while time.time() < deadline:
+    while time.monotonic() < deadline:
       emu_status = self._emulator_stub.getStatus(empty_pb2.Empty())
       logging.info('Waiting for emulator (%r) to start... (%rms)',
                    self.adb_device_name(), emu_status.uptime)
@@ -422,10 +428,12 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
         break
       time.sleep(5.0)
 
-    elapsed_time = time.time() - start_time
+    elapsed_time = time.monotonic() - start_time
     if not success:
       raise EmulatorCrashError(
-          f'The emulator failed to boot after {startup_wait_time_sec} seconds')
+          'The emulator failed to boot after'
+          f' {startup_wait_time.total_seconds()} seconds'
+      )
 
     logging.info('Done booting the emulator (in %f seconds).', elapsed_time)
     logging.info('********** Emulator logs **********')

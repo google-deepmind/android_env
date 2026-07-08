@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import builtins
+import datetime
 import os
 import subprocess
 import sys
@@ -774,6 +775,24 @@ class AdbCallParserTest(parameterized.TestCase):
     self.assertEmpty(response.error_message)
     self.assertEqual(response.generic.output, expected_output)
     adb.execute_command.assert_called_once_with(args, None)
+
+  def test_generic_command_with_timeout_successful(self):
+    adb = mock.create_autospec(adb_controller.AdbController)
+    expected_output = b'broadcast_output'
+    args = ['shell', 'am', 'broadcast', '-n', 'receiver', '-a', 'action']
+    adb.execute_command.return_value = expected_output
+    parser = adb_call_parser.AdbCallParser(adb)
+
+    generic_request = adb_pb2.AdbRequest.GenericRequest(args=args)
+    request = adb_pb2.AdbRequest(generic=generic_request, timeout_sec=5.0)
+    response = parser.parse(request)
+
+    self.assertEqual(adb_pb2.AdbResponse.Status.OK, response.status)
+    self.assertEmpty(response.error_message)
+    self.assertEqual(response.generic.output, expected_output)
+    adb.execute_command.assert_called_once_with(
+        args, datetime.timedelta(seconds=5.0)
+    )
 
   def test_generic_command_adb_error(self):
     adb = mock.create_autospec(adb_controller.AdbController)

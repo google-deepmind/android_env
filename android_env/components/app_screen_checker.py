@@ -16,6 +16,7 @@
 """Determines if the current app screen matches an expected app screen."""
 
 from collections.abc import Callable, Sequence
+import datetime
 import enum
 import re
 import time
@@ -233,32 +234,40 @@ class AppScreenChecker:
 
     return AppScreenChecker.Outcome.SUCCESS
 
-  def wait_for_app_screen(self, timeout_sec: float) -> float:
+  def wait_for_app_screen(
+      self, timeout: datetime.timedelta
+  ) -> datetime.timedelta:
     """Waits for `self._expected_app_screen` to be the current screen.
 
     Args:
-      timeout_sec: Maximum total time to wait for the screen to pop up.
+      timeout: Maximum total time to wait for the screen to pop up.
 
     Returns:
-      The total amount of time in seconds spent waiting for the screen to pop
-      up.
+      The total amount of time spent waiting for the screen to pop up.
     Raises:
       errors.WaitForAppScreenError if the screen does not pop up within
-      `timeout_sec`.
+      `timeout`.
     """
 
     logging.info('Waiting for app screen...')
-    start_time = time.time()
-    while time.time() - start_time < timeout_sec:
+    start_time = time.monotonic()
+    timeout_sec = timeout.total_seconds()
+    while time.monotonic() - start_time < timeout_sec:
       if self.matches_current_app_screen() == AppScreenChecker.Outcome.SUCCESS:
-        wait_time = time.time() - start_time
-        logging.info('Successfully waited for app screen in %r seconds: [%r]',
-                     wait_time, self._expected_app_screen)
+        wait_time = datetime.timedelta(seconds=time.monotonic() - start_time)
+        logging.info(
+            'Successfully waited for app screen in %r: [%r]',
+            wait_time,
+            self._expected_app_screen,
+        )
         return wait_time
       time.sleep(0.1)
 
-    wait_time = time.time() - start_time
-    logging.error('Failed to wait for app screen in %r seconds: [%r].',
-                  wait_time, self._expected_app_screen)
+    wait_time = datetime.timedelta(seconds=time.monotonic() - start_time)
+    logging.error(
+        'Failed to wait for app screen in %r: [%r].',
+        wait_time,
+        self._expected_app_screen,
+    )
 
     raise errors.WaitForAppScreenError()

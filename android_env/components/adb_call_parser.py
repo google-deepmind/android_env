@@ -15,6 +15,7 @@
 
 """Processes adb_pb2.AdbRequest commands."""
 
+import datetime
 import os
 import re
 import subprocess
@@ -63,7 +64,7 @@ class AdbCallParser:
     }
 
   def _execute_command(
-      self, command_args: list[str], timeout: float | None
+      self, command_args: list[str], timeout: datetime.timedelta | None
   ) -> tuple[adb_pb2.AdbResponse, bytes]:
     """Executes the command, catches errors and populates the response status.
 
@@ -107,11 +108,17 @@ class AdbCallParser:
                                 f'Got: {request.timeout_sec}')
       return response
 
-    timeout: float | None = request.timeout_sec or None
+    timeout = (
+        datetime.timedelta(seconds=request.timeout_sec)
+        if request.timeout_sec > 0
+        else None
+    )
     return self._handlers[command_type](request, timeout)
 
   def _force_stop(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Stops an application.
 
@@ -136,7 +143,7 @@ class AdbCallParser:
     return response
 
   def _fetch_current_task_id(
-      self, full_activity_name: str, timeout: float | None = None
+      self, full_activity_name: str, timeout: datetime.timedelta | None = None
   ) -> int:
     """Returns the task ID of the given `full_activity_name`.
 
@@ -183,7 +190,9 @@ class AdbCallParser:
     return -1
 
   def _start_screen_pinning(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Pins an application.
 
@@ -217,7 +226,9 @@ class AdbCallParser:
     return response
 
   def _send_broadcast(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Sends a broadcast.
 
@@ -250,7 +261,9 @@ class AdbCallParser:
     return response
 
   def _install_apk(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Installs an app given its local path in the filesystem.
 
@@ -305,7 +318,9 @@ class AdbCallParser:
     return response
 
   def _start_activity(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Starts a given activity.
 
@@ -353,7 +368,9 @@ class AdbCallParser:
     return response
 
   def _press_button(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Presses a keyboard key.
 
@@ -380,7 +397,9 @@ class AdbCallParser:
     return response
 
   def _handle_uninstall_package(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Handles UninstallPackage messages.
 
@@ -419,7 +438,9 @@ class AdbCallParser:
     return response
 
   def _get_current_activity(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Fetches current activity.
 
@@ -473,7 +494,9 @@ class AdbCallParser:
     return response
 
   def _get_orientation(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Fetches current device orientation.
 
@@ -534,7 +557,9 @@ class AdbCallParser:
     return response
 
   def _push(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Uploads contents to the device.
 
@@ -565,7 +590,9 @@ class AdbCallParser:
     return response
 
   def _pull(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Downloads file content from the device.
 
@@ -598,7 +625,9 @@ class AdbCallParser:
     return response
 
   def _input_text(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Inserts text as keyboard events.
 
@@ -621,7 +650,9 @@ class AdbCallParser:
     return response
 
   def _tap(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Taps the device screen.
 
@@ -651,7 +682,9 @@ class AdbCallParser:
     return response
 
   def _handle_settings(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Handles SettingsRequest messages.
 
@@ -767,7 +800,9 @@ class AdbCallParser:
         )
 
   def _handle_generic(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Handles GenericRequest messages.
 
@@ -786,7 +821,9 @@ class AdbCallParser:
     return response
 
   def _handle_package_manager(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Handles PackageManagerRequest messages.
 
@@ -880,7 +917,9 @@ class AdbCallParser:
         )
 
   def _handle_dumpsys(
-      self, request: adb_pb2.AdbRequest, timeout: float | None = None
+      self,
+      request: adb_pb2.AdbRequest,
+      timeout: datetime.timedelta | None = None,
   ) -> adb_pb2.AdbResponse:
     """Handles DumpsysRequest messages.
 

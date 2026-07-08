@@ -17,6 +17,7 @@
 
 from collections.abc import Sequence
 import copy
+import datetime
 import time
 from typing import Any
 
@@ -43,7 +44,7 @@ class SetupStepInterpreter:
         'error_count_wait_for_app_screen': 0,
         'error_count_check_install': 0,
         'error_count_wait_for_message': 0,
-        'total_time_waiting_for_app_screen': 0.0,
+        'total_time_waiting_for_app_screen': datetime.timedelta(seconds=0.0),
     }
 
   def stats(self) -> dict[str, Any]:
@@ -149,9 +150,8 @@ class SetupStepInterpreter:
             adb_call_parser=self._adb_call_parser,
             expected_app_screen=wait_for_app_screen.app_screen,
         )
-        wait_time = screen_checker.wait_for_app_screen(
-            timeout_sec=wait_for_app_screen.timeout_sec
-        )
+        timeout = datetime.timedelta(seconds=wait_for_app_screen.timeout_sec)
+        wait_time = screen_checker.wait_for_app_screen(timeout=timeout)
         self._stats['total_time_waiting_for_app_screen'] += wait_time
       case 'check_install':
         self._check_install(success_condition.check_install)
