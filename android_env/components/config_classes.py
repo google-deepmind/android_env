@@ -16,6 +16,7 @@
 """Dataclass definitions used for instantiating AndroidEnv components."""
 
 import dataclasses
+import datetime
 import enum
 
 
@@ -31,7 +32,7 @@ class AdbControllerConfig:
   # Port for adb server.
   adb_server_port: int = 5037
   # Default timeout in seconds for internal commands.
-  default_timeout: float = 120.0
+  default_timeout: datetime.timedelta = datetime.timedelta(seconds=120.0)
   # Name of the device to communicate with.
   device_name: str = ''
   # Whether to use adb server port set in OS Environment variables.
@@ -84,7 +85,7 @@ class SimulatorConfig:
   # How often to (asynchronously) grab the screenshot from the simulator.
   # If <= 0, stepping the environment blocks on fetching the screenshot (the
   # environment is synchronous).
-  interaction_rate_sec: float = 0.0
+  interaction_rate_sec: datetime.timedelta = datetime.timedelta(seconds=0.0)
 
 
 @enum.unique
