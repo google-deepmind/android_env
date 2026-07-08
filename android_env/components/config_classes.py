@@ -161,6 +161,11 @@ class EmulatorConfig(SimulatorConfig):
   # The number of times to try launching the emulator before reinstalling
   # (reinstall on the n+1-st try).
   launch_n_times_without_reinstall: int = 2
+  # If True, use the raw on-device server instead of EmulatorSimulator.
+  use_raw_server: bool = False
+  # If True, enable audio capture from the device. Only applicable if
+  # use_raw_server is True.
+  enable_audio: bool = False
 
 
 @dataclasses.dataclass

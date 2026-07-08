@@ -17,6 +17,7 @@
 
 import glob
 import os
+import shutil
 import subprocess
 import tempfile
 
@@ -164,8 +165,14 @@ class EmulatorLauncher:
   def close(self):
     """Clean up launcher files and processes."""
     if not self._is_closed:
-      self._local_tmp_dir_handle.cleanup()
       self.confirm_shutdown()
+      if os.path.exists(self._logfile_path):
+        try:
+          shutil.copyfile(self._logfile_path, '/tmp/emulator_output_debug')
+          logging.info('Copied emulator log to /tmp/emulator_output_debug')
+        except Exception as e:  # pylint: disable=broad-exception-caught
+          logging.error('Failed to copy emulator log: %s', e)
+      self._local_tmp_dir_handle.cleanup()
       self._is_closed = True
 
   def __del__(self):
