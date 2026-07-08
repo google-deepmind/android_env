@@ -17,6 +17,7 @@
 
 import abc
 from collections.abc import Callable
+import datetime
 import threading
 import time
 
@@ -85,7 +86,7 @@ class BaseSimulator(metaclass=abc.ABCMeta):
       ) from error
 
     # Start interaction thread.
-    if self._config.interaction_rate_sec > 0:
+    if self._config.interaction_rate_sec > datetime.timedelta(seconds=0):
       self._interaction_thread = InteractionThread(
           self._get_screenshot_impl, self._config.interaction_rate_sec
       )
@@ -151,7 +152,7 @@ class BaseSimulator(metaclass=abc.ABCMeta):
   def get_screenshot(self) -> np.ndarray:
     """Returns pixels representing the current screenshot of the simulator."""
 
-    if self._config.interaction_rate_sec > 0:
+    if self._config.interaction_rate_sec > datetime.timedelta(seconds=0):
       assert self._interaction_thread is not None
       return self._interaction_thread.screenshot()  # Async mode.
     else:
@@ -180,7 +181,7 @@ class InteractionThread(threading.Thread):
   def __init__(
       self,
       get_screenshot_fn: Callable[[], np.ndarray],
-      interaction_rate_sec: float,
+      interaction_rate_sec: datetime.timedelta,
   ):
     super().__init__()
     self._get_screenshot_fn = get_screenshot_fn
@@ -189,15 +190,15 @@ class InteractionThread(threading.Thread):
     self._screenshot = self._get_screenshot_fn()
 
   def run(self):
-    last_read = time.time()
+    last_read = time.monotonic()
     while not self._should_stop.is_set():
       self._screenshot = self._get_screenshot_fn()
-      now = time.time()
-      elapsed = now - last_read
+      now = time.monotonic()
+      elapsed = datetime.timedelta(seconds=now - last_read)
       last_read = now
       sleep_time = self._interaction_rate_sec - elapsed
-      if sleep_time > 0.0:
-        time.sleep(sleep_time)
+      if sleep_time > datetime.timedelta(seconds=0):
+        time.sleep(sleep_time.total_seconds())
     logging.info('InteractionThread.run() finished.')
 
   def stop(self):
