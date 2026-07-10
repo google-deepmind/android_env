@@ -17,6 +17,7 @@
 
 import builtins
 import os
+import pathlib
 import subprocess
 import tempfile
 from unittest import mock
@@ -55,10 +56,14 @@ class EmulatorLauncherTest(parameterized.TestCase):
     self._ports = ['-ports', f'{self._emulator_console_port},{self._adb_port}']
     self._snapshot = ['-no-snapshot']
 
-    base_lib_dir = self._emulator_path[:-8] + 'lib64/'
+    emulator_path = pathlib.Path(self._emulator_path)
+    emulator_dir = emulator_path.parent
+    base_lib_dir = emulator_dir / 'lib64'
     ld_library_path = ':'.join([
-        base_lib_dir + 'x11/', base_lib_dir + 'qt/lib/',
-        base_lib_dir + 'gles_swiftshader/', base_lib_dir
+        str(base_lib_dir / 'x11'),
+        str(base_lib_dir / 'qt/lib'),
+        str(base_lib_dir / 'gles_swiftshader'),
+        str(base_lib_dir),
     ])
 
     # Instantiate the config to extract default values.
@@ -70,7 +75,7 @@ class EmulatorLauncherTest(parameterized.TestCase):
         'ANDROID_EMULATOR_KVM_DEVICE': '/dev/kvm',
         'ANDROID_ADB_SERVER_PORT': '1234',
         'LD_LIBRARY_PATH': ld_library_path,
-        'QT_XKB_CONFIG_ROOT': str(self._emulator_path[:-8] + 'qt_config/'),
+        'QT_XKB_CONFIG_ROOT': str(emulator_dir / 'qt_config'),
         'ANDROID_EMU_ENABLE_CRASH_REPORTING': '1',
     }
 
