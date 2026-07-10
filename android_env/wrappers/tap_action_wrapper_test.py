@@ -20,6 +20,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from android_env import env_interface
 from android_env.components import action_type
+from android_env.proto import adb_pb2
 from android_env.wrappers import tap_action_wrapper
 import dm_env
 from dm_env import specs
@@ -233,6 +234,36 @@ class TapActionWrapperTest(parameterized.TestCase):
     self.assertEqual(3, self.base_env.step.call_count)
     self.assertIs(ts.step_type, dm_env.StepType.LAST)
     self.assertEqual(ts.reward, 1.0)
+
+  def test_dm_env(self):
+    base_env = mock.create_autospec(dm_env.Environment)
+    base_env.action_spec.return_value = self._base_action_spec
+    wrapped_env = tap_action_wrapper.TapActionWrapper(base_env)
+
+    # Test stats fallback
+    stats = wrapped_env.stats()
+    self.assertIn('env_steps', stats)
+    self.assertEqual(stats['env_steps'], 0)
+
+    # Test task_extras fallback (should return {})
+    self.assertEqual({}, wrapped_env.task_extras())
+
+    # Test execute_adb_call fallback (should return default AdbResponse)
+    adb_request = adb_pb2.AdbRequest()
+    self.assertEqual(
+        adb_pb2.AdbResponse(), wrapped_env.execute_adb_call(adb_request)
+    )
+
+    # Test missing attributes
+    with self.assertRaisesRegex(
+        AttributeError, 'does not have attribute raw_action'
+    ):
+      _ = wrapped_env.raw_action
+
+    with self.assertRaisesRegex(
+        AttributeError, 'does not have attribute raw_observation'
+    ):
+      _ = wrapped_env.raw_observation
 
 
 if __name__ == '__main__':

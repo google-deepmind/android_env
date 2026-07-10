@@ -72,7 +72,7 @@ class LastActionWrapper(base_wrapper.BaseWrapper):
   def _get_last_action_layer(self, pixels: np.ndarray) -> np.ndarray:
     """Makes sure the rescaling doesn't distort the last_action layer."""
 
-    last_action = self._env.raw_action
+    last_action = self.raw_action
     last_action_layer = np.zeros(self._screen_dimensions, dtype=pixels.dtype)
 
     if ('action_type' in last_action and

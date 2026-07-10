@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for a11y_grpc_wrapper."""
-
 import time
 from unittest import mock
 
@@ -961,6 +959,58 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         f'--ei "port" {wrapped_env.get_port()}',
         base_env.execute_adb_call.call_args[0][0].send_broadcast.action,
     )
+
+  @mock.patch.object(
+      a11y_pb2_grpc, 'add_A11yServiceServicer_to_server', autospec=True
+  )
+  @mock.patch.object(grpc, 'server', autospec=True)
+  def test_dm_env(self, mock_server, mock_add_servicer):
+    del mock_server, mock_add_servicer
+    base_env = mock.create_autospec(dm_env.Environment)
+    base_env.action_spec.return_value = {
+        'action_type': dm_env.specs.DiscreteArray(
+            num_values=3, name='action_type'
+        )
+    }
+    base_env.reset.return_value = dm_env.restart(
+        observation={'pixels': np.zeros((10, 10, 3))}
+    )
+    base_env.step.return_value = dm_env.transition(
+        observation={'pixels': np.zeros((10, 10, 3))}, reward=0.0
+    )
+
+    wrapped_env = a11y_grpc_wrapper.A11yGrpcWrapper(
+        base_env,
+        install_a11y_forwarding=False,
+        start_a11y_service=False,
+        enable_a11y_tree_info=False,
+    )
+
+    # Test stats fallback
+    self.assertEqual({}, wrapped_env.stats())
+
+    # Test task_extras fallback
+    wrapped_env.reset()
+    self.assertEqual({}, wrapped_env.task_extras())
+
+    # Test execute_adb_call fallback
+    adb_request = adb_pb2.AdbRequest()
+    self.assertEqual(
+        adb_pb2.AdbResponse(), wrapped_env.execute_adb_call(adb_request)
+    )
+
+    # Test missing attributes
+    with self.assertRaisesRegex(
+        AttributeError, 'does not have attribute raw_action'
+    ):
+      _ = wrapped_env.raw_action
+
+    with self.assertRaisesRegex(
+        AttributeError, 'does not have attribute raw_observation'
+    ):
+      _ = wrapped_env.raw_observation
+
+    wrapped_env.close()
 
 
 if __name__ == '__main__':

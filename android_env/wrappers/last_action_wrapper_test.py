@@ -13,14 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for android_env.wrappers.last_action_wrapper."""
-
-from typing import Any
 from unittest import mock
 
 from absl.testing import absltest
 from android_env import env_interface
 from android_env.components import action_type
+from android_env.proto import adb_pb2
 from android_env.wrappers import last_action_wrapper
 import dm_env
 from dm_env import specs
@@ -157,6 +155,37 @@ class LastActionWrapperTest(absltest.TestCase):
     self.assertEqual(np.sum(last_action_layer), 255)
     y, x = np.where(last_action_layer == 255)
     self.assertEqual((y.item(), x.item()), (90, 79))
+
+  def test_dm_env(self):
+    base_env = mock.create_autospec(dm_env.Environment)
+    base_env.observation_spec.return_value = {'pixels': _simple_spec()}
+    wrapped_env = last_action_wrapper.LastActionWrapper(base_env)
+
+    # Test stats fallback
+    self.assertEqual({}, wrapped_env.stats())
+
+    # Test task_extras fallback (should return {})
+    self.assertEqual({}, wrapped_env.task_extras())
+
+    # Test execute_adb_call fallback (should return default AdbResponse)
+    adb_request = adb_pb2.AdbRequest()
+    self.assertEqual(
+        adb_pb2.AdbResponse(), wrapped_env.execute_adb_call(adb_request)
+    )
+
+    # Test that reset and step raise AttributeError because they need raw_action
+    base_env.reset.return_value = _simple_timestep()
+    with self.assertRaisesRegex(
+        AttributeError, 'does not have attribute raw_action'
+    ):
+      wrapped_env.reset()
+
+    base_env.step.return_value = _simple_timestep()
+    with self.assertRaisesRegex(
+        AttributeError, 'does not have attribute raw_action'
+    ):
+      wrapped_env.step(action={})
+
 
 if __name__ == '__main__':
   absltest.main()

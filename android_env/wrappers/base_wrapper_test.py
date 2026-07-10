@@ -13,15 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for android_env.wrappers.base_wrapper."""
-
 from unittest import mock
 
 from absl import logging
 from absl.testing import absltest
 from android_env import env_interface
+from android_env.proto import adb_pb2
 from android_env.proto import state_pb2
 from android_env.wrappers import base_wrapper
+import dm_env
+from dm_env import specs
 
 
 class BaseWrapperTest(absltest.TestCase):
@@ -148,6 +149,90 @@ class BaseWrapperTest(absltest.TestCase):
     }
 
     self.assertEqual(expected_stats, wrapped_env.stats())
+
+
+class BaseWrapperDmEnvTest(absltest.TestCase):
+
+  def test_dm_env_forwarding(self):
+    base_env = mock.create_autospec(dm_env.Environment, instance=True)
+    wrapped_env = base_wrapper.BaseWrapper(base_env)
+
+    fake_ts = dm_env.TimeStep(
+        step_type=dm_env.StepType.MID, reward=0.0, discount=1.0, observation={}
+    )
+    base_env.reset.return_value = fake_ts
+    self.assertEqual(fake_ts, wrapped_env.reset())
+    base_env.reset.assert_called_once()
+
+    fake_action = 'fake_action'
+    base_env.step.return_value = fake_ts
+    self.assertEqual(fake_ts, wrapped_env.step(fake_action))
+    base_env.step.assert_called_once_with(fake_action)
+
+    fake_obs_spec = 'fake_obs_spec'
+    base_env.observation_spec.return_value = fake_obs_spec
+    self.assertEqual(fake_obs_spec, wrapped_env.observation_spec())
+    base_env.observation_spec.assert_called_once()
+
+    fake_action_spec = 'fake_action_spec'
+    base_env.action_spec.return_value = fake_action_spec
+    self.assertEqual(fake_action_spec, wrapped_env.action_spec())
+    base_env.action_spec.assert_called_once()
+
+    fake_reward_spec = mock.create_autospec(specs.Array)
+    fake_discount_spec = mock.create_autospec(specs.Array)
+    base_env.reward_spec.return_value = fake_reward_spec
+    base_env.discount_spec.return_value = fake_discount_spec
+
+    self.assertEqual(fake_reward_spec, wrapped_env.reward_spec())
+    self.assertEqual(fake_discount_spec, wrapped_env.discount_spec())
+    base_env.reward_spec.assert_called_once()
+    base_env.discount_spec.assert_called_once()
+
+    wrapped_env.close()
+    base_env.close.assert_called_once()
+
+  def test_safe_fallbacks(self):
+    base_env = mock.create_autospec(dm_env.Environment, instance=True)
+    wrapped_env = base_wrapper.BaseWrapper(base_env)
+
+    # task_extras should return default value {} without crashing
+    self.assertEqual({}, wrapped_env.task_extras(latest_only=True))
+
+    # stats should return default value {} without crashing
+    self.assertEqual({}, wrapped_env.stats())
+
+    # execute_adb_call should return default value AdbResponse without crashing
+    self.assertEqual(
+        adb_pb2.AdbResponse(),
+        wrapped_env.execute_adb_call(adb_pb2.AdbRequest()),
+    )
+
+  def test_raw_action_observation_raises_attribute_error(self):
+    base_env = mock.create_autospec(dm_env.Environment, instance=True)
+    wrapped_env = base_wrapper.BaseWrapper(base_env)
+
+    with self.assertRaisesRegex(
+        AttributeError,
+        'Underlying environment .*Mock does not have attribute raw_action',
+    ):
+      _ = wrapped_env.raw_action
+
+    with self.assertRaisesRegex(
+        AttributeError,
+        'Underlying environment .*Mock does not have attribute raw_observation',
+    ):
+      _ = wrapped_env.raw_observation
+
+  def test_getattr_delegation(self):
+    base_env = mock.create_autospec(dm_env.Environment, instance=True)
+    base_env.custom_attr = 'custom_value'
+    wrapped_env = base_wrapper.BaseWrapper(base_env)
+
+    self.assertEqual('custom_value', wrapped_env.custom_attr)
+
+    with self.assertRaises(AttributeError):
+      _ = wrapped_env.non_existent_attribute
 
 
 if __name__ == '__main__':

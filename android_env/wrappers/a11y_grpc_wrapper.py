@@ -187,7 +187,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
             ),
         )
     )
-    start_service_response = self._env.execute_adb_call(start_service_request)
+    start_service_response = self.execute_adb_call(start_service_request)
     if start_service_response.status != adb_pb2.AdbResponse.Status.OK:
       raise RuntimeError(
           'Could not start accessibility forwarder '
@@ -204,7 +204,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
             blob=adb_pb2.AdbRequest.InstallApk.Blob(contents=a11y_fwd_apk),
         )
     )
-    install_response = self._env.execute_adb_call(install_request)
+    install_response = self.execute_adb_call(install_request)
     if install_response.status != adb_pb2.AdbResponse.Status.OK:
       raise ValueError(
           f'Could not install accessibility_forwarder.apk: {install_response}.'
@@ -222,9 +222,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
             ),
         )
     )
-    enable_tree_logs_response = self._env.execute_adb_call(
-        enable_tree_logs_request
-    )
+    enable_tree_logs_response = self.execute_adb_call(enable_tree_logs_request)
     if enable_tree_logs_response.status != adb_pb2.AdbResponse.Status.OK:
       raise ValueError(
           'Could not enable accessibility tree logging: '
@@ -405,9 +403,10 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
     self._servicer.pause_and_clear()
     timestep = self._env.reset()
     self._servicer.resume()
-    if self._env.stats()['relaunch_count'] > self._relaunch_count:
+    relaunch_count = self.stats().get('relaunch_count', 0)
+    if relaunch_count > self._relaunch_count:
       self._configure_grpc()
-      self._relaunch_count = self._env.stats()['relaunch_count']
+      self._relaunch_count = relaunch_count
     self._accumulated_extras = {}
     timeout = self._a11y_info_timeout or 0.0
     new_observation = self._fetch_task_extras_and_update_observation(
@@ -456,7 +455,7 @@ class A11yGrpcWrapper(base_wrapper.BaseWrapper):
       EnableNetworkingError: after a fixed number of attempts to revive the a11y
         services by re-enabling the network connection.
     """
-    base_extras = self._env.task_extras(latest_only=False).copy()
+    base_extras = super().task_extras(latest_only=False).copy()
     # If the previous future is done, reset it to the initial state.
     if (
         self._enabling_networking_future is not None

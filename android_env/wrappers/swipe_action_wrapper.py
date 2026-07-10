@@ -66,7 +66,7 @@ class SwipeActionWrapper(base_wrapper.BaseWrapper):
 
   def stats(self) -> dict[str, Any]:
     """Returns a dictionary of metrics logged by the environment."""
-    logs = self._env.stats()
+    logs = super().stats()
     logs.update({'env_steps': self._env_steps})
     return logs
 

@@ -27,10 +27,18 @@ import numpy as np
 
 
 class BaseWrapper(env_interface.AndroidEnvInterface):
-  """AndroidEnv wrapper."""
+  """AndroidEnv wrapper.
 
-  def __init__(self, env: env_interface.AndroidEnvInterface) -> None:
-    self._env = env
+  Supports wrapping standard `dm_env.Environment` instances in addition to
+  `AndroidEnvInterface` instances.
+  """
+
+  def __init__(self, env: dm_env.Environment) -> None:
+    # `self._env` can be a standard `dm_env.Environment` or an
+    # `AndroidEnvInterface`. We use the `|` operator to support both, and use
+    # `hasattr` checks before calling AndroidEnv-specific methods that are not
+    # present in standard `dm_env.Environment`.
+    self._env: env_interface.AndroidEnvInterface | dm_env.Environment = env
     logging.info('Wrapping with %s', self.__class__.__name__)
 
   def reset(self) -> dm_env.TimeStep:
@@ -42,8 +50,25 @@ class BaseWrapper(env_interface.AndroidEnvInterface):
     action = self._process_action(action)
     return self._process_timestep(self._env.step(action))
 
+  def _get_env_attr(self, name: str) -> Any:
+    """Safely gets an attribute from the wrapped environment."""
+    if hasattr(self._env, name):
+      return getattr(self._env, name)
+    raise AttributeError(
+        f'Underlying environment {type(self._env).__name__} does not have'
+        f' attribute {name}.'
+    )
+
+  def _delegate_to_env(self, method_name: str, *args, **kwargs) -> Any:
+    """Delegates to the underlying env if the method exists, else uses super()."""
+    method = getattr(self._env, method_name, None)
+    if method is not None and callable(method):
+      return method(*args, **kwargs)
+    # Fallback to super() to call the default AndroidEnvInterface implementation
+    return getattr(super(), method_name)(*args, **kwargs)
+
   def task_extras(self, latest_only: bool = True) -> dict[str, np.ndarray]:
-    return self._env.task_extras(latest_only=latest_only)
+    return self._delegate_to_env('task_extras', latest_only=latest_only)
 
   def _reset_state(self):
     pass
@@ -71,7 +96,10 @@ class BaseWrapper(env_interface.AndroidEnvInterface):
     return {}
 
   def stats(self) -> dict[str, Any]:
-    info = self._env.stats()
+    if hasattr(self._env, 'stats'):
+      info = self._env.stats()
+    else:
+      info = super().stats()
     info.update(self._wrapper_stats())
     return info
 
@@ -79,7 +107,7 @@ class BaseWrapper(env_interface.AndroidEnvInterface):
       self, request: state_pb2.LoadStateRequest
   ) -> state_pb2.LoadStateResponse:
     """Loads a state."""
-    return self._env.load_state(request)
+    return self._delegate_to_env('load_state', request)
 
   def save_state(
       self, request: state_pb2.SaveStateRequest
@@ -94,23 +122,23 @@ class BaseWrapper(env_interface.AndroidEnvInterface):
       A `SaveStateResponse` containing the status, error message (if
       applicable), and any other relevant information.
     """
-    return self._env.save_state(request)
+    return self._delegate_to_env('save_state', request)
 
   def execute_adb_call(
       self, adb_call: adb_pb2.AdbRequest
   ) -> adb_pb2.AdbResponse:
-    return self._env.execute_adb_call(adb_call)
+    return self._delegate_to_env('execute_adb_call', adb_call)
 
   @property
   def raw_action(self) -> Any:
-    return self._env.raw_action
+    return self._get_env_attr('raw_action')
 
   @property
   def raw_observation(self) -> Any:
-    return self._env.raw_observation
+    return self._get_env_attr('raw_observation')
 
   @property
-  def raw_env(self) -> env_interface.AndroidEnvInterface:
+  def raw_env(self) -> dm_env.Environment:
     """Recursively unwrap until we reach the true 'raw' env."""
     wrapped = self._env
     if hasattr(wrapped, 'raw_env'):
@@ -119,6 +147,8 @@ class BaseWrapper(env_interface.AndroidEnvInterface):
 
   def __getattr__(self, attr) -> Any:
     """Delegate attribute access to underlying environment."""
+    if attr in ('raw_action', 'raw_observation'):
+      return self._get_env_attr(attr)
     return getattr(self._env, attr)
 
   def close(self) -> None:
