@@ -17,6 +17,7 @@
 
 import glob
 import os
+import pathlib
 import subprocess
 import tempfile
 
@@ -60,23 +61,24 @@ class EmulatorLauncher:
     logging.info('Booting new emulator: %s', self._config.emulator_path)
 
     # Set necessary environment variables.
-    base_lib_dir = self._config.emulator_path[:-8] + 'lib64/'
+    emu_dir = pathlib.Path(self._config.emulator_path).parent
+    base_lib_dir = os.fspath(emu_dir / 'lib64') + '/'
     ld_library_path = ':'.join([
-        base_lib_dir + 'x11/', base_lib_dir + 'qt/lib/',
-        base_lib_dir + 'gles_swiftshader/', base_lib_dir
+        base_lib_dir + 'x11/',
+        base_lib_dir + 'qt/lib/',
+        base_lib_dir + 'gles_swiftshader/',
+        base_lib_dir,
     ])
     extra_env_vars = {
         'ANDROID_HOME': '',
-        'ANDROID_SDK_ROOT': self._config.android_sdk_root,
-        'ANDROID_AVD_HOME': self._config.android_avd_home,
+        'ANDROID_SDK_ROOT': os.fspath(self._config.android_sdk_root),
+        'ANDROID_AVD_HOME': os.fspath(self._config.android_avd_home),
         'ANDROID_EMULATOR_KVM_DEVICE': self._config.kvm_device,
         'ANDROID_ADB_SERVER_PORT': str(
             self._adb_controller_config.adb_server_port
         ),
         'LD_LIBRARY_PATH': ld_library_path,
-        'QT_XKB_CONFIG_ROOT': str(
-            self._config.emulator_path[:-8] + 'qt_config/'
-        ),
+        'QT_XKB_CONFIG_ROOT': os.fspath(emu_dir / 'qt_config') + '/',
         'ANDROID_EMU_ENABLE_CRASH_REPORTING': '1',
         'SHOW_PERF_STATS': str(1 if self._config.show_perf_stats else 0),
     }
@@ -114,9 +116,9 @@ class EmulatorLauncher:
     )
     command = (
         [
-            self._config.emulator_path,
+            os.fspath(self._config.emulator_path),
             '-adb-path',
-            self._adb_controller_config.adb_path,
+            os.fspath(self._adb_controller_config.adb_path),
             '-gpu',
             self._config.gpu_mode,
             '-no-audio',
