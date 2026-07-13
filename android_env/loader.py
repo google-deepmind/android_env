@@ -16,6 +16,7 @@
 """Function for loading AndroidEnv."""
 
 import os
+import pathlib
 
 from absl import logging
 from android_env import environment
@@ -36,6 +37,7 @@ def _load_task(task_config: config_classes.TaskConfig) -> task_pb2.Task:
   task = task_pb2.Task()
   match task_config:
     case config_classes.FilesystemTaskConfig():
+      assert task_config.path is not None
       with open(task_config.path, 'r') as proto_file:
         text_format.Parse(proto_file.read(), task)
     case _:
@@ -79,15 +81,18 @@ def _process_emulator_launcher_config(
 
   # Expand the user directory if specified.
   launcher_config = emulator_config.emulator_launcher
-  launcher_config.android_avd_home = os.path.expanduser(
-      launcher_config.android_avd_home
-  )
-  launcher_config.android_sdk_root = os.path.expanduser(
-      launcher_config.android_sdk_root
-  )
-  launcher_config.emulator_path = os.path.expanduser(
-      launcher_config.emulator_path
-  )
-  emulator_config.adb_controller.adb_path = os.path.expanduser(
-      emulator_config.adb_controller.adb_path
+  if launcher_config.android_avd_home is not None:
+    launcher_config.android_avd_home = pathlib.Path(
+        os.path.expanduser(launcher_config.android_avd_home)
+    )
+  if launcher_config.android_sdk_root is not None:
+    launcher_config.android_sdk_root = pathlib.Path(
+        os.path.expanduser(launcher_config.android_sdk_root)
+    )
+  if launcher_config.emulator_path is not None:
+    launcher_config.emulator_path = pathlib.Path(
+        os.path.expanduser(launcher_config.emulator_path)
+    )
+  emulator_config.adb_controller.adb_path = pathlib.Path(
+      os.path.expanduser(emulator_config.adb_controller.adb_path)
   )

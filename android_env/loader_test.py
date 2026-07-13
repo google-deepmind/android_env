@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import builtins
-import os
+import pathlib
 from typing import cast
 from unittest import mock
 
@@ -53,17 +53,19 @@ class LoaderTest(absltest.TestCase):
     mock_open.return_value.__enter__ = mock_open
     mock_open.return_value.read.return_value = ''
     config = config_classes.AndroidEnvConfig(
-        task=config_classes.FilesystemTaskConfig(path='some/path/'),
+        task=config_classes.FilesystemTaskConfig(
+            path=pathlib.Path('some/path/')
+        ),
         simulator=config_classes.EmulatorConfig(
             emulator_launcher=config_classes.EmulatorLauncherConfig(
                 avd_name='my_avd',
-                android_avd_home='~/.android/avd',
-                android_sdk_root='~/Android/Sdk',
-                emulator_path='~/Android/Sdk/emulator/emulator',
+                android_avd_home=pathlib.Path('~/.android/avd'),
+                android_sdk_root=pathlib.Path('~/Android/Sdk'),
+                emulator_path=pathlib.Path('~/Android/Sdk/emulator/emulator'),
                 run_headless=False,
             ),
             adb_controller=config_classes.AdbControllerConfig(
-                adb_path='~/Android/Sdk/platform-tools/adb',
+                adb_path=pathlib.Path('~/Android/Sdk/platform-tools/adb'),
             ),
         ),
     )
@@ -79,16 +81,18 @@ class LoaderTest(absltest.TestCase):
         config=config_classes.EmulatorConfig(
             emulator_launcher=config_classes.EmulatorLauncherConfig(
                 avd_name='my_avd',
-                android_avd_home=os.path.expanduser('~/.android/avd'),
-                android_sdk_root=os.path.expanduser('~/Android/Sdk'),
-                emulator_path=os.path.expanduser(
+                android_avd_home=pathlib.Path('~/.android/avd').expanduser(),
+                android_sdk_root=pathlib.Path('~/Android/Sdk').expanduser(),
+                emulator_path=pathlib.Path(
                     '~/Android/Sdk/emulator/emulator'
-                ),
+                ).expanduser(),
                 run_headless=False,
                 gpu_mode='swangle_indirect',
             ),
             adb_controller=config_classes.AdbControllerConfig(
-                adb_path=os.path.expanduser('~/Android/Sdk/platform-tools/adb'),
+                adb_path=pathlib.Path(
+                    '~/Android/Sdk/platform-tools/adb'
+                ).expanduser(),
                 adb_server_port=5037,
             ),
         )
@@ -118,7 +122,9 @@ class LoaderTest(absltest.TestCase):
     mock_open.return_value.__enter__ = mock_open
     mock_open.return_value.read.return_value = ''
     config = config_classes.AndroidEnvConfig(
-        task=config_classes.FilesystemTaskConfig(path='some/path/'),
+        task=config_classes.FilesystemTaskConfig(
+            path=pathlib.Path('some/path/')
+        ),
         simulator=config_classes.FakeSimulatorConfig(
             screen_dimensions=(1234, 5678)
         ),
@@ -159,13 +165,15 @@ description: "Task for testing loader."
 max_episode_sec: 0
 '''
     config = config_classes.AndroidEnvConfig(
-        task=config_classes.FilesystemTaskConfig(path='some/path/'),
+        task=config_classes.FilesystemTaskConfig(
+            path=pathlib.Path('some/path/')
+        ),
         simulator=config_classes.EmulatorConfig(
             emulator_launcher=config_classes.EmulatorLauncherConfig(
                 avd_name='my_avd'
             ),
             adb_controller=config_classes.AdbControllerConfig(
-                adb_path='~/Android/Sdk/platform-tools/adb',
+                adb_path=pathlib.Path('~/Android/Sdk/platform-tools/adb'),
             ),
         ),
     )
