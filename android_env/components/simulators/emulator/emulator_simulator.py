@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 import functools
-import os
+import pathlib
 import platform
 import time
 from typing import Any, Final, final
@@ -183,9 +183,11 @@ class EmulatorSimulator(base_simulator.BaseSimulator):
 
   def get_logs(self) -> str:
     """Returns logs recorded by the emulator."""
-    if self._logfile_path and os.path.exists(self._logfile_path):
-      with open(self._logfile_path, 'rb') as f:
-        return f.read().decode('utf-8')
+    logfile_path = (
+        pathlib.Path(self._logfile_path) if self._logfile_path else None
+    )
+    if logfile_path and logfile_path.exists():
+      return logfile_path.read_text(encoding='utf-8')
     else:
       return f'Logfile does not exist: {self._logfile_path}.'
 

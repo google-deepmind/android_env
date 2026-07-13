@@ -17,6 +17,7 @@
 
 import dataclasses
 import enum
+import pathlib
 
 
 @dataclasses.dataclass
@@ -113,7 +114,7 @@ class EmulatorLauncherConfig:
   # Path to the KVM device.
   kvm_device: str = '/dev/kvm'
   # Path to directory which will hold temporary files.
-  tmp_dir: str = '/tmp/android_env/simulator/'
+  tmp_dir: pathlib.Path | str = '/tmp/android_env/simulator/'
   # GPU mode override.
   # Please see
   # https://developer.android.com/studio/run/emulator-acceleration#accel-graphics.
@@ -155,7 +156,7 @@ class EmulatorConfig(SimulatorConfig):
   )
   # Path to file which holds emulator logs. If not provided, it will be
   # determined by the EmulatorLauncher.
-  logfile_path: str = ''
+  logfile_path: pathlib.Path | str = ''
   # The number of times to try launching the emulator before rebooting (reboot
   # on the n+1-st try).
   launch_n_times_without_reboot: int = 1
@@ -195,7 +196,7 @@ class TaskConfig:
   """Base config class for loading tasks."""
 
   # The directory for temporary task-related resources.
-  tmp_dir: str = ''
+  tmp_dir: pathlib.Path | str = ''
 
 
 @dataclasses.dataclass
@@ -203,7 +204,7 @@ class FilesystemTaskConfig(TaskConfig):
   """Config for protobuf files stored in the local filesystem."""
 
   # Filesystem path to `.binarypb` or `.textproto` protobuf Task.
-  path: str = ''
+  path: pathlib.Path | str = ''
 
 
 @dataclasses.dataclass

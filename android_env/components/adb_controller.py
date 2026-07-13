@@ -61,7 +61,7 @@ class AdbController:
       # port explicitly.
       adb_port_args = ['-P', str(self._config.adb_server_port)]
     command_prefix = [
-        self._config.adb_path,
+        os.fspath(self._config.adb_path),
         *adb_port_args,
     ]
     if include_device_name:
