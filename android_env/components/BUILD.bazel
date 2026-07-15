@@ -1,0 +1,373 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "action_fns",
+    srcs = ["action_fns.py"],
+    deps = [
+        ":action_type",
+        ":errors",
+        ":pixel_fns",
+        "//android_env/components/simulators:base_simulator",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "action_fns_test",
+    srcs = ["action_fns_test.py"],
+    deps = [
+        ":action_fns",
+        ":action_type",
+        ":errors",
+        ":pixel_fns",
+        "//android_env/components/simulators:base_simulator",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "action_type",
+    srcs = ["action_type.py"],
+)
+
+py_library(
+    name = "adb_call_parser",
+    srcs = ["adb_call_parser.py"],
+    deps = [
+        ":adb_controller",
+        "//android_env/proto:adb_py_pb2",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "adb_call_parser_test",
+    srcs = ["adb_call_parser_test.py"],
+    deps = [
+        ":adb_call_parser",
+        ":adb_controller",
+        "//android_env/proto:adb_py_pb2",
+        "@pip//absl_py",
+        "@pip//protobuf",
+    ],
+)
+
+py_library(
+    name = "adb_controller",
+    srcs = ["adb_controller.py"],
+    deps = [
+        ":config_classes",
+        ":errors",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "adb_controller_test",
+    srcs = ["adb_controller_test.py"],
+    deps = [
+        ":adb_controller",
+        ":config_classes",
+        ":errors",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "adb_log_stream",
+    srcs = ["adb_log_stream.py"],
+    deps = [
+        ":log_stream",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "adb_log_stream_test",
+    srcs = ["adb_log_stream_test.py"],
+    deps = [
+        ":adb_log_stream",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "app_screen_checker",
+    srcs = ["app_screen_checker.py"],
+    deps = [
+        ":adb_call_parser",
+        ":errors",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "app_screen_checker_test",
+    srcs = ["app_screen_checker_test.py"],
+    deps = [
+        ":adb_call_parser",
+        ":app_screen_checker",
+        ":errors",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "config_classes",
+    srcs = ["config_classes.py"],
+)
+
+py_library(
+    name = "coordinator",
+    srcs = ["coordinator.py"],
+    deps = [
+        ":action_fns",
+        ":adb_call_parser",
+        ":config_classes",
+        ":device_settings",
+        ":errors",
+        ":specs",
+        ":task_manager",
+        "//android_env/components/simulators:base_simulator",
+        "//android_env/proto:adb_py_pb2",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "coordinator_test",
+    srcs = ["coordinator_test.py"],
+    deps = [
+        ":action_type",
+        ":adb_call_parser",
+        ":config_classes",
+        ":coordinator",
+        ":device_settings",
+        ":errors",
+        ":task_manager",
+        "//android_env/components/simulators:base_simulator",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:state_py_pb2",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "device_settings",
+    srcs = ["device_settings.py"],
+    deps = [
+        ":adb_call_parser",
+        ":config_classes",
+        "//android_env/components/simulators:base_simulator",
+        "//android_env/proto:adb_py_pb2",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "device_settings_test",
+    srcs = ["device_settings_test.py"],
+    deps = [
+        ":config_classes",
+        ":device_settings",
+        "//android_env/components/simulators:base_simulator",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "dumpsys_thread",
+    srcs = ["dumpsys_thread.py"],
+    deps = [
+        ":app_screen_checker",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "dumpsys_thread_test",
+    srcs = ["dumpsys_thread_test.py"],
+    deps = [
+        ":app_screen_checker",
+        ":dumpsys_thread",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "errors",
+    srcs = ["errors.py"],
+)
+
+py_test(
+    name = "errors_test",
+    srcs = ["errors_test.py"],
+    deps = [
+        ":errors",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "logcat_thread",
+    srcs = ["logcat_thread.py"],
+    deps = [
+        ":log_stream",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "logcat_thread_test",
+    srcs = ["logcat_thread_test.py"],
+    deps = [
+        ":fake_log_stream",
+        ":logcat_thread",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "log_stream",
+    srcs = ["log_stream.py"],
+    deps = [
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "fake_log_stream",
+    srcs = ["fake_log_stream.py"],
+    deps = [
+        ":log_stream",
+    ],
+)
+
+py_test(
+    name = "log_stream_test",
+    srcs = ["log_stream_test.py"],
+    deps = [
+        ":fake_log_stream",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "setup_step_interpreter",
+    srcs = ["setup_step_interpreter.py"],
+    deps = [
+        ":adb_call_parser",
+        ":app_screen_checker",
+        ":errors",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "setup_step_interpreter_test",
+    srcs = ["setup_step_interpreter_test.py"],
+    deps = [
+        ":adb_call_parser",
+        ":errors",
+        ":setup_step_interpreter",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+        "@pip//protobuf",
+    ],
+)
+
+py_library(
+    name = "specs",
+    srcs = ["specs.py"],
+    deps = [
+        ":action_type",
+        "//android_env/proto:task_py_pb2",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "specs_test",
+    srcs = ["specs_test.py"],
+    deps = [
+        ":specs",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "task_manager",
+    srcs = ["task_manager.py"],
+    deps = [
+        ":adb_call_parser",
+        ":app_screen_checker",
+        ":config_classes",
+        ":dumpsys_thread",
+        ":log_stream",
+        ":logcat_thread",
+        ":setup_step_interpreter",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "task_manager_test",
+    srcs = ["task_manager_test.py"],
+    deps = [
+        ":adb_call_parser",
+        ":config_classes",
+        ":dumpsys_thread",
+        ":log_stream",
+        ":logcat_thread",
+        ":setup_step_interpreter",
+        ":task_manager",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "pixel_fns",
+    srcs = ["pixel_fns.py"],
+    deps = [
+        "@pip//dm_env",  # Replaced dm_env:specs with dm_env
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "pixel_fns_test",
+    srcs = ["pixel_fns_test.py"],
+    deps = [
+        ":pixel_fns",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)

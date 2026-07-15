@@ -1,0 +1,127 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_python//python:packaging.bzl", "py_package", "py_wheel")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "env_interface",
+    srcs = ["env_interface.py"],
+    deps = [
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:state_py_pb2",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "environment",
+    srcs = ["environment.py"],
+    deps = [
+        ":env_interface",
+        "//android_env/components:adb_call_parser",
+        "//android_env/components:coordinator",
+        "//android_env/components:task_manager",
+        "//android_env/components/simulators:base_simulator",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:state_py_pb2",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "environment_test",
+    srcs = ["environment_test.py"],
+    deps = [
+        ":environment",
+        "//android_env/components:config_classes",
+        "//android_env/components:coordinator",
+        "//android_env/components:task_manager",
+        "//android_env/components/simulators:base_simulator",
+        "//android_env/components/simulators/fake:fake_simulator",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:state_py_pb2",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "loader",
+    srcs = ["loader.py"],
+    deps = [
+        ":environment",
+        "//android_env/components:config_classes",
+        "//android_env/components:coordinator",
+        "//android_env/components:device_settings",
+        "//android_env/components:task_manager",
+        "//android_env/components/simulators/emulator:emulator_simulator",
+        "//android_env/components/simulators/emulator:tcp_ports",
+        "//android_env/components/simulators/fake:fake_simulator",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+        "@pip//protobuf",
+    ],
+)
+
+py_test(
+    name = "loader_test",
+    srcs = ["loader_test.py"],
+    deps = [
+        ":env_interface",
+        ":loader",
+        "//android_env/components:config_classes",
+        "//android_env/components:coordinator",
+        "//android_env/components:device_settings",
+        "//android_env/components:task_manager",
+        "//android_env/components/simulators/emulator:emulator_simulator",
+        "//android_env/components/simulators/emulator:tcp_ports",
+        "//android_env/components/simulators/fake:fake_simulator",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+    ],
+)
+
+# Packaging rules for PyPI release
+
+py_package(
+    name = "android_env_pkg",
+    packages = ["android_env"],
+    deps = [
+        ":loader",
+        "//android_env/wrappers:a11y_grpc_wrapper",
+        "//android_env/wrappers:discrete_action_wrapper",
+        "//android_env/wrappers:flat_interface_wrapper",
+        "//android_env/wrappers:float_pixels_wrapper",
+        "//android_env/wrappers:gym_wrapper",
+        "//android_env/wrappers:image_rescale_wrapper",
+        "//android_env/wrappers:last_action_wrapper",
+        "//android_env/wrappers:rate_limit_wrapper",
+        "//android_env/wrappers:swipe_action_wrapper",
+        "//android_env/wrappers:tap_action_wrapper",
+    ],
+)
+
+py_wheel(
+    name = "android_env_wheel",
+    author = "DeepMind",
+    distribution = "android_env",
+    license = "Apache License, Version 2.0",
+    requires = [
+        "absl-py>=0.1.0",
+        "dm-env>=1.6",
+        "numpy>=1.26.0",
+        "portpicker>=1.6.0",
+        "pygame>=2.6.0",
+        "pillow>=10.4.0",
+        "gymnasium>=0.29.1",
+        "protobuf>=5.27.2",
+        "grpcio>=1.64.2",
+    ],
+    summary = "AndroidEnv: A Gym/Gymnasium Environment for Android",
+    version = "1.3.0",
+    deps = [":android_env_pkg"],
+)

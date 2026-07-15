@@ -1,0 +1,90 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "emulator_launcher",
+    srcs = ["emulator_launcher.py"],
+    deps = [
+        "//android_env/components:config_classes",
+        "//android_env/google/resource_utils:avd_installer",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "emulator_launcher_test",
+    srcs = ["emulator_launcher_test.py"],
+    deps = [
+        ":emulator_launcher",
+        "//android_env/components:config_classes",
+        "//android_env/google/resource_utils:avd_installer",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "tcp_ports",
+    srcs = ["tcp_ports.py"],
+    deps = [
+        "//android_env/components:config_classes",
+        "@pip//absl_py",
+        "@pip//portpicker",
+    ],
+)
+
+py_test(
+    name = "tcp_ports_test",
+    srcs = ["tcp_ports_test.py"],
+    deps = [
+        ":tcp_ports",
+        "//android_env/components:config_classes",
+        "@pip//absl_py",
+        "@pip//portpicker",
+    ],
+)
+
+py_library(
+    name = "emulator_simulator",
+    srcs = ["emulator_simulator.py"],
+    deps = [
+        ":emulator_launcher",
+        "//android_env/components:adb_controller",
+        "//android_env/components:adb_log_stream",
+        "//android_env/components:config_classes",
+        "//android_env/components:errors",
+        "//android_env/components:log_stream",
+        "//android_env/components/simulators:base_simulator",
+        "//android_env/google/resource_utils:avd_installer",
+        "//android_env/proto:emulator_controller_py_pb2",
+        "//android_env/proto:emulator_controller_py_pb2_grpc",
+        "//android_env/proto:snapshot_service_py_pb2",
+        "//android_env/proto:snapshot_service_py_pb2_grpc",
+        "//android_env/proto:state_py_pb2",
+        "@pip//absl_py",
+        "@pip//grpcio",
+        "@pip//numpy",
+        "@pip//portpicker",
+        "@pip//protobuf",
+    ],
+)
+
+py_test(
+    name = "emulator_simulator_test",
+    srcs = ["emulator_simulator_test.py"],
+    deps = [
+        ":emulator_launcher",
+        ":emulator_simulator",
+        "//android_env/components:adb_call_parser",
+        "//android_env/components:adb_controller",
+        "//android_env/components:config_classes",
+        "//android_env/proto:emulator_controller_py_pb2",
+        "//android_env/proto:emulator_controller_py_pb2_grpc",
+        "//android_env/proto:snapshot_service_py_pb2",
+        "//android_env/proto:state_py_pb2",
+        "@pip//absl_py",
+        "@pip//grpcio",
+        "@pip//pillow",  # Replaced PIL:pil with pillow
+        "@pip//portpicker",
+    ],
+)

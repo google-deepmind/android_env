@@ -1,0 +1,71 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+package(default_visibility = ["//android_env/wrappers:__subpackages__"])
+
+py_library(
+    name = "a11y_events",
+    srcs = ["a11y_events.py"],
+    deps = [
+        "//android_env/proto/a11y:a11y_py_pb2_grpc",  # Redirected from a11y_py_pb2
+        "@pip//absl_py",
+        "@pip//numpy",
+        "@pip//protobuf",  # For any_py_pb2
+    ],
+)
+
+py_test(
+    name = "a11y_events_test",
+    srcs = ["a11y_events_test.py"],
+    deps = [
+        ":a11y_events",
+        "//android_env/proto/a11y:a11y_py_pb2_grpc",
+        "@pip//absl_py",
+        "@pip//numpy",
+        "@pip//protobuf",
+    ],
+)
+
+py_library(
+    name = "a11y_forests",
+    srcs = ["a11y_forests.py"],
+    deps = [
+        "//android_env/proto/a11y:android_accessibility_forest_py_pb2",
+        "@pip//numpy",
+        "@pip//protobuf",
+    ],
+)
+
+py_test(
+    name = "a11y_forests_test",
+    srcs = ["a11y_forests_test.py"],
+    deps = [
+        ":a11y_forests",
+        "//android_env/proto/a11y:android_accessibility_forest_py_pb2",
+        "@pip//absl_py",
+        "@pip//numpy",
+        "@pip//protobuf",
+    ],
+)
+
+py_library(
+    name = "a11y_servicer",
+    srcs = ["a11y_servicer.py"],
+    deps = [
+        "//android_env/proto/a11y:a11y_py_pb2_grpc",
+        "//android_env/proto/a11y:android_accessibility_forest_py_pb2",
+        "@pip//absl_py",
+        "@pip//grpcio",
+    ],
+)
+
+py_test(
+    name = "a11y_servicer_test",
+    srcs = ["a11y_servicer_test.py"],
+    deps = [
+        ":a11y_servicer",
+        "//android_env/proto/a11y:a11y_py_pb2_grpc",
+        "//android_env/proto/a11y:android_accessibility_forest_py_pb2",
+        "@pip//absl_py",
+        "@pip//grpcio",
+    ],
+)

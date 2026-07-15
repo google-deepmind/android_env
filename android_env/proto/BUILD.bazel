@@ -1,0 +1,65 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_proto_grpc_python//:defs.bzl", "python_grpc_library", "python_proto_library")
+
+package(default_visibility = ["//visibility:public"])
+
+proto_library(
+    name = "adb_proto",
+    srcs = ["adb.proto"],
+)
+
+python_proto_library(
+    name = "adb_py_pb2",
+    protos = [":adb_proto"],
+)
+
+proto_library(
+    name = "emulator_controller_proto",
+    srcs = ["emulator_controller.proto"],
+    deps = ["@protobuf//:empty_proto"],
+)
+
+python_grpc_library(
+    name = "emulator_controller_py_pb2_grpc",
+    protos = [":emulator_controller_proto"],
+)
+
+proto_library(
+    name = "snapshot_proto",
+    srcs = ["snapshot.proto"],
+)
+
+proto_library(
+    name = "snapshot_service_proto",
+    srcs = ["snapshot_service.proto"],
+    deps = [
+        ":snapshot_proto",
+        "@protobuf//:empty_proto",
+    ],
+)
+
+python_grpc_library(
+    name = "snapshot_service_py_pb2_grpc",
+    protos = [":snapshot_service_proto"],
+)
+
+proto_library(
+    name = "task_proto",
+    srcs = ["task.proto"],
+    deps = [":adb_proto"],
+)
+
+python_proto_library(
+    name = "task_py_pb2",
+    protos = [":task_proto"],
+)
+
+proto_library(
+    name = "state_proto",
+    srcs = ["state.proto"],
+)
+
+python_proto_library(
+    name = "state_py_pb2",
+    protos = [":state_proto"],
+)

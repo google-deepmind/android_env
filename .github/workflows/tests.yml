@@ -27,13 +27,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+
+      - name: Configure MODULE.bazel python version
         run: |
-          pip install --upgrade pip setuptools
-          pip install .[testing]
+          sed -i 's/python_version = "3.11"/python_version = "${{ matrix.python-version }}"/' MODULE.bazel
 
       - name: Run tests
         run: |
-          # Find all test files, print their names and execute them in parallel
-          # with a maximum of 20 proccesses.
-          find . -type f -name "*_test.py" -print0 | xargs -t -0 -n1 -P 20 python3
+          bazel test //...

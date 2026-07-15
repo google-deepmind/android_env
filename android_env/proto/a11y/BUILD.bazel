@@ -1,0 +1,100 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_proto_grpc_python//:defs.bzl", "python_grpc_library", "python_proto_library")
+
+package(default_visibility = ["//visibility:public"])
+
+proto_library(
+    name = "a11y_proto",
+    srcs = ["a11y.proto"],
+    deps = [
+        ":android_accessibility_forest_proto",
+    ],
+)
+
+python_grpc_library(
+    name = "a11y_py_pb2_grpc",
+    protos = [":a11y_proto"],
+)
+
+# We also define the individual message-only python proto libraries for granularity.
+
+proto_library(
+    name = "android_accessibility_action_proto",
+    srcs = ["android_accessibility_action.proto"],
+)
+
+python_proto_library(
+    name = "android_accessibility_action_py_pb2",
+    protos = [":android_accessibility_action_proto"],
+)
+
+proto_library(
+    name = "android_accessibility_forest_proto",
+    srcs = ["android_accessibility_forest.proto"],
+    deps = [
+        ":android_accessibility_window_info_proto",
+    ],
+)
+
+python_proto_library(
+    name = "android_accessibility_forest_py_pb2",
+    protos = [":android_accessibility_forest_proto"],
+)
+
+proto_library(
+    name = "android_accessibility_node_info_proto",
+    srcs = ["android_accessibility_node_info.proto"],
+    deps = [
+        ":android_accessibility_action_proto",
+        ":android_accessibility_node_info_clickable_span_proto",
+        ":rect_proto",
+    ],
+)
+
+python_proto_library(
+    name = "android_accessibility_node_info_py_pb2",
+    protos = [":android_accessibility_node_info_proto"],
+)
+
+proto_library(
+    name = "android_accessibility_node_info_clickable_span_proto",
+    srcs = ["android_accessibility_node_info_clickable_span.proto"],
+)
+
+# clickable_span is only used by node_info, so we don't strictly need a py_proto_library
+# for it unless referenced elsewhere. We'll skip it to reduce duplication.
+
+proto_library(
+    name = "android_accessibility_tree_proto",
+    srcs = ["android_accessibility_tree.proto"],
+    deps = [":android_accessibility_node_info_proto"],
+)
+
+python_proto_library(
+    name = "android_accessibility_tree_py_pb2",
+    protos = [":android_accessibility_tree_proto"],
+)
+
+proto_library(
+    name = "android_accessibility_window_info_proto",
+    srcs = ["android_accessibility_window_info.proto"],
+    deps = [
+        ":android_accessibility_tree_proto",
+        ":rect_proto",
+    ],
+)
+
+python_proto_library(
+    name = "android_accessibility_window_info_py_pb2",
+    protos = [":android_accessibility_window_info_proto"],
+)
+
+proto_library(
+    name = "rect_proto",
+    srcs = ["rect.proto"],
+)
+
+python_proto_library(
+    name = "rect_py_pb2",
+    protos = [":rect_proto"],
+)

@@ -1,0 +1,43 @@
+module(
+    name = "android_env",
+    version = "1.3.0",
+)
+
+# Core rules
+bazel_dep(name = "rules_python", version = "0.34.0")
+bazel_dep(name = "rules_proto_grpc_python", version = "5.0.0")
+bazel_dep(name = "protobuf", version = "27.2")
+bazel_dep(name = "rules_proto", version = "6.0.2")
+
+# Local Python Toolchain (uses system python3)
+local_runtime_repo = use_repo_rule(
+    "@rules_python//python/local_toolchains:repos.bzl",
+    "local_runtime_repo",
+)
+local_runtime_toolchains_repo = use_repo_rule(
+    "@rules_python//python/local_toolchains:repos.bzl",
+    "local_runtime_toolchains_repo",
+)
+
+local_runtime_repo(
+    name = "local_python3",
+    interpreter_path = "python3",
+    on_failure = "fail",
+)
+
+local_runtime_toolchains_repo(
+    name = "local_toolchains",
+    runtimes = ["local_python3"],
+)
+
+register_toolchains("@local_toolchains//:all")
+
+# Pip dependencies (configured to use the same local python3)
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "pip",
+    python_version = "3.11",
+    python_interpreter = "python3",
+    requirements_lock = "//:requirements.txt",
+)
+use_repo(pip, "pip")

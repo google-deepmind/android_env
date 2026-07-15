@@ -1,0 +1,281 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "a11y_grpc_wrapper",
+    srcs = ["a11y_grpc_wrapper.py"],
+    deps = [
+        ":base_wrapper",
+        "//android_env:env_interface",
+        "//android_env/components:action_type",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto/a11y:a11y_py_pb2_grpc",
+        "//android_env/wrappers/a11y:a11y_events",
+        "//android_env/wrappers/a11y:a11y_forests",
+        "//android_env/wrappers/a11y:a11y_servicer",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//grpcio",
+        "@pip//numpy",
+        "@pip//portpicker",
+    ],
+)
+
+py_test(
+    name = "a11y_grpc_wrapper_test",
+    srcs = ["a11y_grpc_wrapper_test.py"],
+    deps = [
+        ":a11y_grpc_wrapper",
+        "//android_env:env_interface",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto/a11y:a11y_py_pb2_grpc",
+        "//android_env/proto/a11y:android_accessibility_forest_py_pb2",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//grpcio",
+        "@pip//numpy",
+        "@pip//portpicker",
+    ],
+)
+
+py_library(
+    name = "base_wrapper",
+    srcs = ["base_wrapper.py"],
+    deps = [
+        "//android_env:env_interface",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:state_py_pb2",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "base_wrapper_test",
+    srcs = ["base_wrapper_test.py"],
+    deps = [
+        ":base_wrapper",
+        "//android_env:env_interface",
+        "//android_env/proto:state_py_pb2",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "discrete_action_wrapper",
+    srcs = ["discrete_action_wrapper.py"],
+    deps = [
+        ":base_wrapper",
+        "//android_env:env_interface",
+        "//android_env/components:action_type",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "discrete_action_wrapper_test",
+    srcs = ["discrete_action_wrapper_test.py"],
+    deps = [
+        ":discrete_action_wrapper",
+        "//android_env:env_interface",
+        "//android_env/components:action_type",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "rate_limit_wrapper",
+    srcs = ["rate_limit_wrapper.py"],
+    deps = [
+        ":base_wrapper",
+        "//android_env:env_interface",
+        "//android_env/components:action_type",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "rate_limit_wrapper_test",
+    srcs = ["rate_limit_wrapper_test.py"],
+    deps = [
+        ":rate_limit_wrapper",
+        "//android_env:env_interface",
+        "//android_env/components:action_type",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "flat_interface_wrapper",
+    srcs = ["flat_interface_wrapper.py"],
+    deps = [
+        ":base_wrapper",
+        "//android_env:env_interface",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "flat_interface_wrapper_test",
+    srcs = ["flat_interface_wrapper_test.py"],
+    deps = [
+        ":flat_interface_wrapper",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "float_pixels_wrapper",
+    srcs = ["float_pixels_wrapper.py"],
+    deps = [
+        ":base_wrapper",
+        "//android_env:env_interface",
+        "//android_env/components:pixel_fns",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "float_pixels_wrapper_test",
+    srcs = ["float_pixels_wrapper_test.py"],
+    deps = [
+        ":float_pixels_wrapper",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "gym_wrapper",
+    srcs = ["gym_wrapper.py"],
+    deps = [
+        "@pip//dm_env",
+        "@pip//gymnasium",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "gym_wrapper_test",
+    srcs = ["gym_wrapper_test.py"],
+    deps = [
+        ":gym_wrapper",
+        "//android_env:env_interface",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//gymnasium",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "image_rescale_wrapper",
+    srcs = ["image_rescale_wrapper.py"],
+    deps = [
+        ":base_wrapper",
+        "//android_env:env_interface",
+        "@pip//dm_env",
+        "@pip//numpy",
+        "@pip//pillow",  # Replaced PIL:pil with pillow
+    ],
+)
+
+py_test(
+    name = "image_rescale_wrapper_test",
+    srcs = ["image_rescale_wrapper_test.py"],
+    deps = [
+        ":image_rescale_wrapper",
+        "//android_env:env_interface",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "last_action_wrapper",
+    srcs = ["last_action_wrapper.py"],
+    deps = [
+        ":base_wrapper",
+        "//android_env:env_interface",
+        "//android_env/components:action_type",
+        "//android_env/components:pixel_fns",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "last_action_wrapper_test",
+    srcs = ["last_action_wrapper_test.py"],
+    deps = [
+        ":last_action_wrapper",
+        "//android_env:env_interface",
+        "//android_env/components:action_type",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "tap_action_wrapper",
+    srcs = ["tap_action_wrapper.py"],
+    deps = [
+        ":base_wrapper",
+        "//android_env:env_interface",
+        "//android_env/components:action_type",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "tap_action_wrapper_test",
+    srcs = ["tap_action_wrapper_test.py"],
+    deps = [
+        ":tap_action_wrapper",
+        "//android_env:env_interface",
+        "//android_env/components:action_type",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "swipe_action_wrapper",
+    srcs = ["swipe_action_wrapper.py"],
+    deps = [
+        ":base_wrapper",
+        "//android_env:env_interface",
+        "//android_env/components:action_type",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "swipe_action_wrapper_test",
+    srcs = ["swipe_action_wrapper_test.py"],
+    deps = [
+        ":swipe_action_wrapper",
+        "//android_env:env_interface",
+        "//android_env/components:action_type",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)

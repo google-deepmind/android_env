@@ -1,0 +1,30 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "base_simulator",
+    srcs = ["base_simulator.py"],
+    deps = [
+        "//android_env/components:adb_controller",
+        "//android_env/components:config_classes",
+        "//android_env/components:errors",
+        "//android_env/components:log_stream",
+        "//android_env/proto:state_py_pb2",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "base_simulator_test",
+    srcs = ["base_simulator_test.py"],
+    deps = [
+        ":base_simulator",
+        "//android_env/components:config_classes",
+        "//android_env/components:errors",
+        "//android_env/components/simulators/fake:fake_simulator",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)
