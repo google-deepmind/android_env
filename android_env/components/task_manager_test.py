@@ -62,6 +62,7 @@ class TaskManagerTest(parameterized.TestCase):
     self.assertRegex(text, event)
     match = event.fullmatch(text)
     self.assertIsNotNone(match)
+    assert match is not None
     return match
 
   def test_start(self):

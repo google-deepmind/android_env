@@ -79,6 +79,7 @@ class FakeSimulatorTest(absltest.TestCase):
     line = line.decode('utf-8')
     matches = re.match(r'\s+SurfaceOrientation:\s+(\d)', line)
     self.assertIsNotNone(matches)
+    assert matches is not None
     orientation = matches.group(1)
     self.assertEqual(orientation, '0')
     line = adb_controller.execute_command(['shell', 'service', 'check', 'foo'])

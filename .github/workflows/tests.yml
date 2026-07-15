@@ -32,6 +32,12 @@ jobs:
           pip install --upgrade pip setuptools
           pip install .[testing]
 
+      - name: Run pytype
+        if: matrix.python-version != '3.13'
+        run: |
+          rm -f android_env/proto/*_pb2.py android_env/proto/a11y/*_pb2.py android_env/proto/*_pb2_grpc.py
+          pytype android_env
+
       - name: Run tests
         run: |
           # Find all test files, print their names and execute them in parallel
