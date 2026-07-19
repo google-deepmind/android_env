@@ -2,7 +2,7 @@ absl-py==2.1.0
 dm-env==1.6
 numpy==2.1.0
 portpicker==1.6.0
-pygame==2.6.0
+pygame>=2.6.0
 pillow>=10.4.0
 gymnasium==0.29.1
 protobuf>=6,<7

@@ -6,8 +6,20 @@ module(
 # Core rules
 bazel_dep(name = "rules_python", version = "2.2.0")
 bazel_dep(name = "rules_proto_grpc_python", version = "5.8.0")
-bazel_dep(name = "protobuf", version = "27.2")
+bazel_dep(name = "protobuf", version = "31.1")
 bazel_dep(name = "rules_proto", version = "6.0.2")
+
+# Hermetic Pre-built Protoc Toolchain
+bazel_dep(name = "toolchains_protoc", version = "0.6.1")
+
+protoc = use_extension("@toolchains_protoc//protoc:extensions.bzl", "protoc")
+protoc.toolchain(
+    google_protobuf = "com_google_protobuf",
+    version = "v31.1",
+)
+use_repo(protoc, "toolchains_protoc_hub")
+
+register_toolchains("@toolchains_protoc_hub//:all")
 
 # Hermetic Python Toolchain
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")

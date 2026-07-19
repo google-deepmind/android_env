@@ -28,13 +28,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Setup Bazel
-        uses: bazel-contrib/setup-bazel@0.19.0
-        with:
-          bazelisk-cache: true
-          disk-cache: true
-          repository-cache: true
-
       - name: Configure MODULE.bazel python version
         run: |
           MATRIX_VER="${{ matrix.python-version }}"
@@ -42,9 +35,17 @@ jobs:
           sed -i "s/python_version = \"3.11\"/python_version = \"$MATRIX_VER\"/g" MODULE.bazel
           sed -i "s/python_3_11/python_$VER_UNDERSCORE/g" MODULE.bazel
 
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+          external-cache: true
+
       - name: Run tests
         run: |
-          bazel test --cxxopt=-std=c++17 --host_cxxopt=-std=c++17 //...
+          bazel test //...
       - name: Upload test logs
         if: always()
         uses: actions/upload-artifact@v4

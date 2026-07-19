@@ -1,0 +1,5 @@
+# Default build and test options for AndroidEnv
+build --cxxopt=-std=c++17
+build --host_cxxopt=-std=c++17
+build --incompatible_enable_proto_toolchain_resolution
+build --announce_rc
