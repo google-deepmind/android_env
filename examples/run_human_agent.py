@@ -25,6 +25,7 @@ from android_env import loader
 from android_env.components import action_type
 from android_env.components import config_classes
 from android_env.components import pixel_fns
+from android_env.wrappers import trajectory_recorder_wrapper
 import dm_env
 import numpy as np
 import pygame
@@ -41,6 +42,11 @@ flags.DEFINE_boolean('run_headless', True, 'Optionally turn off display.')
 
 # Environment args.
 flags.DEFINE_string('task_path', None, 'Path to task textproto file.')
+flags.DEFINE_string(
+    'record_dir', None,
+    'If set, records the full episode trajectories (observations, actions, '
+    'rewards) played by the human to this directory, e.g. for later use as '
+    'demonstrations for imitation learning or reward-model training.')
 
 # Pygame args.
 flags.DEFINE_list('screen_size', '480,720', 'Screen width, height in pixels.')
@@ -145,61 +151,74 @@ def main(_):
           ),
       ),
   )
-  with loader.load(config) as env:
+  with loader.load(config) as raw_env:
+    env = raw_env
+    if FLAGS.record_dir:
+      env = trajectory_recorder_wrapper.TrajectoryRecorderWrapper(
+          env, record_dir=FLAGS.record_dir)
 
-    # Reset environment.
-    first_timestep = env.reset()
-    orientation = int(np.argmax(first_timestep.observation['orientation']))
+    try:
+      # Reset environment.
+      first_timestep = env.reset()
+      orientation = int(
+          np.argmax(first_timestep.observation['orientation']))
 
-    # Create pygame canvas.
-    screen_size = list(map(int, FLAGS.screen_size))  # (W x H)
-    obs_shape = env.observation_spec()['pixels'].shape[:2]  # (H x W)
+      # Create pygame canvas.
+      screen_size = list(map(int, FLAGS.screen_size))  # (W x H)
+      obs_shape = env.observation_spec()['pixels'].shape[:2]  # (H x W)
 
-    if (orientation == 1 or orientation == 3):  # LANDSCAPE_90 | LANDSCAPE_270
-      screen_size = screen_size[::-1]
-      obs_shape = obs_shape[::-1]
+      if (orientation == 1 or orientation == 3):  # LANDSCAPE_90 | LANDSCAPE_270
+        screen_size = screen_size[::-1]
+        obs_shape = obs_shape[::-1]
 
-    screen = pygame.display.set_mode(screen_size)  # takes (W x H)
-    surface = pygame.Surface(obs_shape[::-1])  # takes (W x H)
+      screen = pygame.display.set_mode(screen_size)  # takes (W x H)
+      surface = pygame.Surface(obs_shape[::-1])  # takes (W x H)
 
-    # Start game loop.
-    prev_frame = time.time()
-    episode_return = 0
+      # Start game loop.
+      prev_frame = time.time()
+      episode_return = 0
 
-    while True:
-      if pygame.key.get_pressed()[pygame.K_ESCAPE]:
-        return
-
-      all_events = pygame.event.get()
-      for event in all_events:
-        if event.type == pygame.QUIT:
+      while True:
+        if pygame.key.get_pressed()[pygame.K_ESCAPE]:
           return
 
-      # Filter event queue for mouse click events.
-      mouse_click_events = [
-          event for event in all_events
-          if event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]
-      ]
+        all_events = pygame.event.get()
+        for event in all_events:
+          if event.type == pygame.QUIT:
+            return
 
-      # Process all mouse click events.
-      for event in mouse_click_events:
-        action = _get_action_from_event(event, screen, orientation)
+        # Filter event queue for mouse click events.
+        mouse_click_events = [
+            event for event in all_events
+            if event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]
+        ]
+
+        # Process all mouse click events.
+        for event in mouse_click_events:
+          action = _get_action_from_event(event, screen, orientation)
+          timestep = env.step(action)
+          episode_return = _accumulate_reward(timestep, episode_return)
+          _render_pygame_frame(surface, screen, orientation, timestep)
+
+        # Sample the current position of the mouse either way.
+        action = _get_action_from_mouse(screen, orientation)
         timestep = env.step(action)
         episode_return = _accumulate_reward(timestep, episode_return)
         _render_pygame_frame(surface, screen, orientation, timestep)
 
-      # Sample the current position of the mouse either way.
-      action = _get_action_from_mouse(screen, orientation)
-      timestep = env.step(action)
-      episode_return = _accumulate_reward(timestep, episode_return)
-      _render_pygame_frame(surface, screen, orientation, timestep)
-
-      # Limit framerate.
-      now = time.time()
-      frame_time = now - prev_frame
-      if frame_time < FLAGS.frame_rate:
-        time.sleep(FLAGS.frame_rate - frame_time)
-      prev_frame = now
+        # Limit framerate.
+        now = time.time()
+        frame_time = now - prev_frame
+        if frame_time < FLAGS.frame_rate:
+          time.sleep(FLAGS.frame_rate - frame_time)
+        prev_frame = now
+    finally:
+      # `env` may be a wrapper around `raw_env`; closing it explicitly here
+      # (rather than relying only on the `with` block above) ensures e.g. the
+      # trajectory recorder flushes its last, possibly incomplete, episode to
+      # disk. The subsequent `raw_env.close()` from the `with` block remains
+      # safe to call, since `close()` is idempotent.
+      env.close()
 
 
 if __name__ == '__main__':
