@@ -5,7 +5,7 @@ portpicker==1.6.0
 pygame>=2.6.0
 pillow>=10.4.0
 gymnasium==0.29.1
-protobuf==5.29.3
+protobuf==5.29.6
 grpcio==1.69.0
 grpcio-tools==1.69.0
 cloudpickle==3.0.0
