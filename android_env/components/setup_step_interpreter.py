@@ -50,7 +50,7 @@ class SetupStepInterpreter:
     return copy.deepcopy(self._stats)
 
   def interpret(self, setup_steps: Sequence[task_pb2.SetupStep]) -> None:
-    """Returns True if parsing and processing `setup_steps` is successful."""
+    """Executes the given sequence of setup steps."""
     if setup_steps:
       logging.info('Executing setup steps: %s', setup_steps)
       for step in setup_steps:
