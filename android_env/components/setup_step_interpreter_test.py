@@ -15,6 +15,7 @@
 
 """Tests for android_env.components.setup_step_interpreter."""
 
+import time
 from unittest import mock
 
 from absl.testing import absltest
@@ -335,6 +336,62 @@ success_condition: {
     ])
     # We expect the check to fail once and succeed on the second pass.
     self.assertEqual(self._parser.parse.call_count, 2)
+
+  def test_check_dumpsys_success(self):
+    self._parser.parse.return_value = adb_pb2.AdbResponse(
+        status=adb_pb2.AdbResponse.Status.OK,
+        dumpsys=adb_pb2.AdbResponse.DumpsysResponse(
+            output=b'Service accessibility: InputService is running'
+        ),
+    )
+    interpreter = setup_step_interpreter.SetupStepInterpreter(
+        adb_call_parser=self._parser
+    )
+    interpreter.interpret([
+        _to_proto(
+            task_pb2.SetupStep,
+            """
+success_condition: {
+  check_dumpsys: {
+    service: "accessibility"
+    expected_string: "InputService"
+    timeout_sec: 0.0001
+  }
+}""",
+        )
+    ])
+    self._parser.parse.assert_called_once_with(
+        adb_pb2.AdbRequest(
+            dumpsys=adb_pb2.AdbRequest.DumpsysRequest(service='accessibility')
+        )
+    )
+
+  @mock.patch.object(time, 'sleep', autospec=True)
+  def test_check_dumpsys_failure(self, unused_mock_sleep):
+    self._parser.parse.return_value = adb_pb2.AdbResponse(
+        status=adb_pb2.AdbResponse.Status.OK,
+        dumpsys=adb_pb2.AdbResponse.DumpsysResponse(
+            output=b'Service accessibility: OtherService'
+        ),
+    )
+    interpreter = setup_step_interpreter.SetupStepInterpreter(
+        adb_call_parser=self._parser
+    )
+    with self.assertRaises(errors.StepCommandError):
+      interpreter.interpret([
+          _to_proto(
+              task_pb2.SetupStep,
+              """
+success_condition: {
+  check_dumpsys: {
+    service: "accessibility"
+    expected_string: "InputService"
+    timeout_sec: 0.0001
+  }
+}""",
+          )
+      ])
+    self.assertEqual(interpreter.stats()['error_count_check_dumpsys'], 3)
 
 
 if __name__ == '__main__':

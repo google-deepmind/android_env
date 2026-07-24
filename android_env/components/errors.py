@@ -78,6 +78,12 @@ class CheckInstallError(StepCommandError):
   ERROR_CODE = 9
 
 
+class CheckDumpsysError(StepCommandError):
+  """Raised when the check_dumpsys success check is not met."""
+
+  ERROR_CODE = 10
+
+
 def from_code(code: int, msg: str = '') -> AndroidEnvError | None:
   """Returns an AndroidEnvError instance from the given arguments."""
 
@@ -92,6 +98,7 @@ def from_code(code: int, msg: str = '') -> AndroidEnvError | None:
       7: StepCommandError,
       8: WaitForAppScreenError,
       9: CheckInstallError,
+      10: CheckDumpsysError,
   }
 
   if code in code_to_error:

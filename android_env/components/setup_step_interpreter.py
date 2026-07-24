@@ -42,6 +42,7 @@ class SetupStepInterpreter:
         'error_count_adb_request': 0,
         'error_count_wait_for_app_screen': 0,
         'error_count_check_install': 0,
+        'error_count_check_dumpsys': 0,
         'error_count_wait_for_message': 0,
         'total_time_waiting_for_app_screen': 0.0,
     }
@@ -107,6 +108,16 @@ class SetupStepInterpreter:
                           success_condition.check_install.package_name,
                           num_tries, max_retries)
 
+      except errors.CheckDumpsysError as error:
+        latest_error = error
+        self._stats['error_count_check_dumpsys'] += 1
+        logging.exception(
+            'Dumpsys check for service [%r] failed. Try %d of %d.',
+            success_condition.check_dumpsys.service,
+            num_tries,
+            max_retries,
+        )
+
     raise errors.StepCommandError(
         f'Step failed: [{step_cmd}]') from latest_error
 
@@ -155,6 +166,8 @@ class SetupStepInterpreter:
         self._stats['total_time_waiting_for_app_screen'] += wait_time
       case 'check_install':
         self._check_install(success_condition.check_install)
+      case 'check_dumpsys':
+        self._check_dumpsys(success_condition.check_dumpsys)
       case _:
         raise NotImplementedError(f'No success check called [{success_check}].')
 
@@ -180,3 +193,39 @@ class SetupStepInterpreter:
 
     logging.error('Package not found.')
     raise errors.CheckInstallError()
+
+  def _check_dumpsys(self, check_dumpsys: task_pb2.CheckDumpsys) -> None:
+    """Checks that the dumpsys output contains the expected string."""
+
+    service = check_dumpsys.service
+    expected_string = check_dumpsys.expected_string
+    logging.info(
+        'Checking dumpsys output for service [%r] matching [%r]',
+        service,
+        expected_string,
+    )
+
+    request = adb_pb2.AdbRequest(
+        dumpsys=adb_pb2.AdbRequest.DumpsysRequest(service=service)
+    )
+
+    start_time = time.time()
+    while time.time() - start_time < check_dumpsys.timeout_sec:
+      response = self._adb_call_parser.parse(request)
+      if response.status == adb_pb2.AdbResponse.Status.OK:
+        output = response.dumpsys.output
+        if isinstance(output, bytes):
+          output = output.decode('utf-8', errors='replace')
+        if expected_string in output:
+          logging.info(
+              'Done confirming dumpsys output for service [%r].', service
+          )
+          return
+      time.sleep(0.1)
+
+    logging.error(
+        'Expected string [%r] not found in dumpsys output for service [%r].',
+        expected_string,
+        service,
+    )
+    raise errors.CheckDumpsysError()

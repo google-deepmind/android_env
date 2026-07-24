@@ -52,6 +52,12 @@ message CheckInstall {
   float timeout_sec = 2;
 }
 
+message CheckDumpsys {
+  string service = 1;          // e.g. "accessibility"
+  string expected_string = 2;  // e.g. "InputService"
+  float timeout_sec = 3;
+}
+
 message Sleep {
   float time_sec = 1;
 }
@@ -62,6 +68,7 @@ message SuccessCondition {
   oneof check {
     WaitForAppScreen wait_for_app_screen = 2;
     CheckInstall check_install = 3;
+    CheckDumpsys check_dumpsys = 4;
   }
 }
 
