@@ -49,6 +49,11 @@ message EventRequest {
   map<string, string> event = 1;
 }
 
+// A list of Accessibility events.
+message EventRequestList {
+  repeated EventRequest events = 1;
+}
+
 message EventResponse {
   // The error if anything.
   string error = 1;
