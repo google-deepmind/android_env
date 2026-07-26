@@ -66,6 +66,7 @@ class AndroidDeviceEnv(env_interface.AndroidEnvInterface):
     }
     self._connection.update_subscriptions(self._active_signals)
     self._latest_state = None
+    self._latest_pixels = None
     self._is_touching = False
     self._last_touch_position = None
     self._last_non_touch_action = None
@@ -115,17 +116,7 @@ class AndroidDeviceEnv(env_interface.AndroidEnvInterface):
 
   def reset(self) -> dm_env.TimeStep:
     self._latest_state = self._connection.get_device_state()
-    if device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT in self._active_signals:
-      pixels, _ = self._connection.read_frame()
-    else:
-      pixels = np.zeros(self._pixel_shape, dtype=np.uint8)
-
-    active_package = ''
-    if self._latest_state:
-      for sig in self._latest_state.signals:
-        if sig.type == device_env_service_pb2.DEVICE_SIGNAL_ACTIVE_PACKAGE:
-          active_package = sig.active_package
-          break
+    pixels, active_package, audio = self._parse_signals(self._latest_state)
 
     orientation = np.array([1, 0, 0, 0], dtype=np.uint8)  # Portrait default
     if self._latest_state:
@@ -193,21 +184,16 @@ class AndroidDeviceEnv(env_interface.AndroidEnvInterface):
               proto_action.touch_position.y,
           )
       elif env_action_type == action_type.ActionType.LIFT:
-        if self._is_touching:
-          proto_action.action_type = device_env_service_pb2.ACTION_TYPE_TOUCH_UP
-          if 'touch_position' in action:
-            pos = action['touch_position']
-            proto_action.touch_position.x = float(pos[0])
-            proto_action.touch_position.y = float(pos[1])
-          elif self._last_touch_position is not None:
-            proto_action.touch_position.x = self._last_touch_position[0]
-            proto_action.touch_position.y = self._last_touch_position[1]
-          self._is_touching = False
-          self._last_touch_position = None
-        else:
-          proto_action.action_type = (
-              device_env_service_pb2.ACTION_TYPE_UNSPECIFIED
-          )
+        proto_action.action_type = device_env_service_pb2.ACTION_TYPE_TOUCH_UP
+        if 'touch_position' in action:
+          pos = action['touch_position']
+          proto_action.touch_position.x = float(pos[0])
+          proto_action.touch_position.y = float(pos[1])
+        elif self._last_touch_position is not None:
+          proto_action.touch_position.x = self._last_touch_position[0]
+          proto_action.touch_position.y = self._last_touch_position[1]
+        self._is_touching = False
+        self._last_touch_position = None
       elif env_action_type == action_type.ActionType.KEYDOWN:
         proto_action.action_type = device_env_service_pb2.ACTION_TYPE_KEY_EVENT
         if 'keycode' in action:
@@ -230,18 +216,7 @@ class AndroidDeviceEnv(env_interface.AndroidEnvInterface):
     ):
       self._connection.inject_action(proto_action)
     self._latest_state = self._connection.get_device_state()
-
-    if device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT in self._active_signals:
-      pixels, _ = self._connection.read_frame()
-    else:
-      pixels = np.zeros(self._pixel_shape, dtype=np.uint8)
-
-    active_package = ''
-    if self._latest_state:
-      for sig in self._latest_state.signals:
-        if sig.type == device_env_service_pb2.DEVICE_SIGNAL_ACTIVE_PACKAGE:
-          active_package = sig.active_package
-          break
+    pixels, active_package, audio = self._parse_signals(self._latest_state)
 
     # Calculate timedelta
     now = time.time()
@@ -265,14 +240,6 @@ class AndroidDeviceEnv(env_interface.AndroidEnvInterface):
         device_env_service_pb2.DEVICE_SIGNAL_AUDIO_OUTPUT
         in self._active_signals
     ):
-      audio = np.zeros((0, 2), dtype=np.int16)
-      if self._latest_state:
-        for sig in self._latest_state.signals:
-          if sig.type == device_env_service_pb2.DEVICE_SIGNAL_AUDIO_OUTPUT:
-            raw_bytes = sig.audio_output.raw_bytes
-            if raw_bytes:
-              audio = np.frombuffer(raw_bytes, dtype=np.int16).reshape(-1, 2)
-            break
       obs['audio'] = audio
 
     return dm_env.transition(reward=0.0, observation=obs)
@@ -292,11 +259,46 @@ class AndroidDeviceEnv(env_interface.AndroidEnvInterface):
             == device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_EVENTS
         ):
           extras['accessibility_events'].extend(sig.accessibility_events.events)
-        elif (
-            sig.type == device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_TREE
-        ):
           extras['accessibility_tree'] = sig.accessibility_forest
     return extras
+
+  def _parse_signals(
+      self, state: device_env_service_pb2.DeviceState | None
+  ) -> tuple[np.ndarray, str, np.ndarray]:
+    """Parses DeviceState in a single pass into (pixels, active_package, audio)."""
+    if self._latest_pixels is None:
+      self._latest_pixels = np.zeros(self._pixel_shape, dtype=np.uint8)
+
+    pixels = self._latest_pixels
+    active_package = ''
+    audio = np.zeros((0, 2), dtype=np.int16)
+    if not state:
+      return pixels, active_package, audio
+
+    has_screenshot_sub = (
+        device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT in self._active_signals
+    )
+
+    for sig in state.signals:
+      if (
+          has_screenshot_sub
+          and sig.type == device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT
+          and sig.HasField('screenshot')
+          and sig.screenshot.HasField('decoded')
+      ):
+        decoded = sig.screenshot.decoded
+        self._latest_pixels = np.frombuffer(
+            decoded.raw_pixels, dtype=np.uint8
+        ).reshape((decoded.height, decoded.width, 3))
+        pixels = self._latest_pixels
+      elif sig.type == device_env_service_pb2.DEVICE_SIGNAL_ACTIVE_PACKAGE:
+        active_package = sig.active_package
+      elif sig.type == device_env_service_pb2.DEVICE_SIGNAL_AUDIO_OUTPUT:
+        raw_bytes = sig.audio_output.raw_bytes
+        if raw_bytes:
+          audio = np.frombuffer(raw_bytes, dtype=np.int16).reshape(-1, 2)
+
+    return pixels, active_package, audio
 
   def close(self):
     logging.info('Closing AndroidDeviceEnv...')

@@ -51,10 +51,17 @@ class FakeDeviceConnection(device_connection.DeviceConnection):
   def get_video_metadata(self) -> tuple[str, int, int]:
     return self._video_codec, self._video_width, self._video_height
 
-  def read_frame(self) -> tuple[np.ndarray, int]:
-    return self.fake_frame, 12345
-
   def get_device_state(self) -> device_env_service_pb2.DeviceState:
+    if not any(
+        sig.type == device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT
+        for sig in self.device_state.signals
+    ):
+      h, w, _ = self.fake_frame.shape
+      sig = self.device_state.signals.add()
+      sig.type = device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT
+      sig.screenshot.decoded.raw_pixels = self.fake_frame.tobytes()
+      sig.screenshot.decoded.width = w
+      sig.screenshot.decoded.height = h
     return self.device_state
 
   def inject_action(self, action: device_env_service_pb2.Action):
@@ -375,6 +382,37 @@ class AndroidDeviceEnvTest(absltest.TestCase):
     fake_conn = FakeDeviceConnection()
     env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
     self.assertEqual(env.stats(), {})
+
+  def test_step_lift_without_explicit_touch_position(self):
+    fake_conn = FakeDeviceConnection()
+    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
+    env.reset()
+
+    # Touch down first to set last touch position
+    env.step({
+        'action_type': np.array(action_type.ActionType.TOUCH),
+        'touch_position': np.array([0.4, 0.6], dtype=np.float32),
+    })
+
+    # LIFT without touch_position in action dict
+    env.step({'action_type': np.array(action_type.ActionType.LIFT)})
+    self.assertLen(fake_conn.injected_actions, 2)
+    last_action = fake_conn.injected_actions[-1]
+    self.assertEqual(
+        last_action.action_type, device_env_service_pb2.ACTION_TYPE_TOUCH_UP
+    )
+    self.assertAlmostEqual(last_action.touch_position.x, 0.4)
+    self.assertAlmostEqual(last_action.touch_position.y, 0.6)
+
+  def test_parse_signals_with_none_state(self):
+    fake_conn = FakeDeviceConnection()
+    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
+    pixels, active_pkg, audio = env._parse_signals(None)
+    np.testing.assert_array_equal(
+        pixels, np.zeros((480, 640, 3), dtype=np.uint8)
+    )
+    self.assertEqual(active_pkg, '')
+    self.assertEqual(len(audio), 0)
 
 
 if __name__ == '__main__':
