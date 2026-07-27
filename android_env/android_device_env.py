@@ -13,15 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Task-Free AndroidEnv implementation connecting to on-device server."""
+"""Task-Free AndroidDeviceEnv implementation connecting to on-device server."""
 
-from collections.abc import Callable, Sequence
 import time
-from typing import Any
+from typing import Any, Self
+
 from absl import logging
 from android_env import env_interface
 from android_env.components import action_type
-from android_env.components import device_connection
+from android_env.components import android_device
+from android_env.components.specs import base_action_spec
+from android_env.components.specs import base_observation_spec
+from android_env.proto import adb_pb2
 from android_env.proto import device_env_service_pb2
 import dm_env
 from dm_env import specs
@@ -29,33 +32,29 @@ import numpy as np
 
 
 class AndroidDeviceEnv(env_interface.AndroidEnvInterface):
-  """Task-Free AndroidEnv connected to a real device via WebSockets."""
+  """Task-Free AndroidDeviceEnv connected to a real device via WebSockets."""
 
-  def __init__(
-      self,
-      connection: device_connection.DeviceConnection,
-      on_close_callbacks: Sequence[Callable[[], None]] | None = None,
-      on_error_callbacks: (
-          Sequence[Callable[[Any, Any, Any], None]] | None
-      ) = None,
-  ):
+  def __init__(self, device: android_device.AndroidDevice):
     """Initializes the AndroidDeviceEnv.
 
     Args:
-      connection: Connection to the on-device server.
-      on_close_callbacks: Callbacks to run when close() is called. Callbacks
-        must not raise exceptions.
-      on_error_callbacks: Callbacks to run when exiting the context manager with
-        an error. Callbacks must not raise exceptions.
+      device: AndroidDevice handle instance.
     """
-    self._connection = connection
-    self._on_close_callbacks = on_close_callbacks or []
-    self._on_error_callbacks = on_error_callbacks or []
+    self._device = device
     self._latest_observation_time = 0.0
-    logging.info('Querying video stream metadata from device...')
-    codec, w, h = self._connection.get_video_metadata()
+    state = self._device.get_state()
+    h, w = 1080, 1920
+    for signal in state.signals:
+      if (
+          signal.type == device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT
+          and signal.HasField('screenshot')
+          and signal.screenshot.HasField('decoded')
+      ):
+        h = signal.screenshot.decoded.height or 1080
+        w = signal.screenshot.decoded.width or 1920
+        break
     self._pixel_shape = (h, w, 3)
-    logging.info('Detected video resolution: %s (%s)', self._pixel_shape, codec)
+    logging.info('Detected video resolution: %s', self._pixel_shape)
 
     self._active_signals = {
         device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT,
@@ -64,7 +63,7 @@ class AndroidDeviceEnv(env_interface.AndroidEnvInterface):
         device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_TREE,
         device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_EVENTS,
     }
-    self._connection.update_subscriptions(self._active_signals)
+    self._device.update_subscriptions(self._active_signals)
     self._latest_state = None
     self._latest_pixels = None
     self._is_touching = False
@@ -72,117 +71,95 @@ class AndroidDeviceEnv(env_interface.AndroidEnvInterface):
     self._last_non_touch_action = None
 
   def action_spec(self) -> dict[str, specs.Array]:
-    return {
-        'action_type': specs.DiscreteArray(
-            num_values=len(device_env_service_pb2.ActionType.DESCRIPTOR.values),
-            name='action_type',
-        ),
-        'touch_position': specs.BoundedArray(
-            shape=(2,),
-            dtype=np.float32,
-            minimum=[0.0, 0.0],
-            maximum=[1.0, 1.0],
-            name='touch_position',
-        ),
-    }
+    return base_action_spec(num_fingers=1, enable_key_events=True)
 
   def observation_spec(self) -> dict[str, specs.Array]:
-    spec = {
-        'pixels': specs.BoundedArray(
-            shape=self._pixel_shape,
-            dtype=np.uint8,
-            minimum=0,
-            maximum=255,
-            name='pixels',
-        ),
-        'active_package': specs.Array(
-            shape=(), dtype=object, name='active_package'
-        ),
-        'timedelta': specs.Array(shape=(), dtype=np.int64, name='timedelta'),
-        'orientation': specs.BoundedArray(
-            shape=np.array([4]),
-            dtype=np.uint8,
-            name='orientation',
-            minimum=0,
-            maximum=1,
-        ),
+    return base_observation_spec(
+        height=self._pixel_shape[0], width=self._pixel_shape[1]
+    )
+
+  def execute_adb_call(self, call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
+    """Executes an ADB call using the underlying AndroidDevice."""
+    return self._device.execute_adb_call(call)
+
+  def task_extras(self, latest_only: bool = True) -> dict[str, Any]:
+    """Returns extras from the latest state signals."""
+    extras: dict[str, Any] = {}
+    if self._latest_state is not None:
+      for sig in self._latest_state.signals:
+        if sig.type == device_env_service_pb2.DEVICE_SIGNAL_SYSTEM_LOGS:
+          extras['logs'] = list(sig.system_logs.values)
+        elif (
+            sig.type
+            == device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_EVENTS
+        ):
+          extras['accessibility_events'] = list(sig.accessibility_events.events)
+        elif (
+            sig.type == device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_TREE
+        ):
+          extras['accessibility_tree'] = sig.accessibility_forest
+    return extras
+
+  def _build_observation(
+      self, state: device_env_service_pb2.DeviceState, timedelta_us: int
+  ) -> dict[str, Any]:
+    pixels, active_package, audio, _ = self._parse_signals(state)
+    if pixels is not None:
+      self._latest_pixels = pixels
+    else:
+      pixels = (
+          self._latest_pixels
+          if self._latest_pixels is not None
+          else np.zeros(self._pixel_shape, dtype=np.uint8)
+      )
+
+    orient_one_hot = np.zeros(4, dtype=np.uint8)
+    orient_val = state.orientation
+    if 0 <= orient_val < 4:
+      orient_one_hot[orient_val] = 1
+    else:
+      orient_one_hot[0] = 1
+
+    obs: dict[str, Any] = {
+        'pixels': pixels,
+        'timedelta': np.int64(timedelta_us),
+        'active_package': active_package or '',
+        'orientation': orient_one_hot,
     }
-    if (
-        device_env_service_pb2.DEVICE_SIGNAL_AUDIO_OUTPUT
-        in self._active_signals
-    ):
-      spec['audio'] = specs.Array(shape=(0, 2), dtype=np.int16, name='audio')
-    return spec
+    if audio is not None:
+      obs['audio'] = audio
+    return obs
 
   def reset(self) -> dm_env.TimeStep:
-    self._latest_state = self._connection.get_device_state()
-    pixels, active_package, audio = self._parse_signals(self._latest_state)
-
-    orientation = np.array([1, 0, 0, 0], dtype=np.uint8)  # Portrait default
-    if self._latest_state:
-      orientation_val = self._latest_state.orientation
-      if 0 <= orientation_val < 4:
-        orientation = np.zeros(4, dtype=np.uint8)
-        orientation[orientation_val] = 1
-
+    """Resets the environment."""
+    logging.info('Resetting AndroidDeviceEnv...')
+    self._latest_pixels = None
+    self._latest_state = self._device.get_state()
+    obs = self._build_observation(self._latest_state, timedelta_us=0)
     self._latest_observation_time = time.time()
-
-    obs = {
-        'pixels': pixels,
-        'active_package': active_package,
-        'timedelta': np.array(0, dtype=np.int64),
-        'orientation': orientation,
-    }
-    if (
-        device_env_service_pb2.DEVICE_SIGNAL_AUDIO_OUTPUT
-        in self._active_signals
-    ):
-      audio = np.zeros((0, 2), dtype=np.int16)
-      if self._latest_state:
-        for sig in self._latest_state.signals:
-          if sig.type == device_env_service_pb2.DEVICE_SIGNAL_AUDIO_OUTPUT:
-            raw_bytes = sig.audio_output.raw_bytes
-            if raw_bytes:
-              audio = np.frombuffer(raw_bytes, dtype=np.int16).reshape(-1, 2)
-            break
-      obs['audio'] = audio
     return dm_env.restart(obs)
 
-  def step(self, action: dict[str, np.ndarray]) -> dm_env.TimeStep:
-    # Convert numpy action to proto Action
-    env_action_type = action_type.ActionType(int(action['action_type']))
-    proto_action = device_env_service_pb2.Action()
+  def step(self, action: dict[str, Any]) -> dm_env.TimeStep:
+    """Takes a step in the environment by executing an action."""
+    env_action_type = action.get('action_type')
 
-    if env_action_type == action_type.ActionType.REPEAT:
-      if self._is_touching and self._last_touch_position is not None:
-        proto_action.action_type = device_env_service_pb2.ACTION_TYPE_TOUCH_MOVE
-        proto_action.touch_position.x = self._last_touch_position[0]
-        proto_action.touch_position.y = self._last_touch_position[1]
-      elif self._last_non_touch_action is not None:
-        proto_action.CopyFrom(self._last_non_touch_action)
-      else:
-        proto_action.action_type = (
-            device_env_service_pb2.ACTION_TYPE_UNSPECIFIED
-        )
-    else:
+    proto_action = device_env_service_pb2.Action()
+    if env_action_type is not None:
       if env_action_type == action_type.ActionType.TOUCH:
+        proto_action.action_type = device_env_service_pb2.ACTION_TYPE_TOUCH_DOWN
+        pos = action.get('touch_position', [0.0, 0.0])
+        proto_action.touch_position.x = float(pos[0])
+        proto_action.touch_position.y = float(pos[1])
+        self._is_touching = True
+        self._last_touch_position = (float(pos[0]), float(pos[1]))
+      elif env_action_type == action_type.ActionType.REPEAT:
         if self._is_touching:
+          assert self._last_touch_position is not None
           proto_action.action_type = (
               device_env_service_pb2.ACTION_TYPE_TOUCH_MOVE
           )
-        else:
-          proto_action.action_type = (
-              device_env_service_pb2.ACTION_TYPE_TOUCH_DOWN
-          )
-          self._is_touching = True
-        if 'touch_position' in action:
-          pos = action['touch_position']
-          proto_action.touch_position.x = float(pos[0])
-          proto_action.touch_position.y = float(pos[1])
-          self._last_touch_position = (
-              proto_action.touch_position.x,
-              proto_action.touch_position.y,
-          )
+          proto_action.touch_position.x = self._last_touch_position[0]
+          proto_action.touch_position.y = self._last_touch_position[1]
       elif env_action_type == action_type.ActionType.LIFT:
         proto_action.action_type = device_env_service_pb2.ACTION_TYPE_TOUCH_UP
         if 'touch_position' in action:
@@ -214,103 +191,55 @@ class AndroidDeviceEnv(env_interface.AndroidEnvInterface):
         proto_action.action_type
         != device_env_service_pb2.ACTION_TYPE_UNSPECIFIED
     ):
-      self._connection.inject_action(proto_action)
-    self._latest_state = self._connection.get_device_state()
-    pixels, active_package, audio = self._parse_signals(self._latest_state)
+      self._device.send_action(proto_action)
+    self._latest_state = self._device.get_state()
 
-    # Calculate timedelta
     now = time.time()
     timedelta_us = int((now - self._latest_observation_time) * 1e6)
     self._latest_observation_time = now
 
-    orientation = np.array([1, 0, 0, 0], dtype=np.uint8)  # Portrait default
-    if self._latest_state:
-      orientation_val = self._latest_state.orientation
-      if 0 <= orientation_val < 4:
-        orientation = np.zeros(4, dtype=np.uint8)
-        orientation[orientation_val] = 1
-
-    obs = {
-        'pixels': pixels,
-        'active_package': active_package,
-        'timedelta': np.array(timedelta_us, dtype=np.int64),
-        'orientation': orientation,
-    }
-    if (
-        device_env_service_pb2.DEVICE_SIGNAL_AUDIO_OUTPUT
-        in self._active_signals
-    ):
-      obs['audio'] = audio
-
+    obs = self._build_observation(self._latest_state, timedelta_us=timedelta_us)
     return dm_env.transition(reward=0.0, observation=obs)
-
-  def task_extras(self, latest_only: bool = True) -> dict[str, Any]:
-    extras: dict[str, Any] = {
-        'logs': [],
-        'accessibility_events': [],
-        'accessibility_tree': None,
-    }
-    if self._latest_state:
-      for sig in self._latest_state.signals:
-        if sig.type == device_env_service_pb2.DEVICE_SIGNAL_SYSTEM_LOGS:
-          extras['logs'].extend(sig.system_logs.values)
-        elif (
-            sig.type
-            == device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_EVENTS
-        ):
-          extras['accessibility_events'].extend(sig.accessibility_events.events)
-          extras['accessibility_tree'] = sig.accessibility_forest
-    return extras
 
   def _parse_signals(
       self, state: device_env_service_pb2.DeviceState | None
-  ) -> tuple[np.ndarray, str, np.ndarray]:
-    """Parses DeviceState in a single pass into (pixels, active_package, audio)."""
-    if self._latest_pixels is None:
-      self._latest_pixels = np.zeros(self._pixel_shape, dtype=np.uint8)
-
-    pixels = self._latest_pixels
-    active_package = ''
-    audio = np.zeros((0, 2), dtype=np.int16)
-    if not state:
-      return pixels, active_package, audio
-
-    has_screenshot_sub = (
-        device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT in self._active_signals
-    )
+  ) -> tuple[
+      np.ndarray | None,
+      str | None,
+      np.ndarray | None,
+      list[str] | None,
+  ]:
+    if state is None:
+      return None, None, None, None
+    pixels = None
+    active_package = None
+    audio = None
+    logs = None
 
     for sig in state.signals:
-      if (
-          has_screenshot_sub
-          and sig.type == device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT
-          and sig.HasField('screenshot')
-          and sig.screenshot.HasField('decoded')
-      ):
-        decoded = sig.screenshot.decoded
-        self._latest_pixels = np.frombuffer(
-            decoded.raw_pixels, dtype=np.uint8
-        ).reshape((decoded.height, decoded.width, 3))
-        pixels = self._latest_pixels
+      if sig.type == device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT:
+        if sig.screenshot.HasField('decoded'):
+          decoded = sig.screenshot.decoded
+          pixels = np.frombuffer(decoded.raw_pixels, dtype=np.uint8).reshape(
+              (decoded.height, decoded.width, 3)
+          )
       elif sig.type == device_env_service_pb2.DEVICE_SIGNAL_ACTIVE_PACKAGE:
         active_package = sig.active_package
       elif sig.type == device_env_service_pb2.DEVICE_SIGNAL_AUDIO_OUTPUT:
         raw_bytes = sig.audio_output.raw_bytes
         if raw_bytes:
           audio = np.frombuffer(raw_bytes, dtype=np.int16).reshape(-1, 2)
+      elif sig.type == device_env_service_pb2.DEVICE_SIGNAL_SYSTEM_LOGS:
+        logs = list(sig.system_logs.values)
 
-    return pixels, active_package, audio
+    return pixels, active_package, audio, logs
 
-  def close(self):
+  def close(self) -> None:
     logging.info('Closing AndroidDeviceEnv...')
-    self._connection.close()
-    for cb in self._on_close_callbacks:
-      cb()
+    self._device.close()
 
-  def __enter__(self) -> 'AndroidDeviceEnv':
+  def __enter__(self) -> Self:
     return self
 
-  def __exit__(self, exc_type, exc_value, traceback) -> None:
-    if exc_type is not None:
-      for cb in self._on_error_callbacks:
-        cb(exc_type, exc_value, traceback)
-    self.close()
+  def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+    self._device.__exit__(exc_type, exc_value, traceback)

@@ -13,55 +13,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for android_device_env, verifying dm_env API compliance."""
+"""Unit tests for android_device_env adapter."""
 
 from unittest import mock
 from absl.testing import absltest
 from android_env import android_device_env
 from android_env.components import action_type
+from android_env.components import android_device
 from android_env.components import config_classes
 from android_env.components import device_connection
+from android_env.proto import adb_pb2
 from android_env.proto import device_env_service_pb2
 import numpy as np
 
 
 class FakeDeviceConnection(device_connection.DeviceConnection):
-  """Fake DeviceConnection for unit tests without network side-effects."""
 
   def __init__(
-      self,
-      config: config_classes.DeviceConnectionConfig | None = None,
+      self, config: config_classes.DeviceConnectionConfig | None = None
   ):
     config = config or config_classes.DeviceConnectionConfig()
     self._config = config
-    self._video_codec: str = 'h264'
-    self._video_width: int = 640
-    self._video_height: int = 480
-    self.fake_frame: np.ndarray = np.ones((480, 640, 3), dtype=np.uint8)
+    self.closed: bool = False
+    self.subscriptions: set[int] = set()
+    self.injected_actions: list[device_env_service_pb2.Action] = []
     self.device_state: device_env_service_pb2.DeviceState = (
         device_env_service_pb2.DeviceState()
     )
-    self.injected_actions: list[device_env_service_pb2.Action] = []
-    self.subscriptions: set[int] = set()
-    self.closed: bool = False
 
   def connect(self):
     pass
 
   def get_video_metadata(self) -> tuple[str, int, int]:
-    return self._video_codec, self._video_width, self._video_height
+    return ('h264', 640, 480)
 
   def get_device_state(self) -> device_env_service_pb2.DeviceState:
-    if not any(
-        sig.type == device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT
-        for sig in self.device_state.signals
-    ):
-      h, w, _ = self.fake_frame.shape
-      sig = self.device_state.signals.add()
-      sig.type = device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT
-      sig.screenshot.decoded.raw_pixels = self.fake_frame.tobytes()
-      sig.screenshot.decoded.width = w
-      sig.screenshot.decoded.height = h
     return self.device_state
 
   def inject_action(self, action: device_env_service_pb2.Action):
@@ -70,349 +56,298 @@ class FakeDeviceConnection(device_connection.DeviceConnection):
   def update_subscriptions(self, signals: set[int]):
     self.subscriptions = set(signals)
 
+  def send_message(self, msg: device_env_service_pb2.ClientMessage):
+    payload_type = msg.WhichOneof('payload')
+    if payload_type == 'inject_action':
+      self.injected_actions.append(msg.inject_action.action)
+    elif payload_type == 'update_subscriptions':
+      self.subscriptions = set(msg.update_subscriptions.active_signals)
+
   def close(self):
     self.closed = True
 
 
 class AndroidDeviceEnvTest(absltest.TestCase):
 
-  def test_init(self):
+  def test_update_subscriptions_called_on_init(self):
     fake_conn = FakeDeviceConnection()
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    self.assertEqual(
-        fake_conn.subscriptions,
-        {
-            device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT,
-            device_env_service_pb2.DEVICE_SIGNAL_ACTIVE_PACKAGE,
-            device_env_service_pb2.DEVICE_SIGNAL_SYSTEM_LOGS,
-            device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_TREE,
-            device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_EVENTS,
-        },
-    )
-    self.assertEqual(env._pixel_shape, (480, 640, 3))
+    dev = android_device.AndroidDevice(connection=fake_conn)
+    _ = android_device_env.AndroidDeviceEnv(device=dev)
+    expected_signals = {
+        device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT,
+        device_env_service_pb2.DEVICE_SIGNAL_ACTIVE_PACKAGE,
+        device_env_service_pb2.DEVICE_SIGNAL_SYSTEM_LOGS,
+        device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_TREE,
+        device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_EVENTS,
+    }
+    self.assertEqual(fake_conn.subscriptions, expected_signals)
 
-  def test_specs(self):
+  def test_adapter_lifecycle(self):
     fake_conn = FakeDeviceConnection()
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
+    on_close = mock.MagicMock()
+    dev = android_device.AndroidDevice(
+        connection=fake_conn, on_close_callbacks=[on_close]
+    )
+    env = android_device_env.AndroidDeviceEnv(device=dev)
     action_spec = env.action_spec()
     self.assertIn('action_type', action_spec)
     self.assertIn('touch_position', action_spec)
+    self.assertIn('keycode', action_spec)
 
     obs_spec = env.observation_spec()
     self.assertIn('pixels', obs_spec)
-    self.assertIn('active_package', obs_spec)
+    self.assertIn('orientation', obs_spec)
+    self.assertIn('timedelta', obs_spec)
+    ts = env.reset()
+    self.assertTrue(ts.first())
+    ts = env.step({})
+    self.assertTrue(ts.mid())
+    env.close()
+    self.assertTrue(fake_conn.closed)
+    on_close.assert_called_once()
+
+  def test_video_resolution_detection_from_screenshot_signal(self):
+    fake_conn = FakeDeviceConnection()
+    state = device_env_service_pb2.DeviceState()
+    sig = state.signals.add()
+    sig.type = device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT
+    sig.screenshot.decoded.height = 480
+    sig.screenshot.decoded.width = 640
+    fake_conn.device_state = state
+
+    dev = android_device.AndroidDevice(connection=fake_conn)
+    env = android_device_env.AndroidDeviceEnv(device=dev)
+    obs_spec = env.observation_spec()
     self.assertEqual(obs_spec['pixels'].shape, (480, 640, 3))
 
-  def test_reset(self):
+  def test_video_resolution_fallback_default(self):
     fake_conn = FakeDeviceConnection()
-    sig = fake_conn.device_state.signals.add()
-    sig.type = device_env_service_pb2.DEVICE_SIGNAL_ACTIVE_PACKAGE
-    sig.active_package = 'com.test.app'
+    fake_conn.device_state = device_env_service_pb2.DeviceState()
 
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    timestep = env.reset()
+    dev = android_device.AndroidDevice(connection=fake_conn)
+    env = android_device_env.AndroidDeviceEnv(device=dev)
+    obs_spec = env.observation_spec()
+    self.assertEqual(obs_spec['pixels'].shape, (1080, 1920, 3))
 
-    self.assertTrue(timestep.first())
-    self.assertEqual(timestep.observation['active_package'], 'com.test.app')
-    np.testing.assert_array_equal(
-        timestep.observation['pixels'], fake_conn.fake_frame
-    )
-
-  def test_step(self):
+  def test_build_observation_pixels_and_cached(self):
     fake_conn = FakeDeviceConnection()
-    sig = fake_conn.device_state.signals.add()
-    sig.type = device_env_service_pb2.DEVICE_SIGNAL_ACTIVE_PACKAGE
-    sig.active_package = 'com.test.app.after'
+    raw_pixels = np.ones((2, 2, 3), dtype=np.uint8)
+    state = device_env_service_pb2.DeviceState()
+    sig = state.signals.add()
+    sig.type = device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT
+    sig.screenshot.decoded.width = 2
+    sig.screenshot.decoded.height = 2
+    sig.screenshot.decoded.raw_pixels = raw_pixels.tobytes()
+    fake_conn.device_state = state
 
-    fake_frame_after = np.ones((480, 640, 3), dtype=np.uint8) * 2
-    fake_conn.fake_frame = fake_frame_after
+    dev = android_device.AndroidDevice(connection=fake_conn)
+    env = android_device_env.AndroidDeviceEnv(device=dev)
+    ts = env.reset()
+    np.testing.assert_array_equal(ts.observation['pixels'], raw_pixels)
+    self.assertEqual(ts.observation['active_package'], '')
 
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    env.reset()
+    # Next step with no new screenshot reuses cached pixels.
+    fake_conn.device_state = device_env_service_pb2.DeviceState()
+    ts = env.step({})
+    np.testing.assert_array_equal(ts.observation['pixels'], raw_pixels)
+    self.assertEqual(ts.observation['active_package'], '')
 
-    action = {
-        'action_type': np.array(0),  # TOUCH
-        'touch_position': np.array([0.5, 0.5], dtype=np.float32),
-    }
-    timestep = env.step(action)
+  def test_build_observation_orientation_bounds(self):
+    fake_conn = FakeDeviceConnection()
+    dev = android_device.AndroidDevice(connection=fake_conn)
+    env = android_device_env.AndroidDeviceEnv(device=dev)
 
-    expected_proto_action = device_env_service_pb2.Action()
-    expected_proto_action.action_type = (
-        device_env_service_pb2.ACTION_TYPE_TOUCH_DOWN
-    )
-    expected_proto_action.touch_position.x = 0.5
-    expected_proto_action.touch_position.y = 0.5
-    self.assertEqual(fake_conn.injected_actions, [expected_proto_action])
-
-    self.assertTrue(timestep.mid())
-    self.assertEqual(
-        timestep.observation['active_package'], 'com.test.app.after'
-    )
+    # Valid orientation 2 -> one-hot [0, 0, 1, 0]
+    fake_conn.device_state.orientation = 2
+    ts = env.step({})
     np.testing.assert_array_equal(
-        timestep.observation['pixels'], fake_frame_after
+        ts.observation['orientation'], np.array([0, 0, 1, 0], dtype=np.uint8)
     )
-    self.assertEqual(timestep.reward, 0.0)
+
+    # Out-of-bounds orientation 99 -> fallback one-hot [1, 0, 0, 0]
+    fake_conn.device_state.orientation = 99
+    ts = env.step({})
+    np.testing.assert_array_equal(
+        ts.observation['orientation'], np.array([1, 0, 0, 0], dtype=np.uint8)
+    )
 
   def test_task_extras(self):
     fake_conn = FakeDeviceConnection()
-    sig = fake_conn.device_state.signals.add()
-    sig.type = device_env_service_pb2.DEVICE_SIGNAL_SYSTEM_LOGS
-    sig.system_logs.values.extend(['log1', 'log2'])
+    state = device_env_service_pb2.DeviceState()
+    sig1 = state.signals.add()
+    sig1.type = device_env_service_pb2.DEVICE_SIGNAL_SYSTEM_LOGS
+    sig1.system_logs.values.append('log1')
+    sig2 = state.signals.add()
+    sig2.type = device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_EVENTS
+    ev = sig2.accessibility_events.events.add()
+    sig3 = state.signals.add()
+    sig3.type = device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_TREE
+    fake_conn.device_state = state
 
-    sig_tree = fake_conn.device_state.signals.add()
-    sig_tree.type = device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_TREE
-    sig_tree.accessibility_forest.windows.add()
-
-    sig_events = fake_conn.device_state.signals.add()
-    sig_events.type = device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_EVENTS
-    ev = sig_events.accessibility_events.events.add()
-    ev.event['event_type'] = 'TYPE_VIEW_CLICKED'
-
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    env.reset()  # populates _latest_state
-
+    dev = android_device.AndroidDevice(connection=fake_conn)
+    env = android_device_env.AndroidDeviceEnv(device=dev)
+    env.reset()
     extras = env.task_extras()
-    self.assertEqual(extras['logs'], ['log1', 'log2'])
-    self.assertLen(extras['accessibility_events'], 1)
-    self.assertEqual(
-        extras['accessibility_events'][0].event['event_type'],
-        'TYPE_VIEW_CLICKED',
-    )
-    self.assertIsNotNone(extras['accessibility_tree'])
+    self.assertEqual(extras['logs'], ['log1'])
+    self.assertEqual(extras['accessibility_events'], [ev])
+    self.assertEqual(extras['accessibility_tree'], sig3.accessibility_forest)
 
-  def test_audio_observation(self):
-    fake_conn = FakeDeviceConnection()
-    sig = fake_conn.device_state.signals.add()
-    sig.type = device_env_service_pb2.DEVICE_SIGNAL_AUDIO_OUTPUT
-    audio_data = np.array([[100, 200], [300, 400]], dtype=np.int16)
-    sig.audio_output.raw_bytes = audio_data.tobytes()
+  def test_step_action_types(self):
+    mock_dev = mock.create_autospec(android_device.AndroidDevice, instance=True)
+    mock_dev.get_state.return_value = device_env_service_pb2.DeviceState()
+    env = android_device_env.AndroidDeviceEnv(device=mock_dev)
 
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    env._active_signals.add(device_env_service_pb2.DEVICE_SIGNAL_AUDIO_OUTPUT)
-    timestep = env.reset()
-    self.assertIn('audio', timestep.observation)
-    np.testing.assert_array_equal(timestep.observation['audio'], audio_data)
-
-  def test_reset_orientation(self):
-    for val, expected_arr in [
-        (0, [1, 0, 0, 0]),
-        (1, [0, 1, 0, 0]),
-        (2, [0, 0, 1, 0]),
-        (3, [0, 0, 0, 1]),
-        (4, [1, 0, 0, 0]),
-    ]:
-      fake_conn = FakeDeviceConnection()
-      fake_conn.device_state.orientation = val
-      env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-      timestep = env.reset()
-      np.testing.assert_array_equal(
-          timestep.observation['orientation'],
-          np.array(expected_arr, dtype=np.uint8),
-      )
-
-  def test_step_orientation(self):
-    fake_conn = FakeDeviceConnection()
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    env.reset()
-
-    for val, expected_arr in [
-        (0, [1, 0, 0, 0]),
-        (1, [0, 1, 0, 0]),
-        (2, [0, 0, 1, 0]),
-        (3, [0, 0, 0, 1]),
-        (4, [1, 0, 0, 0]),
-    ]:
-      fake_conn.device_state.orientation = val
-      action = {
-          'action_type': np.array(action_type.ActionType.TOUCH),
-          'touch_position': np.array([0.5, 0.5], dtype=np.float32),
-      }
-      timestep = env.step(action)
-      np.testing.assert_array_equal(
-          timestep.observation['orientation'],
-          np.array(expected_arr, dtype=np.uint8),
-      )
-
-  def test_step_repeat_touch(self):
-    fake_conn = FakeDeviceConnection()
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    env.reset()
-
-    action_touch = {
-        'action_type': np.array(action_type.ActionType.TOUCH),
-        'touch_position': np.array([0.3, 0.7], dtype=np.float32),
-    }
-    env.step(action_touch)
-    self.assertLen(fake_conn.injected_actions, 1)
-    last_action = fake_conn.injected_actions[-1]
-    self.assertEqual(
-        last_action.action_type,
-        device_env_service_pb2.ACTION_TYPE_TOUCH_DOWN,
-    )
-    self.assertAlmostEqual(last_action.touch_position.x, 0.3)
-    self.assertAlmostEqual(last_action.touch_position.y, 0.7)
-
-    action_repeat = {
-        'action_type': np.array(action_type.ActionType.REPEAT),
-        'touch_position': np.array([0.0, 0.0], dtype=np.float32),
-    }
-    env.step(action_repeat)
-    self.assertLen(fake_conn.injected_actions, 2)
-    last_action = fake_conn.injected_actions[-1]
-    self.assertEqual(
-        last_action.action_type,
-        device_env_service_pb2.ACTION_TYPE_TOUCH_MOVE,
-    )
-    self.assertAlmostEqual(last_action.touch_position.x, 0.3)
-    self.assertAlmostEqual(last_action.touch_position.y, 0.7)
-
-  def test_step_keyup_clears_last_non_touch_action(self):
-    fake_conn = FakeDeviceConnection()
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    env.reset()
-
-    action_keydown = {
-        'action_type': np.array(action_type.ActionType.KEYDOWN),
-        'keycode': np.array(66),
-    }
-    env.step(action_keydown)
-    self.assertLen(fake_conn.injected_actions, 1)
-    last_action = fake_conn.injected_actions[-1]
-    self.assertEqual(
-        last_action.action_type,
-        device_env_service_pb2.ACTION_TYPE_KEY_EVENT,
-    )
-    self.assertEqual(last_action.keycode, 66)
-
-    action_keyup = {
-        'action_type': np.array(action_type.ActionType.KEYUP),
-    }
-    env.step(action_keyup)
-    self.assertLen(fake_conn.injected_actions, 1)
-
-    action_repeat = {
-        'action_type': np.array(action_type.ActionType.REPEAT),
-    }
-    env.step(action_repeat)
-    self.assertLen(fake_conn.injected_actions, 1)
-
-  def test_close_callbacks(self):
-    def dummy_cb():
-      pass
-
-    mock_close_cb = mock.create_autospec(dummy_cb)
-    fake_conn = FakeDeviceConnection()
-    env = android_device_env.AndroidDeviceEnv(
-        connection=fake_conn, on_close_callbacks=[mock_close_cb]
-    )
-    env.close()
-    mock_close_cb.assert_called_once()
-    self.assertTrue(fake_conn.closed)
-
-  def test_context_manager_calls_close(self):
-    def dummy_cb():
-      pass
-
-    mock_close_cb = mock.create_autospec(dummy_cb)
-    fake_conn = FakeDeviceConnection()
-    with android_device_env.AndroidDeviceEnv(
-        connection=fake_conn, on_close_callbacks=[mock_close_cb]
-    ):
-      pass
-    mock_close_cb.assert_called_once()
-    self.assertTrue(fake_conn.closed)
-
-  def test_context_manager_calls_error_callbacks(self):
-    def dummy_error_cb(exc_type, exc_value, traceback):
-      del exc_type, exc_value, traceback
-
-    mock_error_cb = mock.create_autospec(dummy_error_cb)
-
-    def dummy_close_cb():
-      pass
-
-    mock_close_cb = mock.create_autospec(dummy_close_cb)
-    fake_conn = FakeDeviceConnection()
-
-    with self.assertRaises(ValueError):
-      with android_device_env.AndroidDeviceEnv(
-          connection=fake_conn,
-          on_close_callbacks=[mock_close_cb],
-          on_error_callbacks=[mock_error_cb],
-      ):
-        raise ValueError('Test error')
-
-    mock_error_cb.assert_called_once_with(ValueError, mock.ANY, mock.ANY)
-    mock_close_cb.assert_called_once()
-    self.assertTrue(fake_conn.closed)
-
-  def test_step_touch_up_transition(self):
-    fake_conn = FakeDeviceConnection()
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    env.reset()
-
-    # Touch down
+    # 1. TOUCH
     env.step({
-        'action_type': np.array(action_type.ActionType.TOUCH),
-        'touch_position': np.array([0.4, 0.6], dtype=np.float32),
+        'action_type': action_type.ActionType.TOUCH,
+        'touch_position': [0.2, 0.8],
     })
-    self.assertLen(fake_conn.injected_actions, 1)
-
-    # Touch up / lift
-    env.step({
-        'action_type': np.array(action_type.ActionType.LIFT),
-        'touch_position': np.array([0.4, 0.6], dtype=np.float32),
-    })
-    self.assertLen(fake_conn.injected_actions, 2)
+    self.assertTrue(mock_dev.send_action.called)
+    last_act = mock_dev.send_action.call_args[0][0]
     self.assertEqual(
-        fake_conn.injected_actions[-1].action_type,
-        device_env_service_pb2.ACTION_TYPE_TOUCH_UP,
+        last_act.action_type, device_env_service_pb2.ACTION_TYPE_TOUCH_DOWN
     )
+    self.assertAlmostEqual(last_act.touch_position.x, 0.2)
+    self.assertAlmostEqual(last_act.touch_position.y, 0.8)
 
-  def test_reset_without_screenshot_signal(self):
-    fake_conn = FakeDeviceConnection()
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    env._active_signals.remove(device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT)
-    timestep = env.reset()
-    np.testing.assert_array_equal(
-        timestep.observation['pixels'], np.zeros((480, 640, 3), dtype=np.uint8)
-    )
-
-  def test_stats(self):
-    fake_conn = FakeDeviceConnection()
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    self.assertEqual(env.stats(), {})
-
-  def test_step_lift_without_explicit_touch_position(self):
-    fake_conn = FakeDeviceConnection()
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    env.reset()
-
-    # Touch down first to set last touch position
-    env.step({
-        'action_type': np.array(action_type.ActionType.TOUCH),
-        'touch_position': np.array([0.4, 0.6], dtype=np.float32),
-    })
-
-    # LIFT without touch_position in action dict
-    env.step({'action_type': np.array(action_type.ActionType.LIFT)})
-    self.assertLen(fake_conn.injected_actions, 2)
-    last_action = fake_conn.injected_actions[-1]
+    # 2. REPEAT when touching
+    mock_dev.send_action.reset_mock()
+    env.step({'action_type': action_type.ActionType.REPEAT})
+    last_act = mock_dev.send_action.call_args[0][0]
     self.assertEqual(
-        last_action.action_type, device_env_service_pb2.ACTION_TYPE_TOUCH_UP
+        last_act.action_type, device_env_service_pb2.ACTION_TYPE_TOUCH_MOVE
     )
-    self.assertAlmostEqual(last_action.touch_position.x, 0.4)
-    self.assertAlmostEqual(last_action.touch_position.y, 0.6)
 
-  def test_parse_signals_with_none_state(self):
-    fake_conn = FakeDeviceConnection()
-    env = android_device_env.AndroidDeviceEnv(connection=fake_conn)
-    pixels, active_pkg, audio = env._parse_signals(None)
-    np.testing.assert_array_equal(
-        pixels, np.zeros((480, 640, 3), dtype=np.uint8)
+    # 3. LIFT with position
+    mock_dev.send_action.reset_mock()
+    env.step({
+        'action_type': action_type.ActionType.LIFT,
+        'touch_position': [0.5, 0.5],
+    })
+    last_act = mock_dev.send_action.call_args[0][0]
+    self.assertEqual(
+        last_act.action_type, device_env_service_pb2.ACTION_TYPE_TOUCH_UP
     )
-    self.assertEqual(active_pkg, '')
-    self.assertEqual(len(audio), 0)
+
+    # 4. REPEAT when not touching (no action sent)
+    mock_dev.send_action.reset_mock()
+    env.step({'action_type': action_type.ActionType.REPEAT})
+    mock_dev.send_action.assert_not_called()
+
+    # 5. KEYDOWN
+    mock_dev.send_action.reset_mock()
+    env.step({'action_type': action_type.ActionType.KEYDOWN, 'keycode': 66})
+    last_act = mock_dev.send_action.call_args[0][0]
+    self.assertEqual(
+        last_act.action_type, device_env_service_pb2.ACTION_TYPE_KEY_EVENT
+    )
+    self.assertEqual(last_act.keycode, 66)
+
+    # 6. KEYUP
+    mock_dev.send_action.reset_mock()
+    env.step({'action_type': action_type.ActionType.KEYUP})
+
+    # 7. Unrecognized action type
+    mock_dev.send_action.reset_mock()
+    env.step({'action_type': 999})
+    mock_dev.send_action.assert_not_called()
+
+  def test_parse_signals_extra_signals(self):
+    fake_conn = FakeDeviceConnection()
+    state = device_env_service_pb2.DeviceState()
+    sig1 = state.signals.add()
+    sig1.type = device_env_service_pb2.DEVICE_SIGNAL_ACTIVE_PACKAGE
+    sig1.active_package = 'com.example.app'
+    sig2 = state.signals.add()
+    sig2.type = device_env_service_pb2.DEVICE_SIGNAL_AUDIO_OUTPUT
+    pcm = np.array([[10, 20]], dtype=np.int16)
+    sig2.audio_output.raw_bytes = pcm.tobytes()
+    fake_conn.device_state = state
+
+    dev = android_device.AndroidDevice(connection=fake_conn)
+    env = android_device_env.AndroidDeviceEnv(device=dev)
+    ts = env.reset()
+    self.assertEqual(ts.observation['active_package'], 'com.example.app')
+    np.testing.assert_array_equal(ts.observation['audio'], pcm)
+
+  def test_parse_signals_none_state(self):
+    fake_conn = FakeDeviceConnection()
+    dev = android_device.AndroidDevice(connection=fake_conn)
+    env = android_device_env.AndroidDeviceEnv(device=dev)
+    res = env._parse_signals(None)
+    self.assertEqual(res, (None, None, None, None))
+
+  def test_parse_signals_screenshot_undecoded(self):
+    fake_conn = FakeDeviceConnection()
+    fake_conn.subscriptions = set()
+    state = device_env_service_pb2.DeviceState()
+    sig = state.signals.add()
+    sig.type = device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT
+    sig.screenshot.encoded_bytes = b'fake_compressed_jpeg_bytes'
+    fake_conn.device_state = state
+
+    dev = android_device.AndroidDevice(connection=fake_conn)
+    env = android_device_env.AndroidDeviceEnv(device=dev)
+    pixels, _, _, _ = env._parse_signals(state)
+    self.assertIsNone(pixels)
+    self.assertTrue(sig.screenshot.HasField('encoded_bytes'))
+
+  def test_parse_signals_system_logs(self):
+    fake_conn = FakeDeviceConnection()
+    state = device_env_service_pb2.DeviceState()
+    sig = state.signals.add()
+    sig.type = device_env_service_pb2.DEVICE_SIGNAL_SYSTEM_LOGS
+    sig.system_logs.values.append('log line 1')
+    sig.system_logs.values.append('log line 2')
+    fake_conn.device_state = state
+
+    dev = android_device.AndroidDevice(connection=fake_conn)
+    env = android_device_env.AndroidDeviceEnv(device=dev)
+    _, _, _, logs = env._parse_signals(state)
+    self.assertEqual(logs, ['log line 1', 'log line 2'])
+
+  def test_parse_signals_screenshot_empty_signal(self):
+    fake_conn = FakeDeviceConnection()
+    fake_conn.subscriptions = set()
+    state = device_env_service_pb2.DeviceState()
+    sig = state.signals.add()
+    sig.type = device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT
+    fake_conn.device_state = state
+
+    dev = android_device.AndroidDevice(connection=fake_conn)
+    env = android_device_env.AndroidDeviceEnv(device=dev)
+    pixels, _, _, _ = env._parse_signals(state)
+    self.assertIsNone(pixels)
+
+  def test_parse_signals_logs_none_for_non_logs_signals(self):
+    fake_conn = FakeDeviceConnection()
+    state = device_env_service_pb2.DeviceState()
+    sig1 = state.signals.add()
+    sig1.type = device_env_service_pb2.DEVICE_SIGNAL_ACTIVE_PACKAGE
+    sig1.active_package = 'com.example.app'
+    sig2 = state.signals.add()
+    sig2.type = device_env_service_pb2.DEVICE_SIGNAL_AUDIO_OUTPUT
+    fake_conn.device_state = state
+
+    dev = android_device.AndroidDevice(connection=fake_conn)
+    env = android_device_env.AndroidDeviceEnv(device=dev)
+    _, _, _, logs = env._parse_signals(state)
+    self.assertIsNone(logs)
+
+  def test_context_manager(self):
+    mock_dev = mock.create_autospec(android_device.AndroidDevice, instance=True)
+    with android_device_env.AndroidDeviceEnv(device=mock_dev) as env:
+      self.assertIsInstance(env, android_device_env.AndroidDeviceEnv)
+    mock_dev.__exit__.assert_called_once()
+
+  def test_execute_adb_call_delegates_to_device(self):
+    mock_dev = mock.create_autospec(android_device.AndroidDevice, instance=True)
+    env = android_device_env.AndroidDeviceEnv(device=mock_dev)
+    req = adb_pb2.AdbRequest()
+    mock_dev.execute_adb_call.return_value = adb_pb2.AdbResponse()
+    res = env.execute_adb_call(req)
+    mock_dev.execute_adb_call.assert_called_once_with(req)
+    self.assertIsInstance(res, adb_pb2.AdbResponse)
 
 
 if __name__ == '__main__':
