@@ -18,6 +18,7 @@
 import os
 
 from absl import logging
+from android_env import env_interface
 from android_env import environment
 from android_env.components import config_classes
 from android_env.components import coordinator as coordinator_lib
@@ -44,7 +45,9 @@ def _load_task(task_config: config_classes.TaskConfig) -> task_pb2.Task:
   return task
 
 
-def load(config: config_classes.AndroidEnvConfig) -> environment.AndroidEnv:
+def load(
+    config: config_classes.AndroidEnvConfig,
+) -> env_interface.AndroidEnvInterface:
   """Loads an AndroidEnv instance."""
 
   task = _load_task(config.task)
