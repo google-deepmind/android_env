@@ -15,7 +15,7 @@
 
 """Function for loading AndroidEnv."""
 
-import os
+import pathlib
 
 from absl import logging
 from android_env import env_interface
@@ -82,15 +82,19 @@ def _process_emulator_launcher_config(
 
   # Expand the user directory if specified.
   launcher_config = emulator_config.emulator_launcher
-  launcher_config.android_avd_home = os.path.expanduser(
-      launcher_config.android_avd_home
-  )
-  launcher_config.android_sdk_root = os.path.expanduser(
-      launcher_config.android_sdk_root
-  )
-  launcher_config.emulator_path = os.path.expanduser(
-      launcher_config.emulator_path
-  )
-  emulator_config.adb_controller.adb_path = os.path.expanduser(
-      emulator_config.adb_controller.adb_path
-  )
+  if launcher_config.android_avd_home:
+    launcher_config.android_avd_home = pathlib.Path(
+        launcher_config.android_avd_home
+    ).expanduser()
+  if launcher_config.android_sdk_root:
+    launcher_config.android_sdk_root = pathlib.Path(
+        launcher_config.android_sdk_root
+    ).expanduser()
+  if launcher_config.emulator_path:
+    launcher_config.emulator_path = pathlib.Path(
+        launcher_config.emulator_path
+    ).expanduser()
+  if emulator_config.adb_controller.adb_path:
+    emulator_config.adb_controller.adb_path = pathlib.Path(
+        emulator_config.adb_controller.adb_path
+    ).expanduser()
