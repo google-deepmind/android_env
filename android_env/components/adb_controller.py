@@ -15,6 +15,7 @@
 
 """A class to manage and control an external ADB process."""
 
+import datetime
 import os
 import subprocess
 import time
@@ -68,7 +69,7 @@ class AdbController:
       command_prefix.extend(['-s', self._config.device_name])
     return command_prefix
 
-  def init_server(self, timeout: float | None = None):
+  def init_server(self, timeout: datetime.timedelta | None = None):
     """Initialize the ADB server deamon on the given port.
 
     This function should be called immediately after initializing the first
@@ -82,7 +83,7 @@ class AdbController:
     self.execute_command(['devices'], timeout, device_specific=False)
     time.sleep(0.2)
 
-  def _restart_server(self, timeout: float | None = None):
+  def _restart_server(self, timeout: datetime.timedelta | None = None):
     """Kills and restarts the adb server.
 
     Args:
@@ -105,7 +106,7 @@ class AdbController:
   def execute_command(
       self,
       args: list[str],
-      timeout: float | None = None,
+      timeout: datetime.timedelta | None = None,
       device_specific: bool = True,
   ) -> bytes:
     """Executes an adb command.
@@ -141,14 +142,17 @@ class AdbController:
     ) from latest_error
 
   def _execute_attempt(
-      self, command: list[str], command_str: str, timeout: float
+      self,
+      command: list[str],
+      command_str: str,
+      timeout: datetime.timedelta | None,
   ) -> bytes:
     """Executes a single adb command attempt."""
     logging.info('Executing ADB command: [%s]', command_str)
     cmd_output = subprocess.check_output(
         command,
         stderr=subprocess.STDOUT,
-        timeout=timeout,
+        timeout=timeout.total_seconds() if timeout is not None else None,
         env=self._os_env_vars,
     )
     logging.debug('ADB command output: %s', cmd_output)
