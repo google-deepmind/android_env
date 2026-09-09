@@ -477,14 +477,14 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         base_env, add_latest_a11y_info_to_obs=True
     )
     with mock.patch.object(wrapped_env, '_fetch_task_extras'):
-      wrapped_env._fetch_task_extras.return_value = {
+      wrapped_env._fetch_task_extras.return_value = {  # pyrefly: ignore[missing-attribute]
           'full_event': np.array(single_item_dict(), ndmin=1, dtype=object),
           'accessibility_tree': np.array(empty_forest(), ndmin=1, dtype=object),
       }
       timestep = wrapped_env.reset()
       self.assertIn('a11y_forest', timestep.observation)
       self.assertEqual(timestep.observation['a11y_forest'], empty_forest())
-      wrapped_env._fetch_task_extras.return_value = {
+      wrapped_env._fetch_task_extras.return_value = {  # pyrefly: ignore[missing-attribute]
           'full_event': np.array(empty_dict(), ndmin=1, dtype=object),
           'accessibility_tree': np.array(
               one_window_two_nodes_forest(), ndmin=1, dtype=object
@@ -500,7 +500,7 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
       self.assertEqual(
           timestep.observation['a11y_forest'], one_window_two_nodes_forest()
       )
-      wrapped_env._fetch_task_extras.return_value = {
+      wrapped_env._fetch_task_extras.return_value = {  # pyrefly: ignore[missing-attribute]
           'full_event': np.array(single_item_dict(), ndmin=1, dtype=object),
       }
       timestep = wrapped_env.step({})
@@ -576,7 +576,7 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         base_env, add_latest_a11y_info_to_obs=False, a11y_info_timeout=1.0
     )
     with mock.patch.object(wrapped_env, '_fetch_task_extras'):
-      wrapped_env._fetch_task_extras.return_value = {
+      wrapped_env._fetch_task_extras.return_value = {  # pyrefly: ignore[missing-attribute]
           'accessibility_tree': np.array(empty_forest(), ndmin=1, dtype=object),
       }
       timestep = wrapped_env.reset()
@@ -609,7 +609,7 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         base_env, add_latest_a11y_info_to_obs=True, a11y_info_timeout=1.0
     )
     with mock.patch.object(wrapped_env, '_fetch_task_extras'):
-      wrapped_env._fetch_task_extras.side_effect = [{
+      wrapped_env._fetch_task_extras.side_effect = [{  # pyrefly: ignore[missing-attribute]
           'accessibility_tree': np.array(empty_forest(), ndmin=1, dtype=object),
       }]
       timestep = wrapped_env.reset()
@@ -640,7 +640,7 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         base_env, add_latest_a11y_info_to_obs=True, a11y_info_timeout=1.0
     )
     with mock.patch.object(wrapped_env, '_fetch_task_extras'):
-      wrapped_env._fetch_task_extras.side_effect = [
+      wrapped_env._fetch_task_extras.side_effect = [  # pyrefly: ignore[missing-attribute]
           {
               'accessibility_tree': np.array(
                   empty_forest(), ndmin=1, dtype=object
@@ -675,7 +675,7 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         base_env, add_latest_a11y_info_to_obs=True, a11y_info_timeout=0.0
     )
     with mock.patch.object(wrapped_env, '_fetch_task_extras'):
-      wrapped_env._fetch_task_extras.side_effect = [
+      wrapped_env._fetch_task_extras.side_effect = [  # pyrefly: ignore[missing-attribute]
           {
               'accessibility_tree': np.array(
                   empty_forest(), ndmin=1, dtype=object
@@ -704,7 +704,7 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         'accessibility_tree': np.array(empty_forest(), ndmin=1, dtype=object),
     }
     with mock.patch.object(wrapped_env, '_fetch_task_extras'):
-      wrapped_env._fetch_task_extras.return_value = expected_task_extras
+      wrapped_env._fetch_task_extras.return_value = expected_task_extras  # pyrefly: ignore[missing-attribute]
       wrapped_env.reset()
     task_extras = wrapped_env.task_extras(latest_only=False)
     np.testing.assert_equal(
@@ -731,7 +731,7 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
         ),
     }
     with mock.patch.object(wrapped_env, '_fetch_task_extras'):
-      wrapped_env._fetch_task_extras.return_value = expected_task_extras
+      wrapped_env._fetch_task_extras.return_value = expected_task_extras  # pyrefly: ignore[missing-attribute]
       wrapped_env.step({})
     task_extras = wrapped_env.task_extras(latest_only=False)
     np.testing.assert_equal(
@@ -770,7 +770,7 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
           'full_event': np.array(empty_dict(), ndmin=1, dtype=object),
           'accessibility_tree': np.array(empty_forest(), ndmin=1, dtype=object),
       }
-      wrapped_env._fetch_task_extras.return_value = expected_task_extras
+      wrapped_env._fetch_task_extras.return_value = expected_task_extras  # pyrefly: ignore[missing-attribute]
       wrapped_env.reset()
       task_extras = wrapped_env.task_extras(latest_only=False)
       np.testing.assert_equal(
@@ -785,7 +785,7 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
           'full_event': np.array(single_item_dict(), ndmin=1, dtype=object),
           'accessibility_tree': np.array(empty_forest(), ndmin=1, dtype=object),
       }
-      wrapped_env._fetch_task_extras.return_value = expected_task_extras
+      wrapped_env._fetch_task_extras.return_value = expected_task_extras  # pyrefly: ignore[missing-attribute]
       wrapped_env.step({})
       task_extras = wrapped_env.task_extras(latest_only=False)
       np.testing.assert_equal(
@@ -801,7 +801,7 @@ class A11yGrpcWrapperTest(parameterized.TestCase):
               one_window_two_nodes_forest(), ndmin=1, dtype=object
           ),
       }
-      wrapped_env._fetch_task_extras.return_value = expected_task_extras
+      wrapped_env._fetch_task_extras.return_value = expected_task_extras  # pyrefly: ignore[missing-attribute]
       wrapped_env.step({})
       task_extras = wrapped_env.task_extras(latest_only=False)
       np.testing.assert_equal(
