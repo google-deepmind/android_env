@@ -331,6 +331,26 @@ py_test(
 )
 
 py_library(
+    name = "telemetry",
+    srcs = ["telemetry.py"],
+    deps = [
+        "//android_env/proto:device_env_service_py_pb2",
+    ],
+)
+
+py_test(
+    name = "telemetry_test",
+    srcs = ["telemetry_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":telemetry",
+        "//android_env/proto:device_env_service_py_pb2",
+        "@pip//absl_py",
+    ],
+)
+
+
+py_library(
     name = "task_manager",
     srcs = ["task_manager.py"],
     deps = [
