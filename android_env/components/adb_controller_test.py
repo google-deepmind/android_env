@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import os
 import subprocess
 import time
@@ -25,7 +26,7 @@ from android_env.components import errors
 
 # Timeout to be used by default in tests below. Set to a small value to avoid
 # hanging on a failed test.
-_TIMEOUT = 2
+_TIMEOUT = datetime.timedelta(seconds=2)
 
 
 class AdbControllerTest(absltest.TestCase):
@@ -67,7 +68,7 @@ class AdbControllerTest(absltest.TestCase):
     mock_check_output.assert_called_once_with(
         ['my_adb', 'devices'],
         stderr=subprocess.STDOUT,
-        timeout=_TIMEOUT,
+        timeout=_TIMEOUT.total_seconds(),
         env=expected_env,
     )
     mock_sleep.assert_called_once()
@@ -104,7 +105,7 @@ class AdbControllerTest(absltest.TestCase):
     mock_check_output.assert_called_once_with(
         ['my_adb', 'devices'],
         stderr=subprocess.STDOUT,
-        timeout=_TIMEOUT,
+        timeout=_TIMEOUT.total_seconds(),
         env=expected_env,
     )
     mock_sleep.assert_called_once()
@@ -138,31 +139,31 @@ class AdbControllerTest(absltest.TestCase):
         mock.call(
             ['my_adb', '-s', 'awesome_device', 'my_command'],
             stderr=subprocess.STDOUT,
-            timeout=_TIMEOUT,
+            timeout=_TIMEOUT.total_seconds(),
             env=expected_env,
         ),
         mock.call(
             ['my_adb', 'kill-server'],
             stderr=subprocess.STDOUT,
-            timeout=_TIMEOUT,
+            timeout=_TIMEOUT.total_seconds(),
             env=expected_env,
         ),
         mock.call(
             ['my_adb', 'start-server'],
             stderr=subprocess.STDOUT,
-            timeout=_TIMEOUT,
+            timeout=_TIMEOUT.total_seconds(),
             env=expected_env,
         ),
         mock.call(
             ['my_adb', 'devices'],
             stderr=subprocess.STDOUT,
-            timeout=_TIMEOUT,
+            timeout=_TIMEOUT.total_seconds(),
             env=expected_env,
         ),
         mock.call(
             ['my_adb', '-s', 'awesome_device', 'my_command'],
             stderr=subprocess.STDOUT,
-            timeout=_TIMEOUT,
+            timeout=_TIMEOUT.total_seconds(),
             env=expected_env,
         ),
     ])
@@ -211,31 +212,31 @@ class AdbControllerTest(absltest.TestCase):
             mock.call(
                 ['my_adb', '-s', 'awesome_device', 'my_command'],
                 stderr=subprocess.STDOUT,
-                timeout=_TIMEOUT,
+                timeout=_TIMEOUT.total_seconds(),
                 env=expected_env,
             ),
             mock.call(
                 ['my_adb', 'kill-server'],
                 stderr=subprocess.STDOUT,
-                timeout=_TIMEOUT,
+                timeout=_TIMEOUT.total_seconds(),
                 env=expected_env,
             ),
             mock.call(
                 ['my_adb', 'start-server'],
                 stderr=subprocess.STDOUT,
-                timeout=_TIMEOUT,
+                timeout=_TIMEOUT.total_seconds(),
                 env=expected_env,
             ),
             mock.call(
                 ['my_adb', 'devices'],
                 stderr=subprocess.STDOUT,
-                timeout=_TIMEOUT,
+                timeout=_TIMEOUT.total_seconds(),
                 env=expected_env,
             ),
             mock.call(
                 ['my_adb', '-s', 'awesome_device', 'my_command'],
                 stderr=subprocess.STDOUT,
-                timeout=_TIMEOUT,
+                timeout=_TIMEOUT.total_seconds(),
                 env=expected_env,
             ),
         ],
