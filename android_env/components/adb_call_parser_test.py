@@ -98,7 +98,6 @@ class AdbCallParserTest(parameterized.TestCase):
     adb.execute_command.assert_called_once_with(
         ['install', '-r', '-t', '-g', '/my/home/test.apk'], None
     )
-    # pytype: disable=attribute-error
     expected_tempfile_kwargs = (
         {'suffix': '.apk', 'delete_on_close': False}
         if sys.version_info > (3, 12)
@@ -110,7 +109,6 @@ class AdbCallParserTest(parameterized.TestCase):
         mock.call().__enter__().write(blob_content),  # Call write function
         mock.call().__exit__(None, None, None),  # Exit context
     ])
-    # pytype: enable=attribute-error
 
   def test_start_activity_empty_full_activity(self):
     """A start_activity command should always have a nonempty activity."""

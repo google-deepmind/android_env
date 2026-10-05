@@ -115,7 +115,7 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
         )
     )
 
-  def observation_spec(self) -> specs.Array | dict[str, specs.Array]:  # pytype: disable=signature-mismatch  # overriding-return-type-checks
+  def observation_spec(self) -> specs.Array | dict[str, specs.Array]:  # pyrefly: ignore[bad-override]
     if self._flat_observations:
       pixels_spec = cast(
           specs.BoundedArray, self._env.observation_spec()['pixels']
@@ -126,8 +126,8 @@ class FlatInterfaceWrapper(base_wrapper.BaseWrapper):
     else:
       return self._env.observation_spec()
 
-  def action_spec(self) -> specs.BoundedArray | dict[str, specs.Array]:  # pytype: disable=signature-mismatch  # overriding-return-type-checks
+  def action_spec(self) -> specs.BoundedArray | dict[str, specs.Array]:  # pyrefly: ignore[bad-override]
     if self._flat_actions:
-      return self._env.action_spec()[self._action_name]  # pytype: disable=bad-return-type
+      return self._env.action_spec()[self._action_name]  # pyrefly: ignore[bad-return]
     else:
       return self._env.action_spec()
