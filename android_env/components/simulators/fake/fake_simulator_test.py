@@ -15,6 +15,7 @@
 
 """Tests for fake_simulator."""
 
+import datetime
 import re
 from absl.testing import absltest
 from android_env.components import config_classes
@@ -74,8 +75,12 @@ class FakeSimulatorTest(absltest.TestCase):
         config_classes.FakeSimulatorConfig(screen_dimensions=(320, 480))
     )
     simulator.launch()
-    adb_controller = simulator.create_adb_controller()
-    line = adb_controller.execute_command(['shell', 'dumpsys', 'input'])
+    adb_controller: fake_simulator.FakeAdbController = (
+        simulator.create_adb_controller()
+    )
+    line = adb_controller.execute_command(
+        ['shell', 'dumpsys', 'input'], timeout=datetime.timedelta(seconds=5)
+    )
     line = line.decode('utf-8')
     matches = re.match(r'\s+SurfaceOrientation:\s+(\d)', line)
     self.assertIsNotNone(matches)
