@@ -15,6 +15,7 @@
 
 """Fake Simulator for testing AndroidEnv infrastructure."""
 
+import datetime
 import random
 import threading
 import time
@@ -67,7 +68,7 @@ class FakeAdbController(adb_controller.AdbController):
   def execute_command(
       self,
       args: list[str],
-      timeout: float | None = None,
+      timeout: datetime.timedelta | None = None,
       device_specific: bool = True,
   ) -> bytes:
     """Returns fake output for adb commands."""
