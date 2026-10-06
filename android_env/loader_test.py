@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import builtins
-import os
+import pathlib
 from typing import cast
 from unittest import mock
 
@@ -79,16 +79,18 @@ class LoaderTest(absltest.TestCase):
         config=config_classes.EmulatorConfig(
             emulator_launcher=config_classes.EmulatorLauncherConfig(
                 avd_name='my_avd',
-                android_avd_home=os.path.expanduser('~/.android/avd'),
-                android_sdk_root=os.path.expanduser('~/Android/Sdk'),
-                emulator_path=os.path.expanduser(
+                android_avd_home=pathlib.Path('~/.android/avd').expanduser(),
+                android_sdk_root=pathlib.Path('~/Android/Sdk').expanduser(),
+                emulator_path=pathlib.Path(
                     '~/Android/Sdk/emulator/emulator'
-                ),
+                ).expanduser(),
                 run_headless=False,
                 gpu_mode='swangle_indirect',
             ),
             adb_controller=config_classes.AdbControllerConfig(
-                adb_path=os.path.expanduser('~/Android/Sdk/platform-tools/adb'),
+                adb_path=pathlib.Path(
+                    '~/Android/Sdk/platform-tools/adb'
+                ).expanduser(),
                 adb_server_port=5037,
             ),
         )

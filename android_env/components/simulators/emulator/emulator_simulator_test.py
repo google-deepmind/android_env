@@ -17,6 +17,7 @@
 
 import builtins
 import os
+import pathlib
 import time
 from unittest import mock
 
@@ -137,12 +138,12 @@ class EmulatorSimulatorTest(parameterized.TestCase):
     simulator = emulator_simulator.EmulatorSimulator(config)
 
     with mock.patch.object(
-        os.path, 'exists', autospec=True, return_value=True
-    ), mock.patch.object(builtins, 'open', autospec=True) as mock_open:
-      mock_file = mock_open.return_value.__enter__.return_value
-      mock_file.read.return_value = b'fake_logs'
+        pathlib.Path, 'exists', autospec=True, return_value=True
+    ), mock.patch.object(
+        pathlib.Path, 'read_text', autospec=True, return_value='fake_logs'
+    ) as mock_read_text:
       logs = simulator.get_logs()
-      mock_open.assert_called_once_with('fake/logfile/path', 'rb')
+      mock_read_text.assert_called_once_with(mock.ANY, encoding='utf-8')
       self.assertEqual(logs, 'fake_logs')
 
   def test_launch_operation_order(self):
