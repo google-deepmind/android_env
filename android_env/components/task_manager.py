@@ -238,7 +238,7 @@ class TaskManager:
         'the transition function.'
     )
 
-    # Check if user existed the task
+    # Check if user exited the task.
     if self._dumpsys_thread.check_user_exited():
       self._increment_bad_state()
       self._stats['reset_count_user_exited'] += 1
