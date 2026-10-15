@@ -1,115 +1,188 @@
-# AndroidEnv - Running the environment
+# AndroidEnv - Running AndroidDevice, Playground, and RL Agents
 
-In order to create an AndroidEnv instance you will need to provide two main
-components: a [simulator](#the-simulator) and a [task](#the-task). In the
-following sections you will learn how you can create them.
+This guide covers how to set up an Android device, interact with it directly
+using `AndroidDevice`, launch the interactive web **Playground**, and run
+Reinforcement Learning (RL) tasks.
 
-### The simulator
+> Upgrading from AndroidEnv v1? See the
+> [AndroidDevice (v2) Migration Guide](migrating_to_android_device.md).
 
-First, you will need to provide your Android virtual device (AVD) that the
-environment (and through it, the agent) can communicate with. While this can
-also be a physical device, in most cases you will need a virtual emulated
-device. There are many ways to emulate an AVD - in our examples, we will use
-[Android Studio](https://developer.android.com/studio) to create one.
+--------------------------------------------------------------------------------
 
-1.  In Android Studio, create a virtual device by following this step-by-step
-    [guide](emulator_guide.md).
-2.  Follow the steps below to attach the AVD to your environment.
+## 1. Set Up an Android Device
 
-### The task and examples with games and other apps
+AndroidEnv works identically with **Android Studio Virtual Devices (AVDs)** and
+**physical Android hardware**.
 
-A `task` is a particular definition of an RL problem that the agent will be
-interacting with. A `task` may include critical RL information, such as what the
-rewards are, when the episodes are supposed to terminate, and what the reset
-procedures are that the environment should perform upon episode termination
-(e.g. start or relaunch an app, clear cache, etc.). This information is packaged
-into a `Task()` proto message, which gets passed passed to AndroidEnv.
+*   **Android Studio Emulator**: Follow the step-by-step
+    [Emulator setup guide](emulator_guide.md) to install the Android SDK and
+    create an AVD.
+*   **Physical Device**: Enable **Developer Options** and **USB Debugging** on
+    your Android device, connect it via USB, and verify that `adb devices` lists
+    its serial number.
 
-*   For ready-made example tasks provided with AndroidEnv, check out the
-    [Available tasks](example_tasks.md), featuring Vokram (with Markov Decision
-    Process (MDP)), Pong, DroidFish (a chess clone), Blockinger (a tetris
-    clone), and more.
+--------------------------------------------------------------------------------
 
-*   See the [Tasks guide](tasks_guide.md) for details on features and
-    capabilities of tasks, as well as how to create custom ones.
+## 2. Direct Control with `AndroidDevice`
 
-### Create the environment
+For UI agents, foundation model evaluations, and automation workflows that do
+not need MDP rewards or episode resets, use
+`android_device_loader.load_android_device()`.
 
-After setting up the simulator and creating a task, you may find the
-[`loader.load()`](https://github.com/google-deepmind/android_env/blob/main/android_env/loader.py)
-function handy for creating an environment instance by providing relevant
-arguments, such as:
+### Connect to an Existing Device or Running Emulator
 
-*   `task_path`: the path pointing to the `.textproto` file describing the
-    desired task.
-*   `avd_name`: the name of the AVD specified when your created it in Android
-    Studio.
-*   `android_avd_home` (Optional): the path to where the AVD is installed.
-    (default value: `~/.android/avd`).
-*   `android_sdk_root` (Optional): the root directory of the Android SDK.
-    (default value: `~/Android/Sdk`).
-*   `emulator_path` (Optional): the path to the emulator binary. (default:
-    `~/Android/Sdk/emulator/emulator`).
-*   `adb_path` (Optional): the path to the ADB
-    ([Android Debug Bridge](https://developer.android.com/studio/command-line/adb)).
-    (default value: `~/Android/Sdk/platform-tools/adb`).
-
-For the AVD name and path, in Android Studio, go to **Tools** > **AVD Manager**,
-right click on your virtual device, and select **View Details**, where you will
-find the `avd_name` and its path.
-
-For the Android SDK location, in Android Studio, go to **Preferences** >
-**Appearance & Behavior** > **System Settings** > **Android SDKs** and note the
-_Android SDK Location_. In the SDK folder, you will find `/emulator/emulator` as
-well as the ADB path (`/platform-tools/adb`).
-
-Your example configuration may look like this, depending on how you set up your
-emulator:
+If your emulator or physical device is already running and visible in `adb
+devices`:
 
 ```python
-from android_env import loader
+from android_env.components import android_device_loader
+from android_env.components import config_classes
 
-env = loader.load(
-    avd_name='my_avd',
-    android_avd_home='/Users/username/.android/avd',
-    android_sdk_root='/Users/username/Library/Android/sdk',
-    emulator_path='/Users/username/Library/Android/sdk/emulator/emulator',
-    adb_path='/Users/username/Library/Android/sdk/platform-tools/adb',
-    task_path='/Users/username/android_env/my_tasks/my_task.textproto',
+config = config_classes.AndroidDeviceConfig(
+    serial='emulator-5554',
+    adb_path='~/Android/Sdk/platform-tools/adb',
 )
+device = android_device_loader.load_android_device(config)
 ```
 
-## Example RL agent scripts
+### Launch a Managed Emulator Instance
 
-The `examples` directory contains a few simple example agent setups, such as:
+To have AndroidEnv automatically start and manage an AVD process:
 
-*   [`run_random_agent.py`](https://github.com/google-deepmind/android_env/blob/main/examples/run_random_agent.py):
-    Runs a simple loop performing randomly selected actions in the environment.
-*   [`run_acme_agent.py`](https://github.com/google-deepmind/android_env/blob/main/examples/run_acme_agent.py):
-    Runs a training loop with an
-    [Acme](https://deepmind.com/research/publications/Acme) DQN agent,
-    implemented in the popular DeepMind RL framework. This will require to
-    install the [`acme`](https://github.com/google-deepmind/acme) dependency.
-*   [`run_human_agent.py`](https://github.com/google-deepmind/android_env/blob/main/examples/run_human_agent.py):
-    Creates a [`pygame`](https://www.pygame.org) instance that lets a human user
-    interact with the environment and observe environment mechanics, such as
-    rewards or task extras. You will need to install the [PyGame] dependency.
+```python
+from android_env.components import android_device_loader
+from android_env.components import config_classes
 
-For instance, here is how you can run
-[`run_random_agent.py`](https://github.com/google-deepmind/android_env/blob/main/examples/run_random_agent.py)
-in a folder where you have your APK file, such as
-[Apple Flinger](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md#apple-flinger)
-from
-[Example tasks](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md).
-(The downloaded TAR file contains the APK file and `.textproto` definitions.)
+config = config_classes.AndroidDeviceConfig(
+    emulator_launcher=config_classes.EmulatorLauncherConfig(
+        avd_name='my_avd',
+        android_avd_home='~/.android/avd',
+        android_sdk_root='~/Android/Sdk',
+        emulator_path='~/Android/Sdk/emulator/emulator',
+    ),
+    adb_path='~/Android/Sdk/platform-tools/adb',
+)
+device = android_device_loader.load_android_device(config)
+```
+
+### Observe Telemetry & Send Actions
+
+```python
+import numpy as np
+from android_env.proto import adb_pb2
+from android_env.proto import device_env_service_pb2
+
+with android_device_loader.load_android_device(config) as device:
+  # 1. Subscribe to screenshots and accessibility trees:
+  device.update_subscriptions({
+      device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT,
+      device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_TREE,
+  })
+
+  # 2. Fetch the current state snapshot:
+  state = device.get_state()
+  for signal in state.signals:
+    if signal.type == device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT:
+      decoded = signal.screenshot.decoded
+      pixels = np.frombuffer(decoded.raw_pixels, dtype=np.uint8).reshape(
+          (decoded.height, decoded.width, 3)
+      )
+    elif signal.type == device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_TREE:
+      forest = signal.accessibility_forest
+
+  # 3. Inject a touch tap at the center of the screen:
+  device.send_action(
+      device_env_service_pb2.Action(
+          action_type=device_env_service_pb2.ACTION_TYPE_TOUCH_DOWN,
+          touch_position=device_env_service_pb2.Point(x=0.5, y=0.5),
+      )
+  )
+  device.send_action(
+      device_env_service_pb2.Action(
+          action_type=device_env_service_pb2.ACTION_TYPE_TOUCH_UP,
+      )
+  )
+
+  # 4. Run an ADB command directly:
+  device.execute_adb_call(
+      adb_pb2.AdbRequest(
+          generic=adb_pb2.AdbRequest.GenericRequest(
+              args=['shell', 'input', 'keyevent', 'KEYCODE_HOME']
+          )
+      )
+  )
+```
+
+--------------------------------------------------------------------------------
+
+## 3. Launch the Interactive Web Playground
+
+AndroidEnv includes a web-based workbench (`android_env.playground`) that
+connects directly to `AndroidDevice`. It provides:
+
+*   Real-time interactive device display with mouse/touch input, hardware
+    navigation buttons (`Back`, `Home`, `App Switch`), and text injection.
+*   Live Accessibility Tree explorer with bidirectional node highlighting on the
+    screen canvas.
+*   Built-in ADB console for running shell commands and resetting tasks.
+
+Run the Playground using Bazel:
 
 ```shell
-python3 run_random_agent.py \
---avd_name='my_avd' \
---android_avd_home=/Users/username/.android/avd \
---android_sdk_root=/Users/username/Library/Android/sdk \
---emulator_path=/Users/username/Library/Android/sdk/emulator/emulator \
---adb_path=/Users/username/Library/Android/sdk/platform-tools/adb \
---num_steps=1000 \
---task_path=/Users/username/<PATH-TO-APP-TASK-FILES>/apple_flinger_M_1_1.textproto
+bazel run //android_env/playground:launch -- \
+    --config=android_env/configs/emulator_config.py \
+    --config.device.emulator_launcher.avd_name=my_avd
 ```
+
+Or if installed via `pip`:
+
+```shell
+python3 -m android_env.playground.launch \
+    --config=path/to/emulator_config.py
+```
+
+Open `http://localhost:8765` in your browser to interact with the device.
+
+--------------------------------------------------------------------------------
+
+## 4. Running Reinforcement Learning Tasks (`dm_env`)
+
+To train RL agents with Markov Decision Process (MDP) rewards, episode step
+limits, and automated reset steps, wrap `AndroidDevice` with
+`android_env.rl.environment.AndroidEnv` and `TaskWrapper`:
+
+*   For ready-made RL tasks (Vokram, Pong, DroidFish, Blockinger, 2048, and
+    more), see [Available tasks](example_tasks.md).
+*   To author your own `.textproto` task definitions, see the
+    [Tasks guide](tasks_guide.md).
+
+```python
+from android_env.components import android_device_loader
+from android_env.components import config_classes
+from android_env.proto import task_pb2
+from android_env.rl import environment
+from android_env.wrappers import task_wrapper
+from google.protobuf import text_format
+
+device = android_device_loader.load_android_device(device_config)
+base_env = environment.AndroidEnv(device)
+
+with open('path/to/my_task.textproto', 'r') as f:
+  task_proto = text_format.Parse(f.read(), task_pb2.Task())
+
+with task_wrapper.TaskWrapper(base_env, task=task_proto) as env:
+  timestep = env.reset()
+  while not timestep.last():
+    action = select_action(timestep.observation)
+    timestep = env.step(action)
+```
+
+### Example RL Agent Scripts
+
+The `examples/` directory contains starter scripts for RL agents:
+
+*   [`run_random_agent.py`](https://github.com/google-deepmind/android_env/blob/main/examples/run_random_agent.py):
+    Runs a loop performing randomly sampled actions in an RL task.
+*   [`run_acme_agent.py`](https://github.com/google-deepmind/android_env/blob/main/examples/run_acme_agent.py):
+    Trains an [Acme](https://github.com/google-deepmind/acme) DQN agent on an
+    AndroidEnv RL task.
