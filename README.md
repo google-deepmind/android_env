@@ -1,20 +1,29 @@
 
-# AndroidEnv - The Android Learning Environment
+# AndroidEnv - The Android Interaction & Learning Platform
 
 <img align="right" src="https://github.com/google-deepmind/android_env/raw/gh-pages/docs/images/device_control.gif" width="160" height="240">
 
-[AndroidEnv](https://github.com/google-deepmind/android_env) is a Python library
-that exposes an [Android](https://www.android.com/) device as a Reinforcement
-Learning (RL) environment. The library provides a flexible platform for defining
-custom tasks on top of the Android Operating System, including any Android
-application. Agents interact with the device through a universal action
-interface - the touchscreen - by sending localized touch and lift events to the
-system. The library processes these events and returns pixel observations and
-rewards as provided by specific
-[task definitions](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md).
-For example, rewards might be given for events such as successfully scrolling
-down a page, sending an email, or achieving some score in a game, depending on
-the research purpose and how the user configures the task.
+[AndroidEnv](https://github.com/google-deepmind/android_env) is a Python and
+Kotlin platform for interacting with [Android](https://www.android.com/) devices
+(both virtualized emulators and physical hardware). Built for foundation model
+UI agents, automated testing, and Reinforcement Learning (RL) research,
+AndroidEnv provides low-latency device telemetry and control over any Android
+application.
+
+In **AndroidEnv v2**, device interaction is decoupled from Reinforcement
+Learning task definitions:
+
+*   **`AndroidDevice` (Direct Device Control & Telemetry)**: A task-free handle
+    that connects to an on-device Kotlin Core server over WebSockets to stream
+    screenshots, accessibility trees, system logs, and sensor data while
+    injecting touch gestures, key events, text, and ADB commands.
+*   **`AndroidEnv` & `TaskWrapper` (Reinforcement Learning)**: An optional
+    [`dm_env`](https://github.com/google-deepmind/dm_env) layer on top of
+    `AndroidDevice` that adds Markov Decision Process (MDP) semantics (`step()`,
+    `reset()`, rewards, and episode terminations) via
+    [task definitions](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md).
+*   **AndroidEnv Playground**: A responsive web workbench for live screen
+    interaction, accessibility tree inspection, and ADB command execution.
 
 [![tests](https://github.com/google-deepmind/android_env/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/google-deepmind/android_env/actions/workflows/tests.yml)
 [![PyPI version](https://badge.fury.io/py/android-env.svg)](https://badge.fury.io/py/android-env)
@@ -22,87 +31,54 @@ the research purpose and how the user configures the task.
 
 ## Index
 
-*   [Environment details](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/environment.md)
-*   [Running AndroidEnv](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/instructions.md)
+*   [Migrating from v1 to AndroidDevice (v2)](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/migrating_to_android_device.md)
+*   [Architecture & environment details](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/environment.md)
+*   [Running AndroidDevice, Playground, and RL agents](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/instructions.md)
 *   [Setting up a virtual Android device](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/emulator_guide.md)
-*   [Defining a task in AndroidEnv](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md)
-*   [Example tasks available for download](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md)
+*   [Defining an RL task in AndroidEnv](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md)
+*   [Example RL tasks available for download](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md)
 
-## Environment features
+## Platform Features
 
-There are a number of aspects that make AndroidEnv a challenging yet suitable
-environment for Reinforcement Learning research:
+*   **Real-World Android Ecosystem**: Agents interact with an unaltered Android
+    OS—on Android Studio Emulators or physical devices—exposing the exact same
+    apps, UI frameworks, and system services that billions of human users
+    interact with daily.
+*   **Rich, Subscription-Based Telemetry (`DeviceState`)**: Subscribe on demand
+    to the signals your agent needs:
+    *   **Screenshots**: High-speed, decoded RGB frame buffers (`width`,
+        `height`, `raw_pixels`).
+    *   **Accessibility Trees**: Full `AndroidAccessibilityForest` window and UI
+        node hierarchies streamed directly from the on-device
+        `AccessibilityService`.
+    *   **System & Sensor Streams**: Foreground package/activity, logcat
+        streams, device settings, GPS location, audio output, and IMU sensors
+        (accelerometer, gyroscope, magnetometer, barometer, light, proximity).
+*   **Expressive Action Interface (`Action`)**:
+    *   **Touch & Multi-Touch Gestures**: Normalized `(x, y)` coordinates in
+        `[0.0, 1.0]` with `TOUCH_DOWN`, `TOUCH_MOVE`, and `TOUCH_UP` across
+        multiple `pointer_id` fingers for taps, swipes, scrolls, and pinches.
+    *   **Hardware Keys & Native Text Entry**: Inject Android keycodes (`BACK`,
+        `HOME`, `ENTER`), set text directly on focused UI nodes
+        (`ACTION_TYPE_SET_TEXT`), or trigger clipboard actions (`CUT`, `COPY`,
+        `PASTE`).
+    *   **Direct ADB Execution**: Run structured or generic `AdbRequest`
+        commands via `device.execute_adb_call()`.
+*   **Composable RL Layer**: When training RL policies, wrap `AndroidDevice`
+    with `android_env.rl.environment.AndroidEnv` and `TaskWrapper` to use custom
+    `.textproto` tasks, reward parsers, and `dm_env` / Gymnasium wrappers.
 
-*   Allowing agents to interact with a system used daily by billions of users
-    around the world, AndroidEnv offers a platform for RL agents to navigate,
-    learn tasks and have direct impact in **real-world contexts**. The
-    environment wraps a simulated Android device, which runs independently from
-    the environment, completely unaltered, and works in exactly the same way as
-    the devices that humans use, exposing exactly the same features and
-    services.
-
-*   The platform offers a virtually infinite **range of possible tasks**, all
-    sharing a common action interface. The library facilitates the design of
-    Reinforcement Learning tasks for any existing or custom built Android
-    application. For example, it exposes the broad world of Android games,
-    ranging from card games, puzzle games, time reactive games, all requiring a
-    diverse set of action combinations and interaction types.
-
-*   The environment runs on top of a **real-time simulation** of an Android
-    device. In other words, the environment dynamics does not wait for the agent
-    to deliberate, and the speed of the simulation cannot be increased.
-
-*   The observation is a collection of **RGB values** corresponding to the
-    displayed pixels on the screen. The exact screen resolution depends on the
-    simulated device, but in general it will be considered relatively large in
-    an RL context. However, users have the option of downsampling each
-    observation.
-
-*   The learning environment has an interesting, **complex action space** unique
-    to the touchscreen interface of Android.
-
-    *   The raw, **hybrid action space** consists of a continuous tuple
-        signifying the action location, and a discrete signal determining
-        whether the agent wants to touch the screen or lift its virtual finger.
-    *   Raw actions are highly **composable**: the Android UI and most
-        applications were designed so that they could be intuitively navigated
-        via common
-        [touchscreen gestures](https://developer.android.com/training/gestures/detector)
-        such as tapping, scrolling, swiping, pinching, drag & drop etc. This is
-        still the case in AndroidEnv: to trigger meaningful changes in the
-        environment, the agent often has to perform carefully timed and
-        positioned sequences of raw actions. For example, in order to navigate
-        to the next image in a photo gallery, the agent would have to perform a
-        *swipe*, touching the screen multiple times, gradually shifting the
-        actions' positions to the right. Thus, in most contexts raw actions do
-        not trigger changes in the state of the environment unless correctly
-        chained together to make up a human gesture.
-    *   The action interface is **closely related to the observation space**, as
-        meaningful touch and lift events are often either co-localized or
-        strongly correlated to the location or movement of salient objects in
-        the observation. For example, the position of a button on the screen
-        aligns with the location of the actions that trigger the button press.
-    *   The library provides tools for flexibly **altering the action
-        interface** if needed for particular studies, such as discretization or
-        hard-coding gesture skills. Still, we believe that the real challenge
-        remains in devising agents that are capable of dealing with a large
-        suite of diverse tasks, through acting and learning in the complex
-        unifying action interface.
-
-# Getting started
+## Getting Started
 
 ### Installation
 
-The easiest way to get AndroidEnv is with pip:
+Install AndroidEnv from PyPI:
 
 ```shell
 $ python3 -m pip install android-env
 ```
 
-Please note that `/examples` are not included in this package.
-
-Alternatively, you can clone the repository from git's `main` branch and test or
-build with Bazel:
+Or clone the repository from `main` and build/test with Bazel:
 
 ```shell
 $ git clone https://github.com/google-deepmind/android_env/
@@ -116,43 +92,74 @@ To build the PyPI wheel locally using Bazel:
 $ bazel build //:android_env_wheel
 ```
 
-Update: the environment now runs on Windows, but please keep in mind that this
-option is not well-maintained or widely supported, as Unix-based systems are the
-primary target platforms of this project.
+### 1. Set Up an Android Device
 
-### Create a simulator
+Connect a physical Android device via USB debugging (`adb devices`) or create an
+Android Virtual Device (AVD) using Android Studio. See the
+[Emulator guide](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/emulator_guide.md)
+for step-by-step instructions.
 
-Before running the environment, you will need access to an emulated Android
-device. For instructions on creating a virtual Android device, see the
-[Emulator guide](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/emulator_guide.md).
+### 2. Direct Control with `AndroidDevice`
 
-### Define a task
+For UI agents, foundation model evaluations, and automation scripts that do not
+need RL episode loops:
 
-Then, you will want to define what the agent's *task* is. At this point, the
-agent will be able to communicate with the emulated device, but it will not yet
-have an objective, or access to signals such as rewards or RL episode ends.
-Learn
-[how to define an RL task](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md)
-of your own, or use one of the
-[existing task definitions](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md)
-for training.
+```python
+import numpy as np
+from android_env.components import android_device_loader
+from android_env.components import config_classes
+from android_env.proto import device_env_service_pb2
 
-### Load and run
+config = config_classes.AndroidDeviceConfig(serial='emulator-5554')
+with android_device_loader.load_android_device(config) as device:
+  # Subscribe to screenshots and accessibility trees:
+  device.update_subscriptions({
+      device_env_service_pb2.DEVICE_SIGNAL_SCREENSHOT,
+      device_env_service_pb2.DEVICE_SIGNAL_ACCESSIBILITY_TREE,
+  })
 
-To find out how to run and train agents on AndroidEnv, see these
+  # Read the latest device state:
+  state = device.get_state()
+
+  # Tap the center of the screen:
+  device.send_action(
+      device_env_service_pb2.Action(
+          action_type=device_env_service_pb2.ACTION_TYPE_TOUCH_DOWN,
+          touch_position=device_env_service_pb2.Point(x=0.5, y=0.5),
+      )
+  )
+  device.send_action(
+      device_env_service_pb2.Action(
+          action_type=device_env_service_pb2.ACTION_TYPE_TOUCH_UP,
+      )
+  )
+```
+
+### 3. Launch the Interactive Web Playground
+
+Explore the device screen, inspect live accessibility trees, and run ADB
+commands from your browser:
+
+```shell
+$ bazel run //android_env/playground:launch -- \
+    --config=android_env/configs/emulator_config.py
+```
+
+### 4. Reinforcement Learning (`dm_env`)
+
+To define MDP tasks with rewards and episode resets, see the
+[Tasks guide](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md),
+[Example tasks](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md),
+and
 [detailed instructions](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/instructions.md).
-Here you can also find example scripts demonstrating how to run a random agent,
-an [acme](https://github.com/google-deepmind/acme) agent, or a human agent on
-AndroidEnv.
 
 ## About
 
-This library is developed and maintained by [DeepMind](http://deepmind.com). \
-You can find the [technical report](https://arxiv.org/abs/2105.13231) on Arxiv,
-as well as an introductory
-[blog
-post](https://www.deepmind.com/publications/androidenv-the-android-learning-environment)
-on DeepMind's website.
+This library is developed and maintained by
+[Google DeepMind](https://deepmind.google/). You can find the original
+[technical report](https://arxiv.org/abs/2105.13231) on arXiv, as well as the
+introductory
+[blog post](https://www.deepmind.com/publications/androidenv-the-android-learning-environment).
 
 If you use AndroidEnv in your research, you can cite the paper using the
 following BibTeX:
