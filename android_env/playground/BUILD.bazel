@@ -1,0 +1,222 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "actions",
+    srcs = ["actions.py"],
+    deps = [
+        "//android_env/components:action_type",
+        "//android_env/proto:device_env_service_py_pb2",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "coordinates",
+    srcs = ["coordinates.py"],
+    deps = [
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "frame_processing",
+    srcs = ["frame_processing.py"],
+    deps = [
+        ":coordinates",
+        "@pip//numpy",
+        "@pip//pillow",
+    ],
+)
+
+py_library(
+    name = "state",
+    srcs = ["state.py"],
+)
+
+py_library(
+    name = "websocket",
+    srcs = ["websocket.py"],
+    deps = [
+        ":actions",
+        ":state",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "log_handler",
+    srcs = ["log_handler.py"],
+    deps = [
+        ":state",
+        ":websocket",
+    ],
+)
+
+py_library(
+    name = "server",
+    srcs = ["server.py"],
+    data = [
+        "//android_env/playground/frontend",
+    ],
+    deps = [
+        ":state",
+        ":websocket",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "device_runner",
+    srcs = ["device_runner.py"],
+    deps = [
+        ":actions",
+        ":coordinates",
+        ":frame_processing",
+        ":state",
+        ":websocket",
+        "//android_env/components:android_device",
+        "//android_env/components:android_device_loader",
+        "//android_env/components:config_classes",
+        "//android_env/components:errors",
+        "//android_env/components:setup_step_interpreter",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:device_env_service_py_pb2",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "playground_lib",
+    srcs = ["playground.py"],
+    deps = [
+        ":device_runner",
+        ":log_handler",
+        ":server",
+        ":state",
+        ":websocket",
+        "@pip//absl_py",
+        "@pip//ml_collections",
+    ],
+)
+
+py_binary(
+    name = "playground",
+    srcs = ["playground.py"],
+    deps = [
+        ":playground_lib",
+    ],
+)
+
+py_test(
+    name = "coordinates_test",
+    srcs = ["coordinates_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":coordinates",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "actions_test",
+    srcs = ["actions_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":actions",
+        "//android_env/components:action_type",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "frame_processing_test",
+    srcs = ["frame_processing_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":frame_processing",
+        "@pip//absl_py",
+        "@pip//numpy",
+        "@pip//pillow",
+    ],
+)
+
+py_test(
+    name = "log_handler_test",
+    srcs = ["log_handler_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":log_handler",
+        ":state",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "state_test",
+    srcs = ["state_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":state",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "websocket_test",
+    srcs = ["websocket_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":state",
+        ":websocket",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "server_test",
+    srcs = ["server_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":server",
+        ":state",
+        ":websocket",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "device_runner_test",
+    srcs = ["device_runner_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":actions",
+        ":device_runner",
+        ":state",
+        "//android_env/components:android_device",
+        "//android_env/components:config_classes",
+        "//android_env/components:errors",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:device_env_service_py_pb2",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "playground_test",
+    srcs = ["playground_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":playground_lib",
+        ":state",
+        "//android_env/components:android_device",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)

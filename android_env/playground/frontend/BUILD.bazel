@@ -1,0 +1,34 @@
+load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+
+package(default_visibility = ["//android_env/playground:__subpackages__"])
+
+npm_link_all_packages(name = "node_modules")
+
+ts_project(
+    name = "frontend_ts",
+    srcs = [
+        "adb_console.ts",
+        "controls.ts",
+        "logs_viewer.ts",
+        "main.ts",
+        "socket.ts",
+        "stats.ts",
+        "task_loader.ts",
+        "theme.ts",
+    ],
+    declaration = True,
+    source_map = True,
+    transpiler = "tsc",
+    tsconfig = ":tsconfig.json",
+    deps = [":node_modules/safevalues"],
+)
+
+filegroup(
+    name = "frontend",
+    srcs = [
+        "index.html",
+        ":frontend_ts",
+    ],
+    visibility = ["//visibility:public"],
+)

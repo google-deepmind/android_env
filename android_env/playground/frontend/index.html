@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AndroidEnv Playground">
+  <title>AndroidEnv Playground</title>
+  <script>
+    (function() {
+      const theme = localStorage.getItem('aenv_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-app: #111318;
+      --bg-panel: #181b22;
+      --bg-elevated: #20242d;
+      --bg-input: #12151b;
+      --border: #2a2f3a;
+      --border-subtle: #222630;
+      --text-main: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #38bdf8;
+      --accent-hover: #7dd3fc;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --log-info: #7dd3fc;
+      --log-warning: #fbbf24;
+      --log-error: #f87171;
+      --log-debug: #8b949e;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    :root[data-theme="light"], [data-theme="light"] {
+      --bg-app: #f4f6f9;
+      --bg-panel: #ffffff;
+      --bg-elevated: #e9eef5;
+      --bg-input: #ffffff;
+      --border: #d0d7de;
+      --border-subtle: #e1e4e8;
+      --text-main: #1f2328;
+      --text-muted: #656d76;
+      --accent: #0969da;
+      --accent-hover: #0550ae;
+      --success: #1a7f37;
+      --warning: #9a6700;
+      --danger: #cf222e;
+      --log-info: #0969da;
+      --log-warning: #9a6700;
+      --log-error: #cf222e;
+      --log-debug: #57606a;
+    }
+    [data-theme="light"] .device-stage {
+      background: radial-gradient(circle at center, #edf2f7 0%, #e2e8f0 100%);
+    }
+    [data-theme="light"] .phone-enclosure {
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.14);
+    }
+    [data-theme="light"] .phone-speaker {
+      background: #94a3b8;
+    }
+    [data-theme="light"] .pane-header {
+      background: #f6f8fa;
+    }
+    [data-theme="light"] .adb-output,
+    [data-theme="light"] .chart-box {
+      background: #f6f8fa;
+    }
+    [data-theme="light"] .adb-entry {
+      border-bottom: 1px dashed #d0d7de;
+    }
+    [data-theme="light"] .chip {
+      color: #334155;
+    }
+    [data-theme="light"] .btn:hover {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+    }
+    [data-theme="light"] .btn-primary {
+      color: #ffffff;
+    }
+    [data-theme="light"] .hw-btn:hover {
+      background: #e2e8f0;
+    }
+    [data-theme="light"] #logs-panel {
+      background-color: #ffffff;
+      border-color: #d0d7de;
+    }
+    [data-theme="light"] .logs-header {
+      background-color: #f6f8fa;
+      border-bottom-color: #d0d7de;
+      color: #1f2328;
+    }
+    [data-theme="light"] #logs-content {
+      background-color: #f6f8fa;
+      color: #1f2328;
+    }
+    [data-theme="light"] .log-info {
+      color: #0969da;
+    }
+    [data-theme="light"] .log-warning {
+      color: #9a6700;
+    }
+    [data-theme="light"] .log-error,
+    [data-theme="light"] .log-fatal,
+    [data-theme="light"] .log-critical {
+      color: #cf222e;
+    }
+    [data-theme="light"] .log-debug {
+      color: #57606a;
+    }
+    [data-theme="light"] .adb-cmd-line,
+    [data-theme="light"] .adb-prompt {
+      color: #0969da;
+    }
+    [data-theme="light"] .adb-output {
+      background: #f6f8fa;
+      color: #1f2328;
+    }
+    [data-theme="light"] .adb-body {
+      color: #1f2328;
+    }
+    [data-theme="light"] .logs-controls button {
+      background-color: #e9eef5;
+      color: #1f2328;
+      border-color: #d0d7de;
+    }
+    [data-theme="light"] .logs-controls select {
+      background-color: #ffffff;
+      color: #1f2328;
+      border-color: #d0d7de;
+    }
+    [data-theme="light"] dialog#stats-panel {
+      background-color: #ffffff;
+      border-color: #d0d7de;
+      color: #1f2328;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg-app);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 13px;
+    }
+    .workbench {
+      display: grid;
+      grid-template-rows: 46px 1fr;
+      height: 100vh;
+    }
+
+    /* Top Header Bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand h1 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    input[type="text"] {
+      background: var(--bg-input);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: var(--font-sans);
+      outline: none;
+    }
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 11px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .btn:hover {
+      background: #282d38;
+      border-color: #3b4252;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #090d16;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    /* Main Workspace Split: Left Dock + Right Phone Stage */
+    .main-area {
+      display: grid;
+      grid-template-columns: 1fr minmax(380px, 46%);
+      height: calc(100vh - 46px);
+      overflow: hidden;
+    }
+
+    /* Left: Split Inspector + Logs */
+    .inspector-dock {
+      display: grid;
+      grid-template-rows: 58% 42%;
+      height: 100%;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+    }
+    .dock-pane {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+    }
+    .pane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      height: 38px;
+      background: #14171d;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      height: 100%;
+      align-items: center;
+    }
+    .tab-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: var(--bg-elevated);
+      color: var(--accent);
+    }
+    .tab-content {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+      padding: 12px;
+      gap: 10px;
+    }
+    .tab-content.active {
+      display: flex;
+    }
+
+    /* ADB Console */
+    adb-console {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+      height: 100%;
+      gap: 10px;
+    }
+    .preset-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .chip {
+      background: var(--bg-elevated);
+      color: #cbd5e1;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+    }
+    .chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .adb-output {
+      flex: 1;
+      background: #0c0e12;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+    .adb-entry {
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #222630;
+    }
+    .adb-cmd-line {
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .adb-prompt {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .adb-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .adb-input-row input {
+      flex: 1;
+      font-family: var(--font-mono);
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .kpi-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .kpi-label {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+    .kpi-val {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 600;
+      margin-top: 3px;
+    }
+
+    /* Stats viewer within tab */
+    #tab-telemetry stats-viewer {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow-y: auto;
+    }
+    #tab-telemetry stats-viewer dialog#stats-panel {
+      display: flex !important;
+      position: static !important;
+      width: 100% !important;
+      box-shadow: none !important;
+      border: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    #tab-telemetry stats-viewer .stats-header {
+      display: none !important;
+    }
+    .stat-line {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 2px 0;
+    }
+
+    /* Logs Viewer */
+    log-viewer {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+      height: 100%;
+    }
+    #logs-panel {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+      height: 100%;
+      background: var(--bg-panel);
+    }
+    .logs-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      height: 38px;
+      background: #14171d;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .logs-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 11px;
+      font-weight: normal;
+    }
+    .logs-controls select,
+    .logs-controls button {
+      background: var(--bg-input);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    #logs-content {
+      flex: 1;
+      background: #0b0d11;
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      line-height: 1.45;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    .log-line { margin-bottom: 2px; }
+    .log-info { color: var(--log-info, #7dd3fc); }
+    .log-warning { color: var(--log-warning, #fbbf24); }
+    .log-error, .log-fatal, .log-critical { color: var(--log-error, #f87171); }
+    .log-debug { color: var(--log-debug, #8b949e); }
+
+    /* Right: Device Stage */
+    .device-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 20px;
+      background: radial-gradient(circle at center, #181c24 0%, #101217 100%);
+      position: relative;
+    }
+    .phone-enclosure {
+      background: #090a0d;
+      padding: 12px;
+      border-radius: 28px;
+      border: 2px solid #2d3340;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-height: 100%;
+    }
+    .phone-speaker {
+      width: 48px;
+      height: 4px;
+      background: #252a34;
+      border-radius: 3px;
+      margin-bottom: 8px;
+    }
+    screen-controls {
+      display: block;
+    }
+    #container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #000;
+    }
+    #screen {
+      display: block;
+      height: calc(100vh - 165px);
+      max-height: 760px;
+      width: auto;
+      aspect-ratio: 9 / 16;
+      border-radius: 18px;
+      cursor: crosshair;
+      user-select: none;
+    }
+    .hw-rail {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      padding: 8px;
+      border-radius: 12px;
+    }
+    .hw-btn {
+      width: 42px;
+      height: 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      gap: 2px;
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .hw-btn:hover {
+      background: #2c323f;
+      border-color: var(--accent);
+    }
+    .hw-sep {
+      height: 1px;
+      background: var(--border);
+      margin: 2px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="workbench">
+    <header class="topbar">
+      <div class="brand">
+        <h1>AndroidEnv Playground</h1>
+        <span class="badge"><span class="dot" id="conn-dot"></span><span id="status">Connecting...</span></span>
+        <span class="badge" id="pkg-badge" title="Active Android Package">pkg: launcher</span>
+      </div>
+      <div class="toolbar-group">
+        <task-loader id="task-loader"></task-loader>
+        <button class="btn" id="reset-btn" title="Reset current RL episode">↻ Reset Episode</button>
+        <input type="text" id="send-text-input" placeholder="Send text to device..." style="width: 150px;">
+        <button class="btn" id="send-text-btn">Send</button>
+        <button class="btn theme-toggle-btn" id="theme-btn" type="button" title="Toggle Light/Dark Theme (Ctrl+Shift+D)">☀️ Light</button>
+      </div>
+    </header>
+
+    <div class="main-area">
+      <!-- Left: Split Inspector Dock (ADB, Telemetry, Server Logs) -->
+      <aside class="inspector-dock">
+        <div class="dock-pane">
+          <div class="pane-header">
+            <div class="tabs">
+              <button class="tab-btn active" data-tab="tab-adb">&gt;_ ADB Shell &amp; Commands</button>
+              <button class="tab-btn" data-tab="tab-telemetry">📊 Telemetry &amp; RL State</button>
+            </div>
+            <span id="last-action-pill" style="color: var(--text-muted); font-family: var(--font-mono); font-size: 11px;">Action: None</span>
+          </div>
+
+          <!-- Tab 1: ADB Shell -->
+          <div class="tab-content active" id="tab-adb">
+            <adb-console id="adb-console"></adb-console>
+          </div>
+
+          <!-- Tab 2: Telemetry & RL State -->
+          <div class="tab-content" id="tab-telemetry">
+            <div class="kpi-grid">
+              <div class="kpi-card"><div class="kpi-label">Episode Step</div><div class="kpi-val" id="kpi-step">0</div></div>
+              <div class="kpi-card"><div class="kpi-label">Return / Reward</div><div class="kpi-val" id="kpi-reward">0.0</div></div>
+              <div class="kpi-card"><div class="kpi-label">ACK / Step RTT</div><div class="kpi-val" id="kpi-latency">- ms</div></div>
+              <div class="kpi-card"><div class="kpi-label">Battery / Power</div><div class="kpi-val" id="kpi-battery">- %</div></div>
+            </div>
+            <stats-viewer id="stats-viewer"></stats-viewer>
+          </div>
+        </div>
+
+        <!-- Bottom Pane: Server Console Logs -->
+        <div class="dock-pane" style="border-bottom: none;">
+          <log-viewer id="logs-viewer"></log-viewer>
+        </div>
+      </aside>
+
+      <!-- Right: Phone Enclosure + Hardware Buttons Rail -->
+      <section class="device-stage" aria-label="Device Viewport">
+        <div class="phone-enclosure">
+          <div class="phone-speaker"></div>
+          <screen-controls id="screen-controls"></screen-controls>
+        </div>
+        <div class="hw-rail" aria-label="Hardware Buttons">
+          <button class="hw-btn" data-key="26" title="Power"><span>⏻</span><span>Pwr</span></button>
+          <button class="hw-btn" data-key="24" title="Volume Up"><span>＋</span><span>Vol+</span></button>
+          <button class="hw-btn" data-key="25" title="Volume Down"><span>－</span><span>Vol-</span></button>
+          <div class="hw-sep"></div>
+          <button class="hw-btn" data-key="4" title="Android Back"><span>◁</span><span>Back</span></button>
+          <button class="hw-btn" data-key="3" title="Android Home"><span>○</span><span>Home</span></button>
+          <button class="hw-btn" data-key="187" title="App Switch / Recents"><span>□</span><span>Apps</span></button>
+          <div class="hw-sep"></div>
+          <button class="hw-btn" id="shot-btn" title="Save Screenshot"><span>📷</span><span>Shot</span></button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="main_bin.js"></script>
+</body>
+</html>

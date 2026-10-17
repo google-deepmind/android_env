@@ -173,6 +173,39 @@ class FakeSimulatorConfig(SimulatorConfig):
 
 
 @dataclasses.dataclass
+class DeviceConnectionConfig:
+  """Configuration for network connection to the on-device AndroidEnv server.
+
+  Attributes:
+    host: Hostname or IP address where the AndroidEnv server runs (e.g.
+      'localhost' when port-forwarded via ADB, or remote device IP).
+    websocket_port: Port for the WebSocket control channel served by the device.
+      The Python client connects to `ws://<host>:<websocket_port>`.
+      Payloads: Binary Protobuf `ClientMessage` and `ServerMessage` for action
+        injection, subscription updates, video frames, and device
+        state/metadata.
+  """
+
+  host: str = 'localhost'
+  websocket_port: int = 8000
+
+
+@dataclasses.dataclass
+class AndroidDeviceConfig(SimulatorConfig):
+  """Config class for AndroidDevice (on-device Core server)."""
+
+  device_connection: DeviceConnectionConfig = dataclasses.field(
+      default_factory=DeviceConnectionConfig
+  )
+  adb_path: str = 'adb'
+  serial: str = ''
+  auto_setup: bool = True
+  # Optional launcher config. If set, loader will launch emulator.
+  emulator_launcher: EmulatorLauncherConfig | None = None
+  adb_controller: AdbControllerConfig | None = None
+
+
+@dataclasses.dataclass
 class TaskManagerConfig:
   """Config class for TaskManager."""
 

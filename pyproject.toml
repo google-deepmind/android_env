@@ -23,6 +23,8 @@ dependencies = [
     "protobuf>=6,<8",
     "pygame>=2.6.0",
     "pillow>=10.4.0",
+    "opencv-python-headless>=4.10.0",
+    "websocket-client>=1.8.0",
 ]
 
 [project.optional-dependencies]
@@ -32,6 +34,11 @@ testing = [
 ]
 acme = ["dm-acme"]
 gym = ["gymnasium"]
+mcp = ["mcp>=1.26,<2"]
+playground = ["ml-collections"]
+
+[tool.setuptools.package-data]
+"android_env.components" = ["*.textproto"]
 
 [project.urls]
 repository = "https://github.com/deepmind/android_env"
