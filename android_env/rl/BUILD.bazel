@@ -1,0 +1,38 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "environment",
+    srcs = ["environment.py"],
+    deps = [
+        "//android_env:env_interface",
+        "//android_env/components:action_type",
+        "//android_env/components:android_device",
+        "//android_env/components:specs",
+        "//android_env/components:telemetry",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:device_env_service_py_pb2",
+        "@pip//absl_py",
+        "@pip//dm_env",
+        "@pip//numpy",
+    ],
+)
+
+py_test(
+    name = "environment_test",
+    srcs = ["environment_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":environment",
+        "//android_env/components:action_type",
+        "//android_env/components:android_device",
+        "//android_env/components:config_classes",
+        "//android_env/components:device_connection",
+        "//android_env/components:telemetry",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:device_env_service_py_pb2",
+        "@pip//absl_py",
+        "@pip//numpy",
+    ],
+)

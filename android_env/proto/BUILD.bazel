@@ -85,3 +85,31 @@ py_proto_library(
     name = "state_py_pb2",
     srcs = ["state.proto"],
 )
+
+proto_library(
+    name = "device_env_service_proto",
+    srcs = ["device_env_service.proto"],
+    deps = [
+        "//android_env/proto/a11y:a11y_proto",
+        "//android_env/proto/a11y:android_accessibility_forest_proto",
+    ],
+)
+
+py_proto_library(
+    name = "device_env_service_py_pb2",
+    srcs = ["device_env_service.proto"],
+    proto_srcs = [
+        "//android_env/proto/a11y:a11y.proto",
+        "//android_env/proto/a11y:android_accessibility_action.proto",
+        "//android_env/proto/a11y:android_accessibility_forest.proto",
+        "//android_env/proto/a11y:android_accessibility_node_info.proto",
+        "//android_env/proto/a11y:android_accessibility_node_info_clickable_span.proto",
+        "//android_env/proto/a11y:android_accessibility_tree.proto",
+        "//android_env/proto/a11y:android_accessibility_window_info.proto",
+        "//android_env/proto/a11y:rect.proto",
+    ],
+    deps = [
+        "//android_env/proto/a11y:a11y_py_pb2",
+        "//android_env/proto/a11y:android_accessibility_forest_py_pb2",
+    ],
+)

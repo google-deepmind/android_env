@@ -94,6 +94,10 @@ py_package(
     packages = ["android_env"],
     deps = [
         ":loader",
+        "//android_env/components:android_device_loader",
+        "//android_env/mcp:android_mcp_tools",
+        "//android_env/playground:playground_lib",
+        "//android_env/rl:environment",
         "//android_env/wrappers:a11y_grpc_wrapper",
         "//android_env/wrappers:discrete_action_wrapper",
         "//android_env/wrappers:flat_interface_wrapper",
@@ -104,6 +108,7 @@ py_package(
         "//android_env/wrappers:rate_limit_wrapper",
         "//android_env/wrappers:swipe_action_wrapper",
         "//android_env/wrappers:tap_action_wrapper",
+        "//android_env/wrappers:task_wrapper",
     ],
 )
 
@@ -111,6 +116,10 @@ py_wheel(
     name = "android_env_wheel",
     author = "DeepMind",
     distribution = "android_env",
+    extra_requires = {
+        "mcp": ["mcp>=1.26,<2"],
+        "playground": ["ml-collections"],
+    },
     license = "Apache License, Version 2.0",
     requires = [
         "absl-py>=0.1.0",
@@ -122,6 +131,8 @@ py_wheel(
         "gymnasium>=0.29.1",
         "protobuf>=5.27.2",
         "grpcio>=1.64.2",
+        "opencv-python-headless>=4.10.0",
+        "websocket-client>=1.8.0",
     ],
     summary = "AndroidEnv: A Gym/Gymnasium Environment for Android",
     version = "1.3.0",

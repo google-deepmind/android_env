@@ -2,3 +2,6 @@
 build --cxxopt=-std=c++17
 build --host_cxxopt=-std=c++17
 build --incompatible_enable_proto_toolchain_resolution
+
+# Required by aspect_rules_ts (Playground frontend).
+common --@aspect_rules_ts//ts:skipLibCheck=always

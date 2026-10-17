@@ -50,3 +50,8 @@ class ActionType(enum.IntEnum):
   KEYDOWN = 3
   KEYUP = 4
   KEYPRESS = 5
+  TEXT = 6
+  SET_SELECTION = 7
+  CUT = 8
+  COPY = 9
+  PASTE = 10
