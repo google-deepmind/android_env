@@ -1,0 +1,305 @@
+// Copyright 2026 DeepMind Technologies Limited.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package android_env.control;
+
+import "android_env/proto/a11y/a11y.proto";
+import "android_env/proto/a11y/android_accessibility_forest.proto";
+
+option java_package = "com.androidenv.proto";
+option java_multiple_files = true;
+option java_outer_classname = "DeviceEnvServiceProto";
+
+// Enumerates all supported sensory streams and telemetry signals that can
+// be observed from the Android device.
+enum DeviceSignal {
+  DEVICE_SIGNAL_UNSPECIFIED = 0;
+  // A raw image of the device display (typically PNG or JPEG).
+  DEVICE_SIGNAL_SCREENSHOT = 1;
+  // The current UI accessibility hierarchy tree.
+  DEVICE_SIGNAL_ACCESSIBILITY_TREE = 2;
+  // Stream of UI accessibility events.
+  DEVICE_SIGNAL_ACCESSIBILITY_EVENTS = 3;
+  // The package name of the foreground application (e.g. "com.android.chrome").
+  DEVICE_SIGNAL_ACTIVE_PACKAGE = 4;
+  // The class name of the current foreground activity.
+  DEVICE_SIGNAL_ACTIVE_ACTIVITY = 5;
+  // Recent logcat system logs.
+  DEVICE_SIGNAL_SYSTEM_LOGS = 6;
+  // List of currently running process names.
+  DEVICE_SIGNAL_RUNNING_PROCESSES = 7;
+  // Key-value map of system settings (e.g. screen_brightness, volume).
+  DEVICE_SIGNAL_DEVICE_SETTINGS = 8;
+  // Linear acceleration force along the X, Y, and Z axes (in m/s^2).
+  DEVICE_SIGNAL_SENSOR_ACCELEROMETER = 9;
+  // Rate of rotation around the X, Y, and Z axes (in rad/s).
+  DEVICE_SIGNAL_SENSOR_GYROSCOPE = 10;
+  // Ambient magnetic field along the X, Y, and Z axes (in micro-Tesla).
+  DEVICE_SIGNAL_SENSOR_MAGNETOMETER = 11;
+  // Atmospheric pressure (in hectopascals / hPa).
+  DEVICE_SIGNAL_SENSOR_BAROMETER = 12;
+  // Ambient room temperature (in degrees Celsius).
+  DEVICE_SIGNAL_SENSOR_AMBIENT_TEMP = 13;
+  // Ambient light level (in lux).
+  DEVICE_SIGNAL_SENSOR_LIGHT = 14;
+  // Proximity sensor distance (in centimeters).
+  DEVICE_SIGNAL_SENSOR_PROXIMITY = 15;
+  // Heart rate from wearable sensors (in beats per minute).
+  DEVICE_SIGNAL_SENSOR_HEART_RATE = 16;
+  // Current GPS coordinates (Latitude, Longitude, Altitude).
+  DEVICE_SIGNAL_LOCATION_GPS = 17;
+  // Continuous audio frames captured from the device speaker output.
+  DEVICE_SIGNAL_AUDIO_OUTPUT = 18;
+  // Battery and power consumption metrics (current, voltage, power, temp,
+  // status).
+  DEVICE_SIGNAL_BATTERY_POWER = 19;
+}
+
+// Enumerates the types of interactive input actions that can be injected.
+enum ActionType {
+  ACTION_TYPE_UNSPECIFIED = 0;
+  // Pressing down on the screen at a specific coordinate.
+  ACTION_TYPE_TOUCH_DOWN = 1;
+  // Lifting up from the screen.
+  ACTION_TYPE_TOUCH_UP = 2;
+  // Dragging/moving a pointer across the screen.
+  ACTION_TYPE_TOUCH_MOVE = 3;
+  // Injecting a physical hardware keycode event (e.g. BACK, HOME).
+  ACTION_TYPE_KEY_EVENT = 4;
+  // Native text insertion via Accessibility ACTION_SET_TEXT.
+  ACTION_TYPE_SET_TEXT = 5;
+  // Setting text selection or cursor position via Accessibility
+  // ACTION_SET_SELECTION.
+  ACTION_TYPE_SET_SELECTION = 6;
+  // Native clipboard cut via Accessibility ACTION_CUT.
+  ACTION_TYPE_CUT = 7;
+  // Native clipboard copy via Accessibility ACTION_COPY.
+  ACTION_TYPE_COPY = 8;
+  // Native clipboard paste via Accessibility ACTION_PASTE.
+  ACTION_TYPE_PASTE = 9;
+}
+
+// Represents a 2D coordinate point on the screen.
+message Point {
+  // X-coordinate normalized between 0.0 (left edge) and 1.0 (right edge).
+  float x = 1;
+  // Y-coordinate normalized between 0.0 (top edge) and 1.0 (bottom edge).
+  float y = 2;
+}
+
+// Represents an input action to be executed on the target Android device.
+message Action {
+  // The type of action to perform. Always required.
+  ActionType action_type = 1;
+  // The screen position for touch actions.
+  // REQUIRED if action_type is TOUCH_DOWN or TOUCH_MOVE. Omitted otherwise.
+  optional Point touch_position = 2;
+  // The Android keycode integer (e.g. 4 for BACK, 3 for HOME).
+  // REQUIRED if action_type is KEY_EVENT. Omitted otherwise.
+  optional int32 keycode = 3;
+  // Identifies the pointer (finger) for multi-touch support.
+  // Optional. Defaults to 0 (primary pointer) if unset. Value range: [0, 9].
+  optional int32 pointer_id = 4;
+  // Text to insert into target text field.
+  // REQUIRED if action_type is SET_TEXT. Omitted otherwise.
+  optional string text = 5;
+  // Selection start index for text field cursor/highlight.
+  // REQUIRED if action_type is SET_SELECTION. Omitted otherwise.
+  optional int32 selection_start = 6;
+  // Selection end index for text field cursor/highlight.
+  // REQUIRED if action_type is SET_SELECTION. Omitted otherwise.
+  optional int32 selection_end = 7;
+}
+
+// Metadata accompanying a streamed signal value, enabling synchronization and
+// latency tracking.
+message StreamedSignalMetadata {
+  // The device wall-clock time when the signal was captured (microseconds since
+  // epoch).
+  int64 timestamp_us = 1;
+  // Monotonically increasing sequence identifier to detect frame drops or
+  // out-of-order delivery.
+  int64 sequence_id = 2;
+}
+
+// Represents raw decoded screenshot image pixel data.
+message DecodedScreenshot {
+  // Uncompressed raw RGB pixel bytes.
+  bytes raw_pixels = 1;
+  // Frame width in pixels.
+  int32 width = 2;
+  // Frame height in pixels.
+  int32 height = 3;
+}
+
+// Wraps screenshot image bytes. Exactly one representation format is set.
+message ScreenshotValue {
+  oneof format {
+    // Raw compressed image bytes (typically JPEG or PNG format).
+    bytes encoded_bytes = 1;
+    // Uncompressed raw RGB pixel payload.
+    DecodedScreenshot decoded = 2;
+  }
+}
+
+// GPS geolocation coordinates.
+message GpsCoordinates {
+  // Latitude in degrees. Value range: [-90.0, 90.0].
+  double latitude = 1;
+  // Longitude in degrees. Value range: [-180.0, 180.0].
+  double longitude = 2;
+  // Altitude in meters above the WGS 84 reference ellipsoid.
+  double altitude = 3;
+}
+
+// A single block of raw audio data captured from the device.
+message AudioFrame {
+  // Raw PCM audio bytes.
+  bytes raw_bytes = 1;
+  // Audio sampling rate in Hertz. Value range: [8000, 48000] (typically 44100).
+  int32 sample_rate_hz = 2;
+  // Number of audio channels. Value range: [1, 2] (1 = mono, 2 = stereo).
+  int32 channel_count = 3;
+  // PCM encoding format string (e.g., "AUDIO_FORMAT_PCM_16BIT").
+  optional string sample_format = 4;
+}
+
+// Telemetry metrics for device battery state, current draw, voltage, and
+// calculated power.
+message BatteryPowerMetrics {
+  // Battery charge level percentage [0-100].
+  int32 level_percent = 1;
+  // Instantaneous current draw in microamperes (uA). Positive for discharge,
+  // negative for charging.
+  int64 current_now_ua = 2;
+  // Voltage in millivolts (mV).
+  int32 voltage_mv = 3;
+  // Calculated instantaneous power in milliwatts (mW).
+  double power_mw = 4;
+  // Battery temperature in degrees Celsius (°C).
+  float temperature_celsius = 5;
+  // Battery health/status string (e.g., "CHARGING", "DISCHARGING", "FULL").
+  string status = 6;
+  // Plugged power source ("AC", "USB", "WIRELESS", "UNPLUGGED").
+  string plugged_source = 7;
+  // Total remaining charge counter in microampere-hours (uAh).
+  int64 charge_counter_uah = 8;
+  // Current thermal status (0 = NONE to 6 = SHUTDOWN).
+  int32 thermal_status = 9;
+  reserved 10;
+  reserved "is_synthetic_emulator_fallback";
+  // Total remaining battery energy in nanowatt-hours (nWh).
+  int64 energy_counter_nwh = 11;
+}
+
+// Wrapper for an array of floats (e.g. sensor readings).
+message FloatArray {
+  repeated float values = 1;
+}
+
+// Wrapper for a list of strings (e.g. log lines).
+message StringList {
+  repeated string values = 1;
+}
+
+// Wrapper for key-value maps (e.g. system settings).
+message StringMap {
+  map<string, string> entries = 1;
+}
+
+// Represents a single streamed telemetry signal packaging metadata and the
+// value.
+message StreamedSignal {
+  // The type of signal this message represents.
+  DeviceSignal type = 1;
+  // Metadata for this signal capture.
+  StreamedSignalMetadata metadata = 2;
+
+  // The actual signal value.
+  oneof value {
+    ScreenshotValue screenshot = 3;
+    AndroidAccessibilityForest accessibility_forest = 4;
+    EventRequestList accessibility_events = 5;
+    string active_package = 6;
+    string active_activity = 7;
+    StringList system_logs = 8;
+    StringList running_processes = 9;
+    StringMap device_settings = 10;
+    FloatArray accelerometer = 11;
+    FloatArray gyroscope = 12;
+    FloatArray magnetometer = 13;
+    float barometer = 14;
+    float ambient_temp = 15;
+    float light_level = 16;
+    float proximity = 17;
+    GpsCoordinates location_gps = 18;
+    float heart_rate = 19;
+    AudioFrame audio_output = 20;
+    BatteryPowerMetrics battery_power = 21;
+  }
+}
+
+// Represents the aggregated state of all subscribed signals on the device.
+message DeviceState {
+  // List of active signal observations currently subscribed.
+  repeated StreamedSignal signals = 1;
+  // Wall-clock time on the device when this state snapshot was assembled
+  // (microseconds since epoch).
+  int64 snapshot_timestamp_us = 2;
+  // Current screen rotation (0: ROTATION_0, 1: ROTATION_90, 2: ROTATION_180, 3:
+  // ROTATION_270).
+  int32 orientation = 3;
+}
+
+// Top-level wrapper message sent from the Python Client to the Android Server.
+message ClientMessage {
+  oneof payload {
+    // Configure which telemetry signals the server should stream/capture.
+    UpdateSubscriptionsRequest update_subscriptions = 1;
+    // Inject a physical user action.
+    InjectActionRequest inject_action = 2;
+    // Query the current state of the device synchronously.
+    GetStateRequest get_state = 3;
+  }
+}
+
+// Request to modify the list of active telemetry subscriptions.
+message UpdateSubscriptionsRequest {
+  repeated DeviceSignal active_signals = 1;
+}
+
+// Request to inject an input action.
+message InjectActionRequest {
+  Action action = 1;
+}
+
+// Empty request to trigger a manual state fetch.
+message GetStateRequest {}
+
+// Top-level wrapper message sent from the Android Server back to the Client.
+message ServerMessage {
+  oneof payload {
+    // Contains the requested device state telemetry.
+    DeviceState state = 1;
+    // Error details if an operation failed on the server.
+    ErrorResponse error = 2;
+  }
+}
+
+// Details of an error encountered on the server.
+message ErrorResponse {
+  string message = 1;
+}

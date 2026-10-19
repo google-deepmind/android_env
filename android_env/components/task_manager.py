@@ -91,6 +91,7 @@ class TaskManager:
         'extra': collections.defaultdict(list),
         'episode_end': False,
     }
+    self._latest_active_package: Any = None
 
     logging.info('Task config: %s', self._task)
 
@@ -207,6 +208,7 @@ class TaskManager:
     ), 'LogcatThread is None. `start()` must be called before `rl_step()`.'
     self._logcat_thread.line_ready().wait()
     with self._lock:
+      self._latest_active_package = observation.get('active_package')
       reward = self._get_current_reward()
       extras = self._get_current_extras()
       transition_fn = self._determine_transition_fn()
@@ -230,6 +232,19 @@ class TaskManager:
     self._latest_values['extra'] = collections.defaultdict(list)
     return extras
 
+  def _check_user_exited(self) -> bool:
+    """Returns True if the user exited the expected app screen."""
+    active_package = self._latest_active_package
+    if active_package is not None:
+      expected_package = self._task.expected_app_screen.activity.split('/')[0]
+      return bool(
+          expected_package
+          and active_package
+          and active_package != expected_package
+      )
+    assert self._dumpsys_thread is not None
+    return self._dumpsys_thread.check_user_exited()
+
   def _determine_transition_fn(self) -> Callable[..., dm_env.TimeStep]:
     """Determines the type of RL transition will be used."""
 
@@ -239,7 +254,7 @@ class TaskManager:
     )
 
     # Check if user existed the task
-    if self._dumpsys_thread.check_user_exited():
+    if self._check_user_exited():
       self._increment_bad_state()
       self._stats['reset_count_user_exited'] += 1
       logging.warning('User exited the task. Truncating the episode.')

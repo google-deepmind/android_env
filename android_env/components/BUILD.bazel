@@ -386,3 +386,124 @@ py_test(
         "@pip//numpy",
     ],
 )
+
+py_library(
+    name = "telemetry",
+    srcs = ["telemetry.py"],
+    deps = [
+        "//android_env/proto:device_env_service_py_pb2",
+        "@pip//absl_py",
+    ],
+)
+
+py_test(
+    name = "telemetry_test",
+    srcs = ["telemetry_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":telemetry",
+        "//android_env/proto:device_env_service_py_pb2",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
+    name = "device_connection",
+    srcs = ["device_connection.py"],
+    deps = [
+        ":config_classes",
+        "//android_env/proto:device_env_service_py_pb2",
+        "@pip//absl_py",
+        "@pip//numpy",
+        "@pip//opencv_python_headless",
+        "@pip//websocket_client",
+    ],
+)
+
+py_test(
+    name = "device_connection_test",
+    srcs = ["device_connection_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":config_classes",
+        ":device_connection",
+        "//android_env/proto:device_env_service_py_pb2",
+        "@pip//absl_py",
+        "@pip//numpy",
+        "@pip//opencv_python_headless",
+        "@pip//websocket_client",
+    ],
+)
+
+py_library(
+    name = "android_device",
+    srcs = ["android_device.py"],
+    deps = [
+        ":adb_call_parser",
+        ":device_connection",
+        ":errors",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:device_env_service_py_pb2",
+        "@pip//absl_py",
+        "@pip//numpy",
+        "@pip//opencv_python_headless",
+    ],
+)
+
+py_test(
+    name = "android_device_test",
+    srcs = ["android_device_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":adb_call_parser",
+        ":android_device",
+        ":device_connection",
+        ":errors",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:device_env_service_py_pb2",
+        "@pip//absl_py",
+        "@pip//numpy",
+        "@pip//opencv_python_headless",
+    ],
+)
+
+py_library(
+    name = "android_device_loader",
+    srcs = ["android_device_loader.py"],
+    data = ["device_prep_steps.textproto"],
+    deps = [
+        ":adb_call_parser",
+        ":adb_controller",
+        ":android_device",
+        ":config_classes",
+        ":device_connection",
+        ":errors",
+        ":setup_step_interpreter",
+        "//android_env/components/simulators/emulator:emulator_launcher",
+        "//android_env/components/simulators/emulator:tcp_ports",
+        "//android_env/proto:adb_py_pb2",
+        "//android_env/proto:task_py_pb2",
+        "@pip//absl_py",
+        "@pip//portpicker",
+        "@pip//protobuf",
+    ],
+)
+
+py_test(
+    name = "android_device_loader_test",
+    srcs = ["android_device_loader_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":adb_call_parser",
+        ":adb_controller",
+        ":android_device",
+        ":android_device_loader",
+        ":config_classes",
+        ":device_connection",
+        ":errors",
+        ":setup_step_interpreter",
+        "//android_env/components/simulators/emulator:emulator_launcher",
+        "//android_env/components/simulators/emulator:tcp_ports",
+        "@pip//absl_py",
+    ],
+)

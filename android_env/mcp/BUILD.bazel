@@ -1,0 +1,54 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "errors",
+    srcs = ["errors.py"],
+)
+
+py_library(
+    name = "android_mcp_tools",
+    srcs = ["android_mcp_tools.py"],
+    deps = [
+        ":errors",
+        "//android_env/components:android_device",
+        "//android_env/proto:device_env_service_py_pb2",
+        "//android_env/proto/a11y:android_accessibility_node_info_py_pb2",
+        "@pip//mcp",
+        "@pip//numpy",
+        "@pip//pillow",
+        "@pip//protobuf",
+    ],
+)
+
+py_test(
+    name = "android_mcp_tools_test",
+    srcs = ["android_mcp_tools_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":android_mcp_tools",
+        ":errors",
+        "//android_env/components:android_device",
+        "//android_env/proto:device_env_service_py_pb2",
+        "//android_env/proto/a11y:android_accessibility_forest_py_pb2",
+        "//android_env/proto/a11y:android_accessibility_node_info_py_pb2",
+        "@pip//absl_py",
+        "@pip//mcp",
+        "@pip//numpy",
+        "@pip//pillow",
+        "@pip//protobuf",
+    ],
+)
+
+py_binary(
+    name = "android_mcp_server",
+    srcs = ["android_mcp_server.py"],
+    deps = [
+        ":android_mcp_tools",
+        "//android_env/components:android_device_loader",
+        "//android_env/components:config_classes",
+        "@pip//absl_py",
+        "@pip//mcp",
+    ],
+)

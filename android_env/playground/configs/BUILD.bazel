@@ -1,0 +1,22 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "emulator_config",
+    srcs = ["emulator_config.py"],
+    deps = [
+        "//android_env/components:config_classes",
+    ],
+)
+
+py_test(
+    name = "emulator_config_test",
+    srcs = ["emulator_config_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":emulator_config",
+        "//android_env/components:config_classes",
+        "@pip//absl_py",
+    ],
+)

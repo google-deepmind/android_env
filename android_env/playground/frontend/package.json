@@ -1,0 +1,10 @@
+{
+  "name": "android-env-playground-frontend",
+  "private": true,
+  "dependencies": {
+    "safevalues": "1.2.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": []
+  }
+}
