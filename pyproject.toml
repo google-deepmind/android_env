@@ -21,7 +21,6 @@ dependencies = [
     "numpy>=2.1.0",
     "portpicker>=1.6.0",
     "protobuf>=6,<8",
-    "pygame>=2.6.0",
     "pillow>=10.4.0",
     "opencv-python-headless>=4.10.0",
     "websocket-client>=1.8.0",
