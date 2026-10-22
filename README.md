@@ -1,6 +1,10 @@
 
 # AndroidEnv - The Android Interaction & Learning Platform
 
+<p align="center">
+  <b>English</b> · <a href="https://github.com/google-deepmind/android_env/blob/main/README.zh.md">简体中文</a>
+</p>
+
 <img align="right" src="https://github.com/google-deepmind/android_env/raw/gh-pages/docs/images/device_control.gif" width="160" height="240">
 
 [AndroidEnv](https://github.com/google-deepmind/android_env) is a Python and
