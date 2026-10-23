@@ -20,6 +20,7 @@ import os
 from absl import logging
 from android_env import env_interface
 from android_env import environment
+from android_env.components import android_device_loader
 from android_env.components import config_classes
 from android_env.components import coordinator as coordinator_lib
 from android_env.components import device_settings as device_settings_lib
@@ -28,6 +29,8 @@ from android_env.components.simulators.emulator import emulator_simulator
 from android_env.components.simulators.emulator import tcp_ports
 from android_env.components.simulators.fake import fake_simulator
 from android_env.proto import task_pb2
+from android_env.rl import environment as rl_environment
+from android_env.wrappers import task_wrapper
 from google.protobuf import text_format
 
 
@@ -49,6 +52,14 @@ def load(
     config: config_classes.AndroidEnvConfig,
 ) -> env_interface.AndroidEnvInterface:
   """Loads an AndroidEnv instance."""
+
+  if isinstance(config.simulator, config_classes.AndroidDeviceConfig):
+    device = android_device_loader.load_android_device(config.simulator)
+    env = rl_environment.AndroidEnv(device=device)
+    if config.task != config_classes.TaskConfig():
+      task = _load_task(config.task)
+      env = task_wrapper.TaskWrapper(env, task=task, config=config.task_manager)
+    return env
 
   task = _load_task(config.task)
   task_manager = task_manager_lib.TaskManager(task, config=config.task_manager)

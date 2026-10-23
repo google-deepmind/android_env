@@ -54,7 +54,9 @@ py_library(
     name = "loader",
     srcs = ["loader.py"],
     deps = [
+        ":env_interface",
         ":environment",
+        "//android_env/components:android_device_loader",
         "//android_env/components:config_classes",
         "//android_env/components:coordinator",
         "//android_env/components:device_settings",
@@ -63,6 +65,8 @@ py_library(
         "//android_env/components/simulators/emulator:tcp_ports",
         "//android_env/components/simulators/fake:fake_simulator",
         "//android_env/proto:task_py_pb2",
+        "//android_env/rl:environment",
+        "//android_env/wrappers:task_wrapper",
         "@pip//absl_py",
         "@pip//protobuf",
     ],
@@ -75,6 +79,7 @@ py_test(
     deps = [
         ":env_interface",
         ":loader",
+        "//android_env/components:android_device_loader",
         "//android_env/components:config_classes",
         "//android_env/components:coordinator",
         "//android_env/components:device_settings",
@@ -83,6 +88,8 @@ py_test(
         "//android_env/components/simulators/emulator:tcp_ports",
         "//android_env/components/simulators/fake:fake_simulator",
         "//android_env/proto:task_py_pb2",
+        "//android_env/rl:environment",
+        "//android_env/wrappers:task_wrapper",
         "@pip//absl_py",
     ],
 )
