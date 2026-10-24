@@ -68,11 +68,16 @@ class AndroidDeviceLoaderTest(absltest.TestCase):
   def test_load_physical_device_success(self, mock_prep):
     config = config_classes.AndroidDeviceConfig(
         serial='device-1',
+        adb_path='~/Android/Sdk/platform-tools/adb',
         auto_setup=False,
     )
     device = android_device_loader.load_android_device(config)
 
     self.assertEqual(device, self._mock_device)
+    self.assertEqual(
+        config.adb_path,
+        os.path.expanduser('~/Android/Sdk/platform-tools/adb'),
+    )
     self._mock_launcher_cls.assert_not_called()
     mock_prep.assert_not_called()
 
@@ -111,6 +116,45 @@ class AndroidDeviceLoaderTest(absltest.TestCase):
     self._mock_adb.execute_command.assert_called_with(
         ['logcat', '-d', '-t', '50000']
     )
+
+  @mock.patch.object(android_device_loader, '_wait_for_boot', autospec=True)
+  @mock.patch.object(android_device_loader, '_prep_device', autospec=True)
+  def test_load_emulator_expands_user_paths_and_propagates_adb_path(
+      self, mock_prep, mock_wait_boot
+  ):
+    del mock_prep, mock_wait_boot
+    self._mock_pick_ports.side_effect = lambda cfg: setattr(
+        cfg, 'adb_port', 5555
+    )
+    config = config_classes.AndroidDeviceConfig(
+        emulator_launcher=config_classes.EmulatorLauncherConfig(
+            avd_name='test_avd',
+            android_avd_home='~/.android/avd',
+            android_sdk_root='~/Android/Sdk',
+            emulator_path='~/Android/Sdk/emulator/emulator',
+        ),
+        adb_path='~/custom/sdk/platform-tools/adb',
+    )
+
+    android_device_loader.load_android_device(config)
+
+    self.assertIsNotNone(config.emulator_launcher)
+    self.assertIsNotNone(config.adb_controller)
+    self.assertEqual(
+        config.emulator_launcher.android_avd_home,
+        os.path.expanduser('~/.android/avd'),
+    )
+    self.assertEqual(
+        config.emulator_launcher.android_sdk_root,
+        os.path.expanduser('~/Android/Sdk'),
+    )
+    self.assertEqual(
+        config.emulator_launcher.emulator_path,
+        os.path.expanduser('~/Android/Sdk/emulator/emulator'),
+    )
+    expected_adb = os.path.expanduser('~/custom/sdk/platform-tools/adb')
+    self.assertEqual(config.adb_controller.adb_path, expected_adb)
+    self.assertEqual(config.adb_path, expected_adb)
 
   @mock.patch.object(android_device_loader, '_wait_for_boot', autospec=True)
   def test_emulator_launch_failure_closes_launcher(self, mock_wait_boot):

@@ -213,10 +213,11 @@ max_episode_sec: 0
     mock_open.return_value.__enter__ = mock_open
     mock_open.return_value.read.return_value = 'id: "device_task"'
     config = config_classes.AndroidEnvConfig(
-        task=config_classes.FilesystemTaskConfig(path='some/path.textproto'),
+        task=config_classes.FilesystemTaskConfig(path='~/some/path.textproto'),
         simulator=config_classes.AndroidDeviceConfig(),
     )
     env = loader.load(config)
+    mock_open.assert_any_call(os.path.expanduser('~/some/path.textproto'), 'r')
     mock_loader.assert_called_once_with(config.simulator)
     mock_android_env.assert_called_once_with(device=mock_loader.return_value)
     expected_task = task_pb2.Task(id='device_task')

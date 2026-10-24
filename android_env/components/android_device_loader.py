@@ -35,17 +35,42 @@ from google.protobuf import text_format
 import portpicker
 
 
+def _prepare_emulator_configs(
+    config: config_classes.AndroidDeviceConfig,
+) -> None:
+  """Initializes and expands user paths on emulator and ADB configs."""
+  assert config.emulator_launcher is not None
+  if config.adb_controller is None:
+    config.adb_controller = config_classes.AdbControllerConfig()
+    if config.adb_path != 'adb':
+      config.adb_controller.adb_path = config.adb_path
+
+  launcher_config = config.emulator_launcher
+  launcher_config.android_avd_home = os.path.expanduser(
+      launcher_config.android_avd_home
+  )
+  launcher_config.android_sdk_root = os.path.expanduser(
+      launcher_config.android_sdk_root
+  )
+  launcher_config.emulator_path = os.path.expanduser(
+      launcher_config.emulator_path
+  )
+  config.adb_controller.adb_path = os.path.expanduser(
+      config.adb_controller.adb_path
+  )
+
+
 def load_android_device(
     config: config_classes.AndroidDeviceConfig,
 ) -> android_device.AndroidDevice:
   """Loads an AndroidDevice handle configured according to `config`."""
   on_close_callbacks = []
   on_error_callbacks = []
+  config.adb_path = os.path.expanduser(config.adb_path)
 
   if config.emulator_launcher is not None:
-    if config.adb_controller is None:
-      config.adb_controller = config_classes.AdbControllerConfig()
-
+    _prepare_emulator_configs(config)
+    assert config.adb_controller is not None
     launcher_config = config.emulator_launcher
     tcp_ports.pick_emulator_ports(launcher_config)
 

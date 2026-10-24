@@ -29,6 +29,7 @@ from android_env.wrappers import discrete_action_wrapper
 from android_env.wrappers import flat_interface_wrapper
 from android_env.wrappers import float_pixels_wrapper
 from android_env.wrappers import image_rescale_wrapper
+from android_env.wrappers import tap_action_wrapper
 import haiku as hk
 
 # Simulator args
@@ -39,6 +40,9 @@ flags.DEFINE_string('emulator_path',
                     '~/Android/Sdk/emulator/emulator', 'Path to emulator.')
 flags.DEFINE_string('adb_path',
                     '~/Android/Sdk/platform-tools/adb', 'Path to ADB.')
+flags.DEFINE_bool(
+    'run_headless', False, 'Whether to display the emulator window.'
+)
 
 # Environment args
 flags.DEFINE_string('task_path', None, 'Path to task textproto file.')
@@ -51,6 +55,7 @@ FLAGS = flags.FLAGS
 
 def apply_wrappers(env):
   """Applies a series of wrappers to the environment."""
+  env = tap_action_wrapper.TapActionWrapper(env, touch_only=True)
   env = discrete_action_wrapper.DiscreteActionWrapper(env, action_grid=(10, 10))
   env = image_rescale_wrapper.ImageRescaleWrapper(
       env, zoom_factors=(0.25, 0.25))
@@ -83,7 +88,7 @@ def main(_):
     del seed
     config = config_classes.AndroidEnvConfig(
         task=config_classes.FilesystemTaskConfig(path=FLAGS.task_path),
-        simulator=config_classes.EmulatorConfig(
+        simulator=config_classes.AndroidDeviceConfig(
             emulator_launcher=config_classes.EmulatorLauncherConfig(
                 emulator_path=FLAGS.emulator_path,
                 android_sdk_root=FLAGS.android_sdk_root,

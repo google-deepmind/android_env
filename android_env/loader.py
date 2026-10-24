@@ -40,7 +40,7 @@ def _load_task(task_config: config_classes.TaskConfig) -> task_pb2.Task:
   task = task_pb2.Task()
   match task_config:
     case config_classes.FilesystemTaskConfig():
-      with open(task_config.path, 'r') as proto_file:
+      with open(os.path.expanduser(task_config.path), 'r') as proto_file:
         text_format.Parse(proto_file.read(), task)
     case _:
       logging.error('Unsupported TaskConfig: %r', task_config)
