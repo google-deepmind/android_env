@@ -15,55 +15,12 @@ py_library(
 )
 
 py_library(
-    name = "environment",
-    srcs = ["environment.py"],
-    deps = [
-        ":env_interface",
-        "//android_env/components:adb_call_parser",
-        "//android_env/components:coordinator",
-        "//android_env/components:task_manager",
-        "//android_env/components/simulators:base_simulator",
-        "//android_env/proto:adb_py_pb2",
-        "//android_env/proto:state_py_pb2",
-        "@pip//absl_py",
-        "@pip//dm_env",
-        "@pip//numpy",
-    ],
-)
-
-py_test(
-    name = "environment_test",
-    srcs = ["environment_test.py"],
-    legacy_create_init = False,
-    deps = [
-        ":environment",
-        "//android_env/components:config_classes",
-        "//android_env/components:coordinator",
-        "//android_env/components:task_manager",
-        "//android_env/components/simulators:base_simulator",
-        "//android_env/components/simulators/fake:fake_simulator",
-        "//android_env/proto:adb_py_pb2",
-        "//android_env/proto:state_py_pb2",
-        "@pip//absl_py",
-        "@pip//dm_env",
-        "@pip//numpy",
-    ],
-)
-
-py_library(
     name = "loader",
     srcs = ["loader.py"],
     deps = [
         ":env_interface",
-        ":environment",
         "//android_env/components:android_device_loader",
         "//android_env/components:config_classes",
-        "//android_env/components:coordinator",
-        "//android_env/components:device_settings",
-        "//android_env/components:task_manager",
-        "//android_env/components/simulators/emulator:emulator_simulator",
-        "//android_env/components/simulators/emulator:tcp_ports",
-        "//android_env/components/simulators/fake:fake_simulator",
         "//android_env/proto:task_py_pb2",
         "//android_env/rl:environment",
         "//android_env/wrappers:task_wrapper",
@@ -77,16 +34,9 @@ py_test(
     srcs = ["loader_test.py"],
     legacy_create_init = False,
     deps = [
-        ":env_interface",
         ":loader",
         "//android_env/components:android_device_loader",
         "//android_env/components:config_classes",
-        "//android_env/components:coordinator",
-        "//android_env/components:device_settings",
-        "//android_env/components:task_manager",
-        "//android_env/components/simulators/emulator:emulator_simulator",
-        "//android_env/components/simulators/emulator:tcp_ports",
-        "//android_env/components/simulators/fake:fake_simulator",
         "//android_env/proto:task_py_pb2",
         "//android_env/rl:environment",
         "//android_env/wrappers:task_wrapper",

@@ -44,38 +44,6 @@ class AdbControllerConfig:
 
 
 @dataclasses.dataclass
-class DeviceSettingsConfig:
-  """Config class for DeviceSettings."""
-
-  # Whether to show circles on the screen indicating touch position.
-  show_touches: bool = True
-  # Whether to show blue lines on the screen indicating touch position.
-  show_pointer_location: bool = True
-  # Whether or not to show the status (top) bar.
-  show_status_bar: bool = False
-  # Whether or not to show the navigation (bottom) bar.
-  show_navigation_bar: bool = False
-
-
-@dataclasses.dataclass
-class CoordinatorConfig:
-  """Config class for Coordinator."""
-
-  # Number of virtual "fingers" of the agent.
-  num_fingers: int = 1
-  # Whether to enable keyboard key events.
-  enable_key_events: bool = False
-  # Time between periodic restarts in minutes. If > 0, will trigger
-  # a simulator restart at the beginning of the next episode once the time has
-  # been reached.
-  periodic_restart_time_min: float = 0.0
-  # General Android settings.
-  device_settings: DeviceSettingsConfig = dataclasses.field(
-      default_factory=DeviceSettingsConfig
-  )
-
-
-@dataclasses.dataclass
 class SimulatorConfig:
   """Base class for all simulator configs."""
 
@@ -139,37 +107,6 @@ class EmulatorLauncherConfig:
   # launch.
   # If False, we launch a new emulator (ports must be pre-allocated).
   connect_to_existing: bool = False
-
-
-@dataclasses.dataclass
-class EmulatorConfig(SimulatorConfig):
-  """Config class for EmulatorSimulator."""
-
-  # Configuration for launching the Android Emulator.
-  emulator_launcher: EmulatorLauncherConfig = dataclasses.field(
-      default_factory=EmulatorLauncherConfig
-  )
-  # Configuration for talking to adb.
-  adb_controller: AdbControllerConfig = dataclasses.field(
-      default_factory=AdbControllerConfig
-  )
-  # Path to file which holds emulator logs. If not provided, it will be
-  # determined by the EmulatorLauncher.
-  logfile_path: str = ''
-  # The number of times to try launching the emulator before rebooting (reboot
-  # on the n+1-st try).
-  launch_n_times_without_reboot: int = 1
-  # The number of times to try launching the emulator before reinstalling
-  # (reinstall on the n+1-st try).
-  launch_n_times_without_reinstall: int = 2
-
-
-@dataclasses.dataclass
-class FakeSimulatorConfig(SimulatorConfig):
-  """Config class for FakeSimulator."""
-
-  # The dimensions in pixels of the device screen (HxW).
-  screen_dimensions: tuple[int, int] = (0, 0)
 
 
 @dataclasses.dataclass
@@ -248,7 +185,6 @@ class AndroidEnvConfig:
   task_manager: TaskManagerConfig = dataclasses.field(
       default_factory=TaskManagerConfig
   )
-  coordinator: CoordinatorConfig = dataclasses.field(
-      default_factory=CoordinatorConfig
+  simulator: SimulatorConfig = dataclasses.field(
+      default_factory=AndroidDeviceConfig
   )
-  simulator: SimulatorConfig = dataclasses.field(default_factory=EmulatorConfig)

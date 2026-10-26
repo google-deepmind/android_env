@@ -3,34 +3,6 @@ load("@rules_python//python:defs.bzl", "py_library", "py_test")
 package(default_visibility = ["//visibility:public"])
 
 py_library(
-    name = "action_fns",
-    srcs = ["action_fns.py"],
-    deps = [
-        ":action_type",
-        ":errors",
-        ":pixel_fns",
-        "//android_env/components/simulators:base_simulator",
-        "@pip//absl_py",
-        "@pip//numpy",
-    ],
-)
-
-py_test(
-    name = "action_fns_test",
-    srcs = ["action_fns_test.py"],
-    legacy_create_init = False,
-    deps = [
-        ":action_fns",
-        ":action_type",
-        ":errors",
-        ":pixel_fns",
-        "//android_env/components/simulators:base_simulator",
-        "@pip//absl_py",
-        "@pip//numpy",
-    ],
-)
-
-py_library(
     name = "action_type",
     srcs = ["action_type.py"],
 )
@@ -81,25 +53,6 @@ py_test(
 )
 
 py_library(
-    name = "adb_log_stream",
-    srcs = ["adb_log_stream.py"],
-    deps = [
-        ":log_stream",
-        "@pip//absl_py",
-    ],
-)
-
-py_test(
-    name = "adb_log_stream_test",
-    srcs = ["adb_log_stream_test.py"],
-    legacy_create_init = False,
-    deps = [
-        ":adb_log_stream",
-        "@pip//absl_py",
-    ],
-)
-
-py_library(
     name = "app_screen_checker",
     srcs = ["app_screen_checker.py"],
     deps = [
@@ -128,73 +81,6 @@ py_test(
 py_library(
     name = "config_classes",
     srcs = ["config_classes.py"],
-)
-
-py_library(
-    name = "coordinator",
-    srcs = ["coordinator.py"],
-    deps = [
-        ":action_fns",
-        ":adb_call_parser",
-        ":config_classes",
-        ":device_settings",
-        ":errors",
-        ":specs",
-        ":task_manager",
-        "//android_env/components/simulators:base_simulator",
-        "//android_env/proto:adb_py_pb2",
-        "@pip//absl_py",
-        "@pip//dm_env",
-        "@pip//numpy",
-    ],
-)
-
-py_test(
-    name = "coordinator_test",
-    srcs = ["coordinator_test.py"],
-    legacy_create_init = False,
-    deps = [
-        ":action_type",
-        ":adb_call_parser",
-        ":config_classes",
-        ":coordinator",
-        ":device_settings",
-        ":errors",
-        ":task_manager",
-        "//android_env/components/simulators:base_simulator",
-        "//android_env/proto:adb_py_pb2",
-        "//android_env/proto:state_py_pb2",
-        "//android_env/proto:task_py_pb2",
-        "@pip//absl_py",
-        "@pip//dm_env",
-        "@pip//numpy",
-    ],
-)
-
-py_library(
-    name = "device_settings",
-    srcs = ["device_settings.py"],
-    deps = [
-        ":adb_call_parser",
-        ":config_classes",
-        "//android_env/components/simulators:base_simulator",
-        "//android_env/proto:adb_py_pb2",
-        "@pip//absl_py",
-        "@pip//numpy",
-    ],
-)
-
-py_test(
-    name = "device_settings_test",
-    srcs = ["device_settings_test.py"],
-    legacy_create_init = False,
-    deps = [
-        ":config_classes",
-        ":device_settings",
-        "//android_env/components/simulators:base_simulator",
-        "@pip//absl_py",
-        "@pip//numpy",
-    ],
 )
 
 py_library(

@@ -1,5 +1,5 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//:py_grpc_library.bzl", "py_grpc_library", "py_proto_library")
+load("//:py_grpc_library.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -11,56 +11,6 @@ proto_library(
 py_proto_library(
     name = "adb_py_pb2",
     srcs = ["adb.proto"],
-)
-
-proto_library(
-    name = "emulator_controller_proto",
-    srcs = ["emulator_controller.proto"],
-    deps = ["@protobuf//:empty_proto"],
-)
-
-py_proto_library(
-    name = "emulator_controller_py_pb2",
-    srcs = ["emulator_controller.proto"],
-)
-
-py_grpc_library(
-    name = "emulator_controller_py_pb2_grpc",
-    srcs = ["emulator_controller.proto"],
-    deps = [":emulator_controller_py_pb2"],
-)
-
-proto_library(
-    name = "snapshot_proto",
-    srcs = ["snapshot.proto"],
-)
-
-py_proto_library(
-    name = "snapshot_py_pb2",
-    srcs = ["snapshot.proto"],
-)
-
-proto_library(
-    name = "snapshot_service_proto",
-    srcs = ["snapshot_service.proto"],
-    deps = [
-        ":snapshot_proto",
-        "@protobuf//:empty_proto",
-    ],
-)
-
-py_proto_library(
-    name = "snapshot_service_py_pb2",
-    srcs = ["snapshot_service.proto"],
-    proto_srcs = ["snapshot.proto"],
-    deps = [":snapshot_py_pb2"],
-)
-
-py_grpc_library(
-    name = "snapshot_service_py_pb2_grpc",
-    srcs = ["snapshot_service.proto"],
-    proto_srcs = ["snapshot.proto"],
-    deps = [":snapshot_service_py_pb2"],
 )
 
 proto_library(
