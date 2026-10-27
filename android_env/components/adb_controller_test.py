@@ -43,6 +43,10 @@ class AdbControllerTest(absltest.TestCase):
       del os.environ['ANDROID_HOME']
     if 'ANDROID_ADB_SERVER_PORT' in os.environ:
       del os.environ['ANDROID_ADB_SERVER_PORT']
+    if 'ADB_SERVER_SOCKET' in os.environ:
+      del os.environ['ADB_SERVER_SOCKET']
+    if 'DISABLE_ADB_KILL_SERVER' in os.environ:
+      del os.environ['DISABLE_ADB_KILL_SERVER']
 
   @mock.patch.object(subprocess, 'check_output', autospec=True)
   @mock.patch.object(time, 'sleep', autospec=True)
@@ -66,6 +70,7 @@ class AdbControllerTest(absltest.TestCase):
     expected_env['HOME'] = '/some/path/'
     mock_check_output.assert_called_once_with(
         ['my_adb', 'devices'],
+        stdin=subprocess.DEVNULL,
         stderr=subprocess.STDOUT,
         timeout=_TIMEOUT,
         env=expected_env,
@@ -103,6 +108,7 @@ class AdbControllerTest(absltest.TestCase):
 
     mock_check_output.assert_called_once_with(
         ['my_adb', 'devices'],
+        stdin=subprocess.DEVNULL,
         stderr=subprocess.STDOUT,
         timeout=_TIMEOUT,
         env=expected_env,
@@ -137,30 +143,35 @@ class AdbControllerTest(absltest.TestCase):
     mock_check_output.assert_has_calls([
         mock.call(
             ['my_adb', '-s', 'awesome_device', 'my_command'],
+            stdin=subprocess.DEVNULL,
             stderr=subprocess.STDOUT,
             timeout=_TIMEOUT,
             env=expected_env,
         ),
         mock.call(
             ['my_adb', 'kill-server'],
+            stdin=subprocess.DEVNULL,
             stderr=subprocess.STDOUT,
             timeout=_TIMEOUT,
             env=expected_env,
         ),
         mock.call(
             ['my_adb', 'start-server'],
+            stdin=subprocess.DEVNULL,
             stderr=subprocess.STDOUT,
             timeout=_TIMEOUT,
             env=expected_env,
         ),
         mock.call(
             ['my_adb', 'devices'],
+            stdin=subprocess.DEVNULL,
             stderr=subprocess.STDOUT,
             timeout=_TIMEOUT,
             env=expected_env,
         ),
         mock.call(
             ['my_adb', '-s', 'awesome_device', 'my_command'],
+            stdin=subprocess.DEVNULL,
             stderr=subprocess.STDOUT,
             timeout=_TIMEOUT,
             env=expected_env,
@@ -210,30 +221,35 @@ class AdbControllerTest(absltest.TestCase):
         [
             mock.call(
                 ['my_adb', '-s', 'awesome_device', 'my_command'],
+                stdin=subprocess.DEVNULL,
                 stderr=subprocess.STDOUT,
                 timeout=_TIMEOUT,
                 env=expected_env,
             ),
             mock.call(
                 ['my_adb', 'kill-server'],
+                stdin=subprocess.DEVNULL,
                 stderr=subprocess.STDOUT,
                 timeout=_TIMEOUT,
                 env=expected_env,
             ),
             mock.call(
                 ['my_adb', 'start-server'],
+                stdin=subprocess.DEVNULL,
                 stderr=subprocess.STDOUT,
                 timeout=_TIMEOUT,
                 env=expected_env,
             ),
             mock.call(
                 ['my_adb', 'devices'],
+                stdin=subprocess.DEVNULL,
                 stderr=subprocess.STDOUT,
                 timeout=_TIMEOUT,
                 env=expected_env,
             ),
             mock.call(
                 ['my_adb', '-s', 'awesome_device', 'my_command'],
+                stdin=subprocess.DEVNULL,
                 stderr=subprocess.STDOUT,
                 timeout=_TIMEOUT,
                 env=expected_env,
@@ -267,6 +283,144 @@ class AdbControllerTest(absltest.TestCase):
         ['my_command'],
         timeout=_TIMEOUT,
     )
+
+  def test_command_prefix_uses_config_port_by_default(self):
+    """Pass `-P <port>` when neither OS env port nor socket is configured."""
+
+    adb_controller = adb_controller_lib.AdbController(
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            adb_server_port=9999,
+            use_adb_server_port_from_os_env=False,
+        )
+    )
+
+    self.assertEqual(
+        adb_controller.command_prefix(),
+        ['my_adb', '-P', '9999', '-s', 'awesome_device'],
+    )
+    self.assertEqual(
+        adb_controller.command_prefix(include_device_name=False),
+        ['my_adb', '-P', '9999'],
+    )
+
+  def test_command_prefix_omits_port_when_adb_server_socket_set(self):
+    """Do not pass `-P <port>` when `ADB_SERVER_SOCKET` is set in os.environ."""
+
+    os.environ['ADB_SERVER_SOCKET'] = 'tcp:localhost:5037'
+    adb_controller = adb_controller_lib.AdbController(
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            adb_server_port=9999,
+            use_adb_server_port_from_os_env=False,
+        )
+    )
+
+    self.assertEqual(
+        adb_controller.command_prefix(),
+        ['my_adb', '-s', 'awesome_device'],
+    )
+    self.assertEqual(
+        adb_controller.command_prefix(include_device_name=False),
+        ['my_adb'],
+    )
+
+  @mock.patch.object(subprocess, 'check_output', autospec=True)
+  @mock.patch.object(time, 'sleep', autospec=True)
+  def test_restart_server_skipped_when_adb_server_socket_set(
+      self, mock_sleep, mock_check_output
+  ):
+    """Do not restart server if ADB_SERVER_SOCKET is set."""
+
+    os.environ['ADB_SERVER_SOCKET'] = 'tcp:localhost:5037'
+    mock_check_output.side_effect = [
+        subprocess.CalledProcessError(
+            returncode=1, cmd='blah', output=b'some error output'
+        ),
+        'fake_output'.encode('utf-8'),
+    ]
+    adb_controller = adb_controller_lib.AdbController(
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            adb_server_port=9999,
+            use_adb_server_port_from_os_env=False,
+        )
+    )
+
+    output = adb_controller.execute_command(['my_command'], timeout=_TIMEOUT)
+
+    self.assertEqual(output, b'fake_output')
+    expected_env = self._env_before
+    expected_env['HOME'] = '/some/path/'
+    expected_env['ADB_SERVER_SOCKET'] = 'tcp:localhost:5037'
+    self.assertEqual(mock_check_output.call_count, 2)
+    mock_check_output.assert_has_calls([
+        mock.call(
+            ['my_adb', '-s', 'awesome_device', 'my_command'],
+            stdin=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+            timeout=_TIMEOUT,
+            env=expected_env,
+        ),
+        mock.call(
+            ['my_adb', '-s', 'awesome_device', 'my_command'],
+            stdin=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+            timeout=_TIMEOUT,
+            env=expected_env,
+        ),
+    ])
+    mock_sleep.assert_not_called()
+
+  @mock.patch.object(subprocess, 'check_output', autospec=True)
+  @mock.patch.object(time, 'sleep', autospec=True)
+  def test_restart_server_skipped_when_disable_adb_kill_server_set(
+      self, mock_sleep, mock_check_output
+  ):
+    """Do not restart server if DISABLE_ADB_KILL_SERVER is set."""
+
+    os.environ['DISABLE_ADB_KILL_SERVER'] = '1'
+    mock_check_output.side_effect = [
+        subprocess.CalledProcessError(
+            returncode=1, cmd='blah', output=b'some error output'
+        ),
+        'fake_output'.encode('utf-8'),
+    ]
+    adb_controller = adb_controller_lib.AdbController(
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='awesome_device',
+            use_adb_server_port_from_os_env=True,
+        )
+    )
+
+    output = adb_controller.execute_command(['my_command'], timeout=_TIMEOUT)
+
+    self.assertEqual(output, b'fake_output')
+    expected_env = self._env_before
+    expected_env['HOME'] = '/some/path/'
+    expected_env['DISABLE_ADB_KILL_SERVER'] = '1'
+    self.assertEqual(mock_check_output.call_count, 2)
+    mock_check_output.assert_has_calls([
+        mock.call(
+            ['my_adb', '-s', 'awesome_device', 'my_command'],
+            stdin=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+            timeout=_TIMEOUT,
+            env=expected_env,
+        ),
+        mock.call(
+            ['my_adb', '-s', 'awesome_device', 'my_command'],
+            stdin=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+            timeout=_TIMEOUT,
+            env=expected_env,
+        ),
+    ])
+    mock_sleep.assert_not_called()
 
 
 class AdbControllerInitTest(absltest.TestCase):

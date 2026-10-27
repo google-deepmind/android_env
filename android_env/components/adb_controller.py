@@ -52,9 +52,12 @@ class AdbController:
 
   def command_prefix(self, include_device_name: bool = True) -> list[str]:
     """The command for instantiating an adb client to this server."""
-    if self._config.use_adb_server_port_from_os_env:
-      # When using the adb server port set from the OS environment, we don't
-      # need to pass the port explicitly.
+    if (
+        self._config.use_adb_server_port_from_os_env
+        or 'ADB_SERVER_SOCKET' in self._os_env_vars
+    ):
+      # When using the adb server port or socket set from the OS environment,
+      # we don't need to pass the port explicitly.
       adb_port_args = []
     else:
       # When using the adb server port set from the config, we need to pass the
@@ -82,13 +85,22 @@ class AdbController:
     self.execute_command(['devices'], timeout, device_specific=False)
     time.sleep(0.2)
 
-  def _restart_server(self, timeout: float | None = None):
+  def _restart_server(self, timeout: float | None = None) -> None:
     """Kills and restarts the adb server.
 
     Args:
       timeout: A timeout to use for this operation. If not set the default
         timeout set on the constructor will be used.
     """
+    if (
+        'ADB_SERVER_SOCKET' in self._os_env_vars
+        or 'DISABLE_ADB_KILL_SERVER' in self._os_env_vars
+    ):
+      logging.warning(
+          'Skipping _restart_server because ADB_SERVER_SOCKET or'
+          ' DISABLE_ADB_KILL_SERVER is set.'
+      )
+      return
     logging.info('Restarting adb server.')
     self.execute_command(
         ['kill-server'], timeout=timeout, device_specific=False
@@ -147,6 +159,7 @@ class AdbController:
     logging.info('Executing ADB command: [%s]', command_str)
     cmd_output = subprocess.check_output(
         command,
+        stdin=subprocess.DEVNULL,
         stderr=subprocess.STDOUT,
         timeout=timeout,
         env=self._os_env_vars,

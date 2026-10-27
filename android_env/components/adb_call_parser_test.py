@@ -79,7 +79,8 @@ class AdbCallParserTest(parameterized.TestCase):
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
     self.assertEmpty(response.error_message)
     adb.execute_command.assert_called_once_with(
-        ['install', '-r', '-t', '-g', '/my/home/game.apk'], None)
+        ['install', '-r', '-t', '-g', '-d', '/my/home/game.apk'], None
+    )
 
   @mock.patch.object(tempfile, 'NamedTemporaryFile', autospec=True)
   def test_install_apk_from_blob(self, mock_tempfile):
@@ -96,7 +97,7 @@ class AdbCallParserTest(parameterized.TestCase):
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
     self.assertEmpty(response.error_message)
     adb.execute_command.assert_called_once_with(
-        ['install', '-r', '-t', '-g', '/my/home/test.apk'], None
+        ['install', '-r', '-t', '-g', '-d', '/my/home/test.apk'], None
     )
     expected_tempfile_kwargs = (
         {'suffix': '.apk', 'delete_on_close': False}
@@ -131,15 +132,26 @@ class AdbCallParserTest(parameterized.TestCase):
     request.start_activity.full_activity = 'my.project.SplashActivity'
     request.start_activity.extra_args.extend(['blah'])
     request.start_activity.force_stop = True
+    request.timeout_sec = 7
     response = parser.parse(request)
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
     self.assertEmpty(response.error_message)
+    self.assertEqual(adb.execute_command.call_count, 2)
     adb.execute_command.assert_has_calls([
-        mock.call([
-            'shell', 'am', 'start', '-S', '-W', '-n',
-            'my.project.SplashActivity', 'blah'
-        ],
-                  timeout=None),
+        mock.call(['shell', 'am', 'task', 'lock', 'stop'], timeout=7.0),
+        mock.call(
+            [
+                'shell',
+                'am',
+                'start',
+                '-S',
+                '-W',
+                '-n',
+                'my.project.SplashActivity',
+                'blah',
+            ],
+            timeout=7.0,
+        ),
     ])
 
   def test_start_activity_successful_no_force_stop(self):
@@ -155,12 +167,22 @@ class AdbCallParserTest(parameterized.TestCase):
     response = parser.parse(request)
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
     self.assertEmpty(response.error_message)
+    self.assertEqual(adb.execute_command.call_count, 2)
     adb.execute_command.assert_has_calls([
-        mock.call([
-            'shell', 'am', 'start', '', '-W', '-n', 'my.project.SplashActivity',
-            'blah'
-        ],
-                  timeout=None),
+        mock.call(['shell', 'am', 'task', 'lock', 'stop'], timeout=None),
+        mock.call(
+            [
+                'shell',
+                'am',
+                'start',
+                '',
+                '-W',
+                '-n',
+                'my.project.SplashActivity',
+                'blah',
+            ],
+            timeout=None,
+        ),
     ])
 
   def test_start_activity_error(self):
@@ -184,11 +206,15 @@ class AdbCallParserTest(parameterized.TestCase):
     parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
     request.force_stop.package_name = 'my.project'
+    request.timeout_sec = 5
     response = parser.parse(request)
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
     self.assertEmpty(response.error_message)
-    adb.execute_command.assert_called_once_with(
-        ['shell', 'am', 'force-stop', 'my.project'], None)
+    self.assertEqual(adb.execute_command.call_count, 2)
+    adb.execute_command.assert_has_calls([
+        mock.call(['shell', 'am', 'task', 'lock', 'stop'], 5.0),
+        mock.call(['shell', 'am', 'force-stop', 'my.project'], 5.0),
+    ])
 
   def test_grant_permissions_empty_package_name(self):
     adb = mock.create_autospec(adb_controller.AdbController)

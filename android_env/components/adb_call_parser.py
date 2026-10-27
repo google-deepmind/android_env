@@ -130,8 +130,12 @@ class AdbCallParser:
       response.error_message = '`force_stop.package_name` cannot be empty.'
       return response
 
+    self._execute_command(
+        ['shell', 'am', 'task', 'lock', 'stop'], timeout=timeout
+    )
     response, _ = self._execute_command(
-        ['shell', 'am', 'force-stop', force_stop.package_name], timeout)
+        ['shell', 'am', 'force-stop', force_stop.package_name], timeout=timeout
+    )
 
     return response
 
@@ -277,7 +281,7 @@ class AdbCallParser:
           return response
 
         response, _ = self._execute_command(
-            ['install', '-r', '-t', '-g', fpath], timeout=timeout
+            ['install', '-r', '-t', '-g', '-d', fpath], timeout=timeout
         )
       case 'blob':
 
@@ -293,7 +297,7 @@ class AdbCallParser:
           f.write(install_apk.blob.contents)
 
           response, _ = self._execute_command(
-              ['install', '-r', '-t', '-g', fpath], timeout=timeout
+              ['install', '-r', '-t', '-g', '-d', fpath], timeout=timeout
           )
       case _:
         response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
@@ -335,6 +339,9 @@ class AdbCallParser:
           status=adb_pb2.AdbResponse.Status.FAILED_PRECONDITION,
           error_message='`start_activity.full_activity` cannot be empty.')
 
+    self._execute_command(
+        ['shell', 'am', 'task', 'lock', 'stop'], timeout=timeout
+    )
     force_stop = '-S' if request.start_activity.force_stop else ''
     response, command_output = self._execute_command(
         ['shell', 'am', 'start', force_stop, '-W', '-n', activity] +
