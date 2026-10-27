@@ -97,7 +97,7 @@ setup_steps {
   success_condition {
     check_dumpsys {
       service: "accessibility"
-      expected_string: "Input Service"
+      expected_string: "com.google.androidenv.core"
       timeout_sec: 30.0
     }
   }

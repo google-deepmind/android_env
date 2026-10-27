@@ -246,10 +246,12 @@ class AndroidDeviceLoaderTest(absltest.TestCase):
     self._mock_adb.execute_command.assert_called_once_with([
         'shell',
         'am',
-        'startservice',
-        '-a',
-        'com.google.androidenv.core.START',
-        'com.google.androidenv.core/.AndroidEnvService',
+        'start',
+        '-n',
+        'com.google.androidenv.core/.MainActivity',
+        '--es',
+        'COMMAND',
+        'START_SERVER',
     ])
 
   def test_connect_to_device_fails_after_max_retries(self):

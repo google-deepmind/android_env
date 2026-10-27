@@ -188,11 +188,10 @@ class MainActivity : ComponentActivity() {
 
   private fun triggerAction(action: PendingAction) {
     if (!isAccessibilityServiceEnabled(this, InputService::class.java)) {
-      Log.w(TAG, "Cannot trigger action: Accessibility disabled.")
-      return
+      Log.w(TAG, "Accessibility service not enabled, proceeding with server start.")
     }
 
-    Log.e("CRITICAL_DEBUG", "triggerAction: action=$action, current pendingAction=$pendingAction")
+    Log.d(TAG, "triggerAction: action=$action, current pendingAction=$pendingAction")
     pendingAction = action
     val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
     screenCaptureLauncher.launch(manager.createScreenCaptureIntent())

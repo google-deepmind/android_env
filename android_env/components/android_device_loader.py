@@ -17,7 +17,7 @@
 
 import os
 import time
-from typing import Any
+from typing import Any, Final
 
 from absl import logging
 from android_env.components import adb_call_parser
@@ -242,10 +242,12 @@ def _connect_to_device(
           adb.execute_command([
               'shell',
               'am',
-              'startservice',
-              '-a',
-              'com.google.androidenv.core.START',
-              'com.google.androidenv.core/.AndroidEnvService',
+              'start',
+              '-n',
+              'com.google.androidenv.core/.MainActivity',
+              '--es',
+              'COMMAND',
+              'START_SERVER',
           ])
         except errors.AdbControllerError:
           pass
