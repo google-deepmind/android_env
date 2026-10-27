@@ -114,7 +114,7 @@ def try_send_frame(state: state_lib.PlaygroundState, jpeg_bytes: bytes):
   ack_timed_out = False
   with state.active_ws_lock:
     if state.waiting_for_ack:
-      if time.time() - state.last_frame_sent_time > 1.0:
+      if time.time() - state.last_frame_sent_time > 0.2:
         ack_timed_out = True
         state.waiting_for_ack = False
       else:
@@ -454,6 +454,7 @@ def handle_websocket(
     logging.warning('WebSocket error: %s', e)
   finally:
     logging.info('WebSocket connection closed')
+    handler.close_connection = True
     with state.active_ws_lock:
       if state.active_ws == sock:
         state.active_ws = None

@@ -86,6 +86,16 @@ class StreamHandler(http.server.SimpleHTTPRequestHandler):
         request, client_address, server_inst, directory=server_inst.static_dir
     )
 
+  def guess_type(self, path):
+    """Infers MIME type and appends UTF-8 charset for text and script assets."""
+    ctype = super().guess_type(path)
+    if ctype.startswith(
+        ('text/', 'application/javascript', 'application/json')
+    ):
+      if 'charset' not in ctype:
+        ctype += '; charset=utf-8'
+    return ctype
+
   def do_GET(self):  # pylint: disable=invalid-name
     """Handles GET requests for HTML and WebSocket handshake."""
     server_inst = self.server

@@ -172,12 +172,6 @@ describe('SocketHandler', () => {
       return Promise.resolve();
     });
 
-    // Mock requestAnimationFrame to execute immediately
-    spyOn(window, 'requestAnimationFrame').and.callFake((cb: FrameRequestCallback) => {
-      cb(0);
-      return 0;
-    });
-
     const fakeBlob = new Blob(['fake image data']); // No type specified (empty type)
 
     if (fakeWs.onmessage) {
@@ -231,6 +225,7 @@ describe('SocketHandler', () => {
 
     expect(console.error).toHaveBeenCalledWith('Decode failed:', jasmine.any(Error));
     expect(screenImg.src).toContain('blob:http://localhost/new-blob');
+    expect(fakeWs.send).toHaveBeenCalledWith('ack');
   });
 
 

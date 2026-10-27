@@ -197,7 +197,17 @@ class WebsocketTest(absltest.TestCase):
     state.active_ws = mock.create_autospec(socket.socket, instance=True)
     state.waiting_for_ack = True
     state.last_frame_sent_time = 100.0
-    with mock.patch.object(websocket.time, 'time', return_value=100.5):
+    with mock.patch.object(websocket.time, 'time', return_value=100.1):
+      websocket.try_send_frame(state, b'frame_data')
+    state.active_ws.sendall.assert_not_called()
+    self.assertTrue(state.waiting_for_ack)
+
+  def test_try_send_frame_client_not_ready_exact_timeout_boundary(self):
+    state = state_lib.PlaygroundState()
+    state.active_ws = mock.create_autospec(socket.socket, instance=True)
+    state.waiting_for_ack = True
+    state.last_frame_sent_time = 0.0
+    with mock.patch.object(websocket.time, 'time', return_value=0.2):
       websocket.try_send_frame(state, b'frame_data')
     state.active_ws.sendall.assert_not_called()
     self.assertTrue(state.waiting_for_ack)
@@ -211,7 +221,7 @@ class WebsocketTest(absltest.TestCase):
     with mock.patch.object(
         websocket.logging, 'warning', autospec=True
     ) as mock_warning:
-      with mock.patch.object(websocket.time, 'time', return_value=102.0):
+      with mock.patch.object(websocket.time, 'time', return_value=100.21):
         websocket.try_send_frame(state, b'frame_data')
       mock_warning.assert_called_once_with(
           'ACK timeout, resetting waiting_for_ack'
@@ -219,7 +229,7 @@ class WebsocketTest(absltest.TestCase):
     expected_header = b'\x82\x0a'
     mock_sock.sendall.assert_called_once_with(expected_header + b'frame_data')
     self.assertTrue(state.waiting_for_ack)
-    self.assertEqual(state.last_frame_sent_time, 102.0)
+    self.assertEqual(state.last_frame_sent_time, 100.21)
 
   def test_try_send_frame_reentrant_active_ws_lock(self):
     state = state_lib.PlaygroundState()
@@ -446,6 +456,7 @@ class WebsocketTest(absltest.TestCase):
     )
     self.assertEqual(mock_read_frame.call_count, 2)
     mock_handle_msg.assert_called_once_with('msg1', state)
+    self.assertTrue(mock_handler.close_connection)
 
   @mock.patch.object(websocket, '_perform_handshake', return_value=True)
   @mock.patch.object(websocket, '_read_frame', return_value=None)

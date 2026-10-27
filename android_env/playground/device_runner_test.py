@@ -223,6 +223,72 @@ class DeviceRunnerTest(absltest.TestCase):
     self.assertEqual(mock_map_coords.call_args_list[1][0][2], 1)
     mock_update_frame.assert_not_called()
 
+  @mock.patch.object(device_runner, '_update_frame', autospec=True)
+  @mock.patch.object(
+      device_runner.coordinates, 'map_client_coordinates', autospec=True
+  )
+  @mock.patch.object(
+      device_runner.actions_lib, 'map_client_action_to_proto', autospec=True
+  )
+  def test_send_client_actions_aborts_on_reload(
+      self, mock_map_proto, mock_map_coords, unused_mock_update_frame
+  ):
+    mock_dev = mock.create_autospec(android_device.AndroidDevice, instance=True)
+    state = state_lib.PlaygroundState()
+    orientation_container = [0]
+    last_pos = np.array([0.0, 0.0])
+
+    dev_state = device_env_service_pb2.DeviceState(orientation=0)
+    mock_dev.get_state.return_value = dev_state
+    mock_map_proto.return_value = device_env_service_pb2.Action()
+    mock_map_coords.return_value = np.array([1.0, 1.0])
+
+    def _trigger_reload(*unused_args, **unused_kwargs):
+      state.set_reload('new_task')
+
+    mock_dev.send_action.side_effect = _trigger_reload
+
+    act_1 = actions_lib.ClientAction(
+        action_type='touch_down',
+        x=0.1,
+        y=0.1,
+        client_timestamp_ms=100.0,
+        recv_timestamp_ms=105.0,
+    )
+    act_2 = actions_lib.ClientAction(
+        action_type='touch_move',
+        x=0.2,
+        y=0.2,
+        client_timestamp_ms=110.0,
+        recv_timestamp_ms=115.0,
+    )
+
+    device_runner._send_client_actions(
+        mock_dev,
+        [act_1, act_2],
+        state,
+        orientation_container,
+        last_pos,
+        (10, 10),
+    )
+
+    mock_dev.send_action.assert_called_once()
+    mock_dev.get_state.assert_called_once()
+
+    # Also verify aborting before the first action fetches fallback device_state
+    mock_dev.reset_mock()
+    state.set_reload('immediate_reload')
+    device_runner._send_client_actions(
+        mock_dev,
+        [act_1],
+        state,
+        orientation_container,
+        last_pos,
+        (10, 10),
+    )
+    mock_dev.send_action.assert_not_called()
+    mock_dev.get_state.assert_called_once()
+
   def test_update_battery_stats(self):
     state = state_lib.PlaygroundState()
     dev_state = device_env_service_pb2.DeviceState()
@@ -243,6 +309,12 @@ class DeviceRunnerTest(absltest.TestCase):
     dev_state = device_env_service_pb2.DeviceState()
     device_runner._update_battery_stats(dev_state, state)
     self.assertIsNone(state.get_battery_power_stats())
+
+  def test_load_task_proto_inline_textproto(self):
+    inline_proto = 'id: "inline_task"\nname: "Inline Task"\n'
+    task = device_runner._load_task_proto(inline_proto, '/tmp/fake')
+    self.assertEqual(task.id, 'inline_task')
+    self.assertEqual(task.name, 'Inline Task')
 
   def test_load_task_proto_from_textproto_file(self):
     task_file = self.create_tempfile(
@@ -573,6 +645,36 @@ class DeviceRunnerTest(absltest.TestCase):
     device_runner.run_device(mock_dev, 0, pixels, state)
 
     mock_send_actions.assert_called_once()
+
+  @mock.patch.object(device_runner, '_update_frame', autospec=True)
+  @mock.patch.object(device_runner, '_send_client_actions', autospec=True)
+  @mock.patch.object(device_runner, '_get_actions', autospec=True)
+  def test_run_device_loop_catches_action_error(
+      self, mock_get_actions, mock_send_actions, unused_mock_frame
+  ):
+    mock_dev = mock.create_autospec(android_device.AndroidDevice, instance=True)
+    state = state_lib.PlaygroundState()
+    act = actions_lib.ClientAction(
+        action_type='touch_down',
+        x=0.5,
+        y=0.5,
+        client_timestamp_ms=100.0,
+        recv_timestamp_ms=105.0,
+    )
+    mock_get_actions.return_value = [act]
+    pixels = np.zeros((10, 10, 3), dtype=np.uint8)
+
+    def _raise_and_stop(*unused_args, **unused_kwargs):
+      state.running = False
+      raise RuntimeError('Send action failed')
+
+    mock_send_actions.side_effect = _raise_and_stop
+
+    with mock.patch.object(
+        device_runner.logging, 'exception', autospec=True
+    ) as mock_log_exc:
+      device_runner.run_device(mock_dev, 0, pixels, state)
+      mock_log_exc.assert_called_once_with('Error processing client actions')
 
   @mock.patch.object(device_runner, '_update_frame', autospec=True)
   @mock.patch.object(device_runner, '_get_actions', autospec=True)

@@ -105,11 +105,7 @@ export class SocketHandler {
       if (oldUrl && oldUrl.startsWith('blob:')) {
         URL.revokeObjectURL(oldUrl);
       }
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          this.sendAck();
-        });
-      });
+      this.sendAck();
     };
 
     tempImg.decode().then(onFinish).catch((err) => {

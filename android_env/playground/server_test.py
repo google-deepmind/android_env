@@ -128,6 +128,39 @@ class ServerTest(absltest.TestCase):
 
     handler.send_error.assert_called_once_with(500, 'Unexpected server type')
 
+  @mock.patch.object(
+      http.server.SimpleHTTPRequestHandler, '__init__', return_value=None
+  )
+  def test_guess_type_adds_utf8_charset(self, unused_mock_super_init):
+    handler = server.StreamHandler(
+        self.mock_request, self.mock_client_address, self.mock_server
+    )
+    with mock.patch.object(
+        http.server.SimpleHTTPRequestHandler,
+        'guess_type',
+        side_effect=[
+            'text/html',
+            'application/javascript',
+            'application/json',
+            'text/html; charset=utf-8',
+            'image/png',
+        ],
+    ):
+      self.assertEqual(
+          handler.guess_type('index.html'), 'text/html; charset=utf-8'
+      )
+      self.assertEqual(
+          handler.guess_type('app.js'),
+          'application/javascript; charset=utf-8',
+      )
+      self.assertEqual(
+          handler.guess_type('data.json'), 'application/json; charset=utf-8'
+      )
+      self.assertEqual(
+          handler.guess_type('already.html'), 'text/html; charset=utf-8'
+      )
+      self.assertEqual(handler.guess_type('logo.png'), 'image/png')
+
   def test_get_default_static_dir_returns_existing_dir(self):
     static_dir = server.get_default_static_dir()
     self.assertIsNotNone(static_dir)

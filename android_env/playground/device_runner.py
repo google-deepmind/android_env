@@ -119,6 +119,12 @@ def _send_client_actions(
   """Sends client actions to the device and updates timing stats."""
   device_state = None
   for i, act_data in enumerate(actions):
+    if state.get_reload() is not None:
+      logging.info(
+          'Reload requested during action execution. Aborting remaining'
+          ' actions.'
+      )
+      break
     pos = coordinates.map_client_coordinates(
         act_data.x, act_data.y, orientation_container[0], raw_shape
     )
@@ -181,7 +187,12 @@ def _update_battery_stats(
 
 
 def _load_task_proto(task_id: str, tmp_dir: str) -> task_pb2.Task:
-  """Resolves a task_id or file path into a Task protobuf."""
+  """Resolves a task_id, inline textproto, or file path into a Task protobuf."""
+  if '\n' in task_id or any(
+      k in task_id for k in ('setup_steps', 'reset_steps', 'id:')
+  ):
+    return text_format.Parse(task_id, task_pb2.Task())
+
   expanded_path = os.path.expanduser(task_id)
   del tmp_dir
   task = task_pb2.Task()
@@ -407,16 +418,19 @@ def run_device(
     actions = _get_actions(state, frame_rate_secs)
 
     if actions:
-      last_pos, new_pixels = _send_client_actions(
-          device,
-          actions,
-          state,
-          orientation_container,
-          last_pos,
-          current_pixels.shape[:2],
-      )
-      if new_pixels is not None:
-        current_pixels = new_pixels
+      try:
+        last_pos, new_pixels = _send_client_actions(
+            device,
+            actions,
+            state,
+            orientation_container,
+            last_pos,
+            current_pixels.shape[:2],
+        )
+        if new_pixels is not None:
+          current_pixels = new_pixels
+      except Exception:  # pylint: disable=broad-exception-caught
+        logging.exception('Error processing client actions')
     else:
       # Idle: poll device state for screen changes without injecting dummy
       # actions.
