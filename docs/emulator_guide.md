@@ -67,18 +67,21 @@ directory (for instance, on Linux or macOS it may be `~/.android/avd`).
 
 With SDK and AVD both set up, you are now ready to use this emulated device with
 AndroidEnv. Don't forget to take note of the following three values: your AVD
-name, the AVD path, and the SDK path. For example, on Linux they may be:
+name, the AVD path, and the SDK path. When configuring
+`config_classes.EmulatorLauncherConfig`, for example on Linux, they map to:
 
-```
---avd_name=my_avd
---avd_package_path=~/.android/avd
---android_sdk_root=~/Android/Sdk
+```python
+avd_name='my_avd',
+android_avd_home='~/.android/avd',
+android_sdk_root='~/Android/Sdk',
 ```
 
 Next, once you have set up the AVD, follow the
-[Task steps](instructions.md#the-task) in the
-[Running the environment guide](instructions.md) to finish setting up
-AndroidEnv.
+[Direct Control with AndroidDevice](instructions.md#2-direct-control-with-androiddevice)
+or
+[Running Reinforcement Learning Tasks](instructions.md#4-running-reinforcement-learning-tasks-dm_env)
+sections in the [Running the environment guide](instructions.md) to connect
+AndroidEnv to your device.
 
 However, if you want to just interact with the newly created device, click on
 the run button next to your AVD in the **AVD Manager** in Android Studio (this

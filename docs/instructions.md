@@ -129,19 +129,24 @@ connects directly to `AndroidDevice`. It provides:
 Run the Playground using Bazel:
 
 ```shell
-bazel run //android_env/playground:launch -- \
-    --config=android_env/configs/emulator_config.py \
-    --config.device.emulator_launcher.avd_name=my_avd
+bazel run //android_env/playground:playground -- \
+    --config=android_env/playground/configs/emulator_config.py:my_avd
 ```
 
-Or if installed via `pip`:
+Or if installed via `pip` (`pip install "android-env[playground]"`):
 
 ```shell
-python3 -m android_env.playground.launch \
-    --config=path/to/emulator_config.py
+# Connect to an already-running emulator or physical device:
+android-env-playground --serial=emulator-5554
+
+# Or launch a local AVD by name:
+android-env-playground --avd_name=my_avd
 ```
 
-Open `http://localhost:8765` in your browser to interact with the device.
+You can also pass a custom `ml_collections` config file via
+`python3 -m android_env.playground.playground --config=path/to/config.py`.
+
+Open `http://localhost:8080` in your browser to interact with the device.
 
 --------------------------------------------------------------------------------
 

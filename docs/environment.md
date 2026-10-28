@@ -139,19 +139,27 @@ For Reinforcement Learning workloads that require a standard
 (`reset()`, `step(action)`), `android_env.rl.environment.AndroidEnv` adapts an
 `AndroidDevice` into array-based observation and action specs:
 
-*   **Observation Spec**: A dictionary containing:
+*   **Observations**: A dictionary containing:
     *   `'pixels'`: `(H, W, 3)` `uint8` RGB image array.
-    *   `'timedelta'`: Microseconds elapsed since the previous timestep.
-    *   `'orientation'`: 4-dimensional one-hot vector representing device
+    *   `'timedelta'`: `int64` microseconds elapsed since the previous timestep.
+    *   `'orientation'`: `(4,)` `uint8` one-hot vector representing device
         rotation.
+    *   `'active_package'`: Foreground application package string returned on
+        each `reset()` / `step()` transition (along with optional `'audio'`
+        `(N, 2)` `int16` PCM frames when `DEVICE_SIGNAL_AUDIO_OUTPUT` is
+        subscribed).
 *   **Action Spec**: A dictionary containing:
-    *   `'action_type'`: Discrete value in `{TOUCH, LIFT, REPEAT}` (and optional
-        `KEYPRESS`).
+    *   `'action_type'`: Discrete `ActionType` value (`TOUCH`, `LIFT`, `REPEAT`,
+        `KEYDOWN`, `KEYUP`, plus accessibility `TEXT`, `SET_SELECTION`, `CUT`,
+        `COPY`, `PASTE`).
     *   `'touch_position'`: Continuous `[x, y]` float array in `[0.0, 1.0]`.
+    *   `'keycode'`: Android `KeyEvent` integer (used with `KEYDOWN`; optional
+        `'text'` and `'selection'` keys are also accepted by `step()` for
+        accessibility actions).
 *   **Telemetry & Task Extras (`env.task_extras()`)**: Exposes structured
-    signals (`'accessibility_tree'`, `'logs'`, `'accessibility_events'`) and
-    custom app log extras parsed by `TaskWrapper` (see the
-    [Tasks guide](tasks_guide.md)).
+    signals (`'accessibility_tree'`, `'logs'`, `'accessibility_events'`,
+    `'battery_power'`) and custom app log extras parsed by `TaskWrapper` (see
+    the [Tasks guide](tasks_guide.md)).
 
 ### RL Environment Wrappers
 

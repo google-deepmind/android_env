@@ -8,8 +8,8 @@ To use any of these tasks in your own experiments, click on **Download** to
 download a ZIP file containing textprotos and the corresponding APKs. After
 downloading, move the `.apk` and `.textproto` files to a directory of your
 choice and take note of their path. This information is needed for
-[running](instructions.md#create-the-env) an AndroidEnv instance with the given
-task.
+[running](instructions.md#4-running-reinforcement-learning-tasks-dm_env) an
+AndroidEnv instance with the given task.
 
 <!-- mdformat off(multi-line tables are not supported well) -->
 
@@ -123,7 +123,7 @@ https://gitlab.com/ar-/apple-flinger.
 
 **apple_flinger_M_2_1**                                                 | **apple_flinger_M_2_2**                                                | **apple_flinger_M_2_18**
 ----------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------
-![Screenshot of 'apple_flinger_M_2_1'](images/apple_flinger_M_2_1.gif)) | ![Screenshot of 'apple_flinger_M_2_2'](images/apple_flinger_M_2_2.gif) | ![Screenshot of 'apple_flinger_M_2_18'](images/apple_flinger_M_2_18.gif)
+![Screenshot of 'apple_flinger_M_2_1'](images/apple_flinger_M_2_1.gif) | ![Screenshot of 'apple_flinger_M_2_2'](images/apple_flinger_M_2_2.gif) | ![Screenshot of 'apple_flinger_M_2_18'](images/apple_flinger_M_2_18.gif)
 
 ## Blockinger
 

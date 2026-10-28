@@ -35,10 +35,14 @@ v2 Architecture:
 Agent -> AndroidDevice -> WebSocket (Protobuf) -> On-Device Core Server
 ```
 
-> **Note for RL Users:** If you still require a standard `dm_env.Environment`
-> interface with MDP rewards and episode resets, use
-> `android_env.rl.environment.AndroidEnv`, which wraps `AndroidDevice` cleanly
-> without the legacy `Coordinator` stack.
+> **Breaking Changes in AndroidEnv 2.0.0:** As of v2.0.0, the legacy v1 host
+> stack (`Coordinator`, `BaseSimulator`, `EmulatorSimulator`,
+> `A11yGrpcWrapper`, and `state.proto` `load_state` / `save_state`) has been
+> removed from the open-source package. If you still require a standard
+> `dm_env.Environment` interface with MDP rewards and episode resets,
+> `android_env.load(config)` and `android_env.rl.environment.AndroidEnv` wrap
+> `AndroidDevice` directly (+ optional `TaskWrapper`) without the legacy
+> `Coordinator` stack.
 
 --------------------------------------------------------------------------------
 

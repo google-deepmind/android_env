@@ -54,7 +54,7 @@ how to put these into code.
 *   `max_episode_sec`: Puts a time limit on the episodes, triggering an episode
     reset if the current episode has lasted too long.
 
-*   `max_duration_steps`: Puts a step limit on the episodes, triggering an
+*   `max_episode_steps`: Puts a step limit on the episodes, triggering an
     episode reset once the agent has reached the specified limit.
 
 *   `log_parsing_config`: If the environment is parsing logcat messages, this
@@ -85,10 +85,10 @@ full_activity_name: "com.tpcstld.twozerogame/com.tpcstld.twozerogame.MainActivit
 setup_steps: [
   {
     # Install the 2048 app
-    adb_call: {
+    adb_request: {
       install_apk: {
         filesystem: {
-          path: path/to/classic_2048.apk
+          path: "path/to/classic_2048.apk"
         }
       }
     }
@@ -101,19 +101,19 @@ setup_steps: [
     }
   },
   # Orient the screen in portait mode
-  { adb_call: { rotate: { orientation: PORTRAIT_0 } } }
+  { adb_request: { rotate: { orientation: PORTRAIT_0 } } }
 ]
 
 # Perform these upon episode resets
 reset_steps: [
 
   # Stop the 2048 app
-  { adb_call: { force_stop: { package_name: "com.tpcstld.twozerogame" } } },
-  { adb_call: { clear_cache: { package_name: "com.tpcstld.twozerogame" } } },
+  { adb_request: { force_stop: { package_name: "com.tpcstld.twozerogame" } } },
+  { adb_request: { clear_cache: { package_name: "com.tpcstld.twozerogame" } } },
 
   # Start the 2048 app
   {
-    adb_call: {
+    adb_request: {
       start_activity: {
         full_activity: "com.tpcstld.twozerogame/com.tpcstld.twozerogame.MainActivity"
         extra_args: [
@@ -139,7 +139,7 @@ reset_steps: [
 
   # Make sure the agent cannot quit the 2048 app
   {
-    adb_call: {
+    adb_request: {
       start_screen_pinning: {
         full_activity: "com.tpcstld.twozerogame/com.tpcstld.twozerogame.MainActivity"
       }
