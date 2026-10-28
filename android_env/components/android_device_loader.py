@@ -67,6 +67,8 @@ def load_android_device(
   on_close_callbacks = []
   on_error_callbacks = []
   config.adb_path = os.path.expanduser(config.adb_path)
+  if config.server_apk_path:
+    config.server_apk_path = os.path.expanduser(config.server_apk_path)
 
   if config.emulator_launcher is not None:
     _prepare_emulator_configs(config)
@@ -163,8 +165,49 @@ def _wait_for_boot(
 
 
 def _get_core_apk_from_runfiles() -> str:
-  """Returns the path to the android_env_server APK in runfiles."""
+  """Returns the path to the bundled `android_env_server.apk`, if available."""
+
+  apk_relpath = os.path.join(
+      'apps',
+      'java',
+      'com',
+      'google',
+      'androidenv',
+      'core',
+      'android_env_server.apk',
+  )
+  candidates = [
+      os.path.normpath(
+          os.path.join(
+              os.path.dirname(os.path.abspath(__file__)), '..', apk_relpath
+          )
+      )
+  ]
+  runfiles_dir = os.environ.get('RUNFILES_DIR')
+  if runfiles_dir:
+    candidates.append(
+        os.path.join(runfiles_dir, '_main', 'android_env', apk_relpath)
+    )
+    candidates.append(os.path.join(runfiles_dir, 'android_env', apk_relpath))
+
+  for candidate in candidates:
+    if os.path.exists(candidate):
+      return candidate
   return ''
+
+
+def _resolve_server_apk_path(
+    config: config_classes.AndroidDeviceConfig,
+) -> str:
+  """Resolves the path to `android_env_server.apk`."""
+  if config.server_apk_path:
+    apk_path = os.path.expanduser(config.server_apk_path)
+    if not os.path.exists(apk_path):
+      raise FileNotFoundError(
+          f'Configured server_apk_path does not exist: {apk_path}'
+      )
+    return apk_path
+  return _get_core_apk_from_runfiles()
 
 
 def _get_prep_steps_path() -> str:
@@ -187,7 +230,7 @@ def _prep_device(
   text_format.Parse(text_content, task)
   steps = list(task.setup_steps)
 
-  apk_path = _get_core_apk_from_runfiles()
+  apk_path = _resolve_server_apk_path(config)
   if apk_path:
     steps.insert(
         1,

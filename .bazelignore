@@ -1,2 +1,3 @@
-android_env/apps
+android_env/apps/java/com/google/androidenv/catch
+android_env/apps/javatests
 android_env/playground/frontend/node_modules

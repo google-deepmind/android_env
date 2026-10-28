@@ -15,6 +15,7 @@
 
 """Unit tests for android_device_loader."""
 
+import contextlib
 import os
 import time
 from unittest import mock
@@ -385,6 +386,154 @@ class AndroidDeviceLoaderTest(absltest.TestCase):
       android_device_loader._connect_to_device(
           config, self._mock_adb, max_retries=0
       )
+
+  @mock.patch.object(
+      setup_step_interpreter, 'SetupStepInterpreter', autospec=True
+  )
+  def test_load_android_device_uses_custom_server_apk_path(
+      self, mock_interpreter_cls
+  ):
+    temp_dir = self.create_tempdir().full_path
+    custom_apk = os.path.join(temp_dir, 'custom_server.apk')
+    with open(custom_apk, 'wb') as f:
+      f.write(b'fake-apk')
+
+    with mock.patch.dict(os.environ, {'HOME': temp_dir}):
+      config = config_classes.AndroidDeviceConfig(
+          serial='device-1',
+          auto_setup=True,
+          server_apk_path='~/custom_server.apk',
+      )
+      device = android_device_loader.load_android_device(config)
+
+    self.assertEqual(device, self._mock_device)
+    self.assertEqual(config.server_apk_path, custom_apk)
+    steps = mock_interpreter_cls.return_value.interpret.call_args[0][0]
+    install_steps = [s for s in steps if s.adb_request.HasField('install_apk')]
+    self.assertLen(install_steps, 1)
+    self.assertEqual(
+        install_steps[0].adb_request.install_apk.filesystem.path,
+        custom_apk,
+    )
+
+  @mock.patch.object(android_device_loader, '_wait_for_boot', autospec=True)
+  def test_load_android_device_missing_server_apk_path_raises_and_closes(
+      self, mock_wait_boot
+  ):
+    del mock_wait_boot
+    config = config_classes.AndroidDeviceConfig(
+        emulator_launcher=config_classes.EmulatorLauncherConfig(
+            avd_name='test_avd',
+            emulator_console_port=5554,
+        ),
+        adb_controller=config_classes.AdbControllerConfig(device_name=''),
+        server_apk_path='/nonexistent/path/to/server.apk',
+    )
+    with self.assertRaisesRegex(
+        FileNotFoundError, 'Configured server_apk_path does not exist'
+    ):
+      android_device_loader.load_android_device(config)
+
+    self._mock_launcher.close.assert_called_once()
+
+  @mock.patch.object(
+      setup_step_interpreter, 'SetupStepInterpreter', autospec=True
+  )
+  def test_load_android_device_resolves_bundled_apk_relative_to_package(
+      self, mock_interpreter_cls
+  ):
+    pkg_root = self.create_tempdir().full_path
+    components_dir = os.path.join(pkg_root, 'components')
+    os.makedirs(components_dir, exist_ok=True)
+    with open(
+        os.path.join(components_dir, 'device_prep_steps.textproto'), 'w'
+    ) as f:
+      f.write('setup_steps { adb_request { generic { args: "root" } } }\n')
+
+    apk_path = os.path.join(
+        pkg_root,
+        'apps',
+        'java',
+        'com',
+        'google',
+        'androidenv',
+        'core',
+        'android_env_server.apk',
+    )
+    os.makedirs(os.path.dirname(apk_path), exist_ok=True)
+    with open(apk_path, 'wb') as f:
+      f.write(b'fake-apk')
+
+    fake_loader_file = os.path.join(components_dir, 'android_device_loader.py')
+    config = config_classes.AndroidDeviceConfig(
+        serial='device-1',
+        auto_setup=True,
+    )
+    with contextlib.ExitStack() as stack:
+      stack.enter_context(mock.patch.dict(os.environ, {'RUNFILES_DIR': ''}))
+      stack.enter_context(
+          mock.patch.object(android_device_loader, '__file__', fake_loader_file)
+      )
+      android_device_loader.load_android_device(config)
+
+    steps = mock_interpreter_cls.return_value.interpret.call_args[0][0]
+    install_steps = [s for s in steps if s.adb_request.HasField('install_apk')]
+    self.assertLen(install_steps, 1)
+    self.assertEqual(
+        install_steps[0].adb_request.install_apk.filesystem.path,
+        apk_path,
+    )
+
+  @mock.patch.object(
+      setup_step_interpreter, 'SetupStepInterpreter', autospec=True
+  )
+  def test_load_android_device_resolves_apk_from_runfiles_dir(
+      self, mock_interpreter_cls
+  ):
+    runfiles_root = self.create_tempdir().full_path
+    apk_path = os.path.join(
+        runfiles_root,
+        '_main',
+        'android_env',
+        'apps',
+        'java',
+        'com',
+        'google',
+        'androidenv',
+        'core',
+        'android_env_server.apk',
+    )
+    os.makedirs(os.path.dirname(apk_path), exist_ok=True)
+    with open(apk_path, 'wb') as f:
+      f.write(b'fake-apk')
+
+    components_dir = os.path.join(self.create_tempdir().full_path, 'components')
+    os.makedirs(components_dir, exist_ok=True)
+    with open(
+        os.path.join(components_dir, 'device_prep_steps.textproto'), 'w'
+    ) as f:
+      f.write('setup_steps { adb_request { generic { args: "root" } } }\n')
+    fake_loader_file = os.path.join(components_dir, 'android_device_loader.py')
+    config = config_classes.AndroidDeviceConfig(
+        serial='device-1',
+        auto_setup=True,
+    )
+    with contextlib.ExitStack() as stack:
+      stack.enter_context(
+          mock.patch.dict(os.environ, {'RUNFILES_DIR': runfiles_root})
+      )
+      stack.enter_context(
+          mock.patch.object(android_device_loader, '__file__', fake_loader_file)
+      )
+      android_device_loader.load_android_device(config)
+
+    steps = mock_interpreter_cls.return_value.interpret.call_args[0][0]
+    install_steps = [s for s in steps if s.adb_request.HasField('install_apk')]
+    self.assertLen(install_steps, 1)
+    self.assertEqual(
+        install_steps[0].adb_request.install_apk.filesystem.path,
+        apk_path,
+    )
 
 
 if __name__ == '__main__':

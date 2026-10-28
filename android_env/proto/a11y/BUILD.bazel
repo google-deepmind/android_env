@@ -1,3 +1,4 @@
+load("@protobuf//bazel:java_lite_proto_library.bzl", "java_lite_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("//:py_proto_library.bzl", "py_proto_library")
 
@@ -144,4 +145,34 @@ proto_library(
 py_proto_library(
     name = "rect_py_pb2",
     srcs = ["rect.proto"],
+)
+
+java_lite_proto_library(
+    name = "a11y_java_proto_lite",
+    deps = [":a11y_proto"],
+)
+
+java_lite_proto_library(
+    name = "android_accessibility_forest_java_proto_lite",
+    deps = [":android_accessibility_forest_proto"],
+)
+
+java_lite_proto_library(
+    name = "android_accessibility_node_info_java_proto_lite",
+    deps = [":android_accessibility_node_info_proto"],
+)
+
+java_lite_proto_library(
+    name = "android_accessibility_tree_java_proto_lite",
+    deps = [":android_accessibility_tree_proto"],
+)
+
+java_lite_proto_library(
+    name = "android_accessibility_window_info_java_proto_lite",
+    deps = [":android_accessibility_window_info_proto"],
+)
+
+java_lite_proto_library(
+    name = "rect_java_proto_lite",
+    deps = [":rect_proto"],
 )

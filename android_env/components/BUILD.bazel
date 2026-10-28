@@ -356,7 +356,10 @@ py_test(
 py_library(
     name = "android_device_loader",
     srcs = ["android_device_loader.py"],
-    data = ["device_prep_steps.textproto"],
+    data = [
+        "device_prep_steps.textproto",
+        "//android_env/apps/java/com/google/androidenv/core:android_env_server.apk",
+    ],
     deps = [
         ":adb_call_parser",
         ":adb_controller",

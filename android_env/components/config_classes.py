@@ -137,6 +137,9 @@ class AndroidDeviceConfig(SimulatorConfig):
   adb_path: str = 'adb'
   serial: str = ''
   auto_setup: bool = True
+  # Optional filesystem path to `android_env_server.apk`. If empty,
+  # `load_android_device` uses the bundled APK when `auto_setup` is True.
+  server_apk_path: str = ''
   # Optional launcher config. If set, loader will launch emulator.
   emulator_launcher: EmulatorLauncherConfig | None = None
   adb_controller: AdbControllerConfig | None = None

@@ -1,0 +1,76 @@
+# Copyright 2026 DeepMind Technologies Limited.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Core interfaces & Android server for AndroidEnv.
+load("@rules_android//rules:rules.bzl", "android_binary")
+load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
+load("@rules_kotlin//kotlin:core.bzl", "kt_kotlinc_options")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+kt_kotlinc_options(
+    name = "kt_kotlinc_options",
+    jvm_target = "11",
+)
+
+kt_android_library(
+    name = "server_lib",
+    srcs = [
+        "Action.kt",
+        "ActionHandler.kt",
+        "AndroidDeviceEnv.kt",
+        "AndroidDeviceEnvImpl.kt",
+        "AndroidDeviceEnvWebSocketServer.kt",
+        "BatteryPowerCollector.kt",
+        "DeviceSignal.kt",
+        "DeviceState.kt",
+        "GestureInjector.kt",
+        "InputService.kt",
+        "MainActivity.kt",
+        "MediaProjectionWrapper.kt",
+        "ProtoConversions.kt",
+        "ScreenShareProvider.kt",
+        "ScreenShareService.kt",
+        "StreamedSignal.kt",
+    ],
+    kotlinc_opts = ":kt_kotlinc_options",
+    manifest = "AndroidManifest.xml",
+    resource_files = glob(["res/**"]),
+    deps = [
+        "//android_env/proto:device_env_service_java_proto_lite",
+        "//android_env/proto/a11y:a11y_java_proto_lite",
+        "//android_env/proto/a11y:android_accessibility_forest_java_proto_lite",
+        "//android_env/proto/a11y:android_accessibility_node_info_java_proto_lite",
+        "//android_env/proto/a11y:android_accessibility_tree_java_proto_lite",
+        "//android_env/proto/a11y:android_accessibility_window_info_java_proto_lite",
+        "//android_env/proto/a11y:rect_java_proto_lite",
+        "@maven//:androidx_activity_activity",
+        "@maven//:androidx_annotation_annotation",
+        "@maven//:androidx_core_core",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:org_java_websocket_Java_WebSocket",
+        "@protobuf//:protobuf_javalite",
+    ],
+)
+
+android_binary(
+    name = "android_env_server",
+    custom_package = "com.google.androidenv.core",
+    manifest = "AndroidManifest.xml",
+    multidex = "native",
+    resource_files = glob(["res/**"]),
+    deps = [":server_lib"],
+)

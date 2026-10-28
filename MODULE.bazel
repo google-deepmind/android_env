@@ -6,7 +6,18 @@ module(
 # Core rules
 bazel_dep(name = "rules_python", version = "2.2.0")
 bazel_dep(name = "protobuf", version = "31.1")
-bazel_dep(name = "rules_proto", version = "6.0.2")
+bazel_dep(name = "rules_proto", version = "7.1.0")
+bazel_dep(name = "rules_java", version = "9.0.3")
+bazel_dep(name = "rules_android", version = "0.6.6")
+bazel_dep(name = "rules_kotlin", version = "2.1.8")
+bazel_dep(name = "rules_jvm_external", version = "6.7")
+
+# Keep protobuf aligned with rules_android's ResourceProcessorBusyBox runtime (4.31.1)
+# and the prebuilt toolchains_protoc v31.1 binary.
+single_version_override(
+    module_name = "protobuf",
+    version = "31.1",
+)
 
 # Hermetic Pre-built Protoc Toolchain
 bazel_dep(name = "toolchains_protoc", version = "0.6.1")
@@ -58,3 +69,40 @@ npm.npm_translate_lock(
     verify_node_modules_ignored = "//:.bazelignore",
 )
 use_repo(npm, "npm")
+
+# Android SDK & Maven dependencies for the on-device AndroidEnv server APK.
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+maven.override(
+    coordinates = "com.google.protobuf:protobuf-javalite",
+    target = "@protobuf//:protobuf_javalite",
+)
+maven.install(
+    aar_import_bzl_label = "@rules_android//rules:rules.bzl",
+    artifacts = [
+        "androidx.activity:activity:1.9.3",
+        "androidx.annotation:annotation:1.9.1",
+        "androidx.core:core:1.13.1",
+        "com.google.errorprone:error_prone_annotations:2.36.0",
+        "org.java-websocket:Java-WebSocket:1.5.7",
+    ],
+    repositories = [
+        "https://maven.google.com",
+        "https://repo1.maven.org/maven2",
+    ],
+    use_starlark_android_rules = True,
+)
+use_repo(maven, "maven")
+
+remote_android_extensions = use_extension(
+    "@rules_android//bzlmod_extensions:android_extensions.bzl",
+    "remote_android_tools_extensions",
+)
+use_repo(remote_android_extensions, "android_tools")
+
+android_sdk_repository_extension = use_extension(
+    "@rules_android//rules/android_sdk_repository:rule.bzl",
+    "android_sdk_repository_extension",
+)
+use_repo(android_sdk_repository_extension, "androidsdk")
+
+register_toolchains("@androidsdk//:sdk-toolchain", "@androidsdk//:all")

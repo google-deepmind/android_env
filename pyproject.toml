@@ -36,6 +36,7 @@ mcp = ["mcp>=1.26,<2"]
 playground = ["ml-collections"]
 
 [tool.setuptools.package-data]
+"android_env.apps.java.com.google.androidenv.core" = ["*.apk"]
 "android_env.components" = ["*.textproto"]
 
 [project.urls]
