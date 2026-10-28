@@ -3,50 +3,11 @@ load("@rules_python//python:defs.bzl", "py_library", "py_test")
 package(default_visibility = ["//visibility:public"])
 
 py_library(
-    name = "a11y_grpc_wrapper",
-    srcs = ["a11y_grpc_wrapper.py"],
-    deps = [
-        ":base_wrapper",
-        "//android_env:env_interface",
-        "//android_env/components:action_type",
-        "//android_env/proto:adb_py_pb2",
-        "//android_env/proto/a11y:a11y_py_pb2_grpc",
-        "//android_env/wrappers/a11y:a11y_events",
-        "//android_env/wrappers/a11y:a11y_forests",
-        "//android_env/wrappers/a11y:a11y_servicer",
-        "@pip//absl_py",
-        "@pip//dm_env",
-        "@pip//grpcio",
-        "@pip//numpy",
-        "@pip//portpicker",
-    ],
-)
-
-py_test(
-    name = "a11y_grpc_wrapper_test",
-    srcs = ["a11y_grpc_wrapper_test.py"],
-    legacy_create_init = False,
-    deps = [
-        ":a11y_grpc_wrapper",
-        "//android_env:env_interface",
-        "//android_env/proto:adb_py_pb2",
-        "//android_env/proto/a11y:a11y_py_pb2_grpc",
-        "//android_env/proto/a11y:android_accessibility_forest_py_pb2",
-        "@pip//absl_py",
-        "@pip//dm_env",
-        "@pip//grpcio",
-        "@pip//numpy",
-        "@pip//portpicker",
-    ],
-)
-
-py_library(
     name = "base_wrapper",
     srcs = ["base_wrapper.py"],
     deps = [
         "//android_env:env_interface",
         "//android_env/proto:adb_py_pb2",
-        "//android_env/proto:state_py_pb2",
         "@pip//absl_py",
         "@pip//dm_env",
         "@pip//numpy",
@@ -60,7 +21,6 @@ py_test(
     deps = [
         ":base_wrapper",
         "//android_env:env_interface",
-        "//android_env/proto:state_py_pb2",
         "@pip//absl_py",
     ],
 )

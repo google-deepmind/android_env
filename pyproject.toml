@@ -7,17 +7,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "android-env"
-version = "1.3.0"
+version = "2.0.0"
 description = "AndroidEnv environment and library for training agents."
 authors = [{name = "DeepMind"}]
 license = {file = "LICENSE"}
-readme = {text = "Read the README at https://github.com/deepmind/android_env for more information.", content-type = "text/plain"}
+readme = {text = "Read the README at https://github.com/google-deepmind/android_env for more information.", content-type = "text/plain"}
 keywords = ["Android", "OS", "reinforcement-learning"]
 requires-python = ">=3.10"
 dependencies = [
     "absl-py>=2.1.0",
     "dm_env>=1.6",
-    "grpcio>=1.70.0",
     "numpy>=2.1.0",
     "portpicker>=1.6.0",
     "protobuf>=6,<8",
@@ -32,7 +31,7 @@ testing = [
     "pytype",
 ]
 acme = ["dm-acme"]
-gym = ["gymnasium"]
+gym = ["gymnasium>=0.29.1"]
 mcp = ["mcp>=1.26,<2"]
 playground = ["ml-collections"]
 
@@ -40,6 +39,6 @@ playground = ["ml-collections"]
 "android_env.components" = ["*.textproto"]
 
 [project.urls]
-repository = "https://github.com/deepmind/android_env"
+repository = "https://github.com/google-deepmind/android_env"
 deepmind = "https://www.deepmind.com/publications/androidenv-the-android-learning-environment"
 arxiv = "https://arxiv.org/abs/2105.13231"

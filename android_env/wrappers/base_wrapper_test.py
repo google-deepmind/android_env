@@ -20,7 +20,6 @@ from unittest import mock
 from absl import logging
 from absl.testing import absltest
 from android_env import env_interface
-from android_env.proto import state_pb2
 from android_env.wrappers import base_wrapper
 
 
@@ -66,22 +65,6 @@ class BaseWrapperTest(absltest.TestCase):
     type(base_env).raw_observation = mock.PropertyMock(
         return_value=fake_raw_observation)
     self.assertEqual(fake_raw_observation, wrapped_env.raw_observation)
-
-    load_request = state_pb2.LoadStateRequest(args={})
-    expected_response = state_pb2.LoadStateResponse(
-        status=state_pb2.LoadStateResponse.Status.OK
-    )
-    base_env.load_state.return_value = expected_response
-    self.assertEqual(wrapped_env.load_state(load_request), expected_response)
-    base_env.load_state.assert_called_once_with(load_request)
-
-    save_request = state_pb2.SaveStateRequest(args={})
-    expected_response = state_pb2.SaveStateResponse(
-        status=state_pb2.SaveStateResponse.Status.OK
-    )
-    base_env.save_state.return_value = expected_response
-    self.assertEqual(wrapped_env.save_state(save_request), expected_response)
-    base_env.save_state.assert_called_once_with(save_request)
 
     wrapped_env.close()
     base_env.close.assert_called_once()

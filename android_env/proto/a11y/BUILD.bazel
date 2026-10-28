@@ -1,5 +1,5 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//:py_grpc_library.bzl", "py_grpc_library", "py_proto_library")
+load("//:py_proto_library.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -24,21 +24,6 @@ py_proto_library(
         "rect.proto",
     ],
     deps = [":android_accessibility_forest_py_pb2"],
-)
-
-py_grpc_library(
-    name = "a11y_py_pb2_grpc",
-    srcs = ["a11y.proto"],
-    proto_srcs = [
-        "android_accessibility_action.proto",
-        "android_accessibility_forest.proto",
-        "android_accessibility_node_info.proto",
-        "android_accessibility_node_info_clickable_span.proto",
-        "android_accessibility_tree.proto",
-        "android_accessibility_window_info.proto",
-        "rect.proto",
-    ],
-    deps = [":a11y_py_pb2"],
 )
 
 proto_library(

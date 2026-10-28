@@ -1,5 +1,5 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//:py_grpc_library.bzl", "py_proto_library")
+load("//:py_proto_library.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -24,16 +24,6 @@ py_proto_library(
     srcs = ["task.proto"],
     proto_srcs = ["adb.proto"],
     deps = [":adb_py_pb2"],
-)
-
-proto_library(
-    name = "state_proto",
-    srcs = ["state.proto"],
-)
-
-py_proto_library(
-    name = "state_py_pb2",
-    srcs = ["state.proto"],
 )
 
 proto_library(
