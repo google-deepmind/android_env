@@ -50,7 +50,7 @@
 $ python3 -m pip install android-env
 ```
 
-或者从 `main` 分支克隆仓库代码并通过 Bazel 进行编译与测试：
+或者从 `main` 分支克隆仓库代码并通过 Bazel 进行编译与测试（请确保环境变量 `ANDROID_HOME` 指向本地安装的 Android SDK 目录）：
 
 ```shell
 $ git clone https://github.com/google-deepmind/android_env/
@@ -105,11 +105,17 @@ with android_device_loader.load_android_device(config) as device:
 
 ### 3. 启动交互式 Web Playground
 
-直接在浏览器中实时浏览设备屏幕、检查无障碍树节点并执行 ADB 命令：
+直接在浏览器中实时浏览设备屏幕、检查无障碍树节点并执行 ADB 命令（通过 `pip install "android-env[playground]"` 安装后）：
 
 ```shell
-$ bazel run //android_env/playground:launch -- \
-    --config=android_env/configs/emulator_config.py
+$ android-env-playground --serial=emulator-5554
+```
+
+或在源码仓库中通过 Bazel 启动本地 AVD：
+
+```shell
+$ bazel run //android_env/playground:playground -- \
+    --config=android_env/playground/configs/emulator_config.py
 ```
 
 ### 4. 强化学习接入 (`dm_env`)

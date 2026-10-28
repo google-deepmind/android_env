@@ -20,7 +20,9 @@ import sys
 from unittest import mock
 
 from absl.testing import absltest
+from absl.testing import flagsaver
 from android_env.components import android_device
+from android_env.components import config_classes
 from android_env.playground import playground
 from android_env.playground import state as state_lib
 import numpy as np
@@ -134,6 +136,58 @@ class PlaygroundTest(absltest.TestCase):
     mock_thread_cls.return_value.start.assert_called_once()
     mock_serve_http.assert_called_once_with(mock.ANY, '/fake/static', 8080)
     mock_thread_cls.return_value.join.assert_called_once_with(timeout=5.0)
+
+  @mock.patch.object(playground, '_serve_http', autospec=True)
+  @mock.patch.object(
+      playground.server,
+      'get_default_static_dir',
+      autospec=True,
+      return_value='/fake/static',
+  )
+  @mock.patch.object(playground.threading, 'Thread', autospec=True)
+  def test_main_uses_serial_flag_when_config_unset(
+      self, mock_thread_cls, unused_mock_static_dir, unused_mock_serve_http
+  ):
+    with flagsaver.flagsaver((playground._SERIAL, 'emulator-5554')):
+      playground.main(['playground'])
+
+    passed_config = mock_thread_cls.call_args.kwargs['args'][1]
+    self.assertEqual(
+        passed_config,
+        config_classes.AndroidDeviceConfig(serial='emulator-5554'),
+    )
+
+  @mock.patch.object(playground, '_serve_http', autospec=True)
+  @mock.patch.object(
+      playground.server,
+      'get_default_static_dir',
+      autospec=True,
+      return_value='/fake/static',
+  )
+  @mock.patch.object(playground.threading, 'Thread', autospec=True)
+  def test_main_uses_avd_name_flag_when_config_unset(
+      self, mock_thread_cls, unused_mock_static_dir, unused_mock_serve_http
+  ):
+    with flagsaver.flagsaver((playground._AVD_NAME, 'my_test_avd')):
+      playground.main(['playground'])
+
+    passed_config = mock_thread_cls.call_args.kwargs['args'][1]
+    self.assertIsInstance(passed_config, config_classes.AndroidDeviceConfig)
+    self.assertIsNotNone(passed_config.emulator_launcher)
+    self.assertEqual(passed_config.emulator_launcher.avd_name, 'my_test_avd')
+
+  def test_main_raises_usage_error_when_serial_and_avd_name_both_set(self):
+    with flagsaver.flagsaver(
+        (playground._SERIAL, 'emulator-5554'),
+        (playground._AVD_NAME, 'my_test_avd'),
+    ):
+      with self.assertRaises(playground.app.UsageError):
+        playground.main(['playground'])
+
+  @mock.patch.object(playground.app, 'run', autospec=True)
+  def test_run_invokes_app_run(self, mock_app_run):
+    playground.run()
+    mock_app_run.assert_called_once_with(playground.main)
 
   def test_main_execution(self):
     original_setitem = playground.flags.FlagValues.__setitem__

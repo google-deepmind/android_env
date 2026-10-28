@@ -22,20 +22,47 @@ import threading
 from absl import app
 from absl import flags
 from absl import logging
+from android_env.components import config_classes
 from android_env.playground import device_runner
 from android_env.playground import log_handler
 from android_env.playground import server
 from android_env.playground import state as state_lib
 from android_env.playground import websocket
+from android_env.playground.configs import emulator_config
 from ml_collections.config_flags import config_flags
 
 _PORT = flags.DEFINE_integer('port', 8080, 'Port to serve the web interface.')
+_SERIAL = flags.DEFINE_string(
+    'serial',
+    None,
+    'ADB serial of an already-running emulator or physical device (used when'
+    ' --config is not set).',
+)
+_AVD_NAME = flags.DEFINE_string(
+    'avd_name',
+    None,
+    'Local Android Virtual Device (AVD) name to launch (used when --config is'
+    ' not set).',
+)
 _CONFIG = config_flags.DEFINE_config_file(
     'config',
     None,
     'File path to the AndroidEnv config.',
     lock_config=False,
 )
+
+
+def _resolve_config():
+  """Resolves the Playground configuration from command-line flags."""
+  if _CONFIG.value is not None:
+    return _CONFIG.value
+  if _SERIAL.value and _AVD_NAME.value:
+    raise app.UsageError('Specify at most one of --serial or --avd_name.')
+  if _SERIAL.value:
+    return config_classes.AndroidDeviceConfig(serial=_SERIAL.value)
+  if _AVD_NAME.value:
+    return emulator_config.get_config(_AVD_NAME.value)
+  return None
 
 
 def _run_device_thread(state: state_lib.PlaygroundState, config):
@@ -92,6 +119,7 @@ def _serve_http(state: state_lib.PlaygroundState, static_dir: str, port: int):
 
 
 def main(_):
+  config = _resolve_config()
   static_dir = server.get_default_static_dir()
   state = state_lib.PlaygroundState()
 
@@ -114,7 +142,7 @@ def main(_):
       target=_run_device_thread,
       args=(
           state,
-          _CONFIG.value,
+          config,
       ),
       daemon=True,
   )
@@ -135,5 +163,10 @@ def main(_):
     custom_log_handler.close()
 
 
-if __name__ == '__main__':
+def run() -> None:
+  """Console-script entry point for `android-env-playground`."""
   app.run(main)
+
+
+if __name__ == '__main__':
+  run()

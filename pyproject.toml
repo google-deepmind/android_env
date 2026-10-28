@@ -35,9 +35,14 @@ gym = ["gymnasium>=0.29.1"]
 mcp = ["mcp>=1.26,<2"]
 playground = ["ml-collections"]
 
+[project.scripts]
+android-env-mcp = "android_env.mcp.android_mcp_server:run"
+android-env-playground = "android_env.playground.playground:run"
+
 [tool.setuptools.package-data]
 "android_env.apps.java.com.google.androidenv.core" = ["*.apk"]
 "android_env.components" = ["*.textproto"]
+"android_env.playground.frontend" = ["index.html", "*.js"]
 
 [project.urls]
 repository = "https://github.com/google-deepmind/android_env"

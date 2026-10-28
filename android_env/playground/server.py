@@ -42,6 +42,7 @@ def get_default_static_dir() -> str:
     runfiles_dir = os.environ.get(env_var)
     if runfiles_dir:
       for rel_path in (
+          '_main/android_env/playground/frontend',
           'android_env/playground/frontend',
       ):
         candidate = os.path.join(runfiles_dir, rel_path)

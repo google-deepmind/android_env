@@ -131,6 +131,8 @@ class ServerTest(absltest.TestCase):
   def test_get_default_static_dir_returns_existing_dir(self):
     static_dir = server.get_default_static_dir()
     self.assertIsNotNone(static_dir)
+    self.assertTrue(os.path.exists(os.path.join(static_dir, 'index.html')))
+    self.assertTrue(os.path.exists(os.path.join(static_dir, 'main_bin.js')))
 
   @mock.patch.object(os.path, 'exists', autospec=True)
   def test_get_default_static_dir_resource_path(self, mock_exists):
@@ -163,6 +165,28 @@ class ServerTest(absltest.TestCase):
     ):
       static_dir = server.get_default_static_dir()
       self.assertEqual(static_dir, expected_dir)
+
+  @mock.patch.object(os.path, 'exists', autospec=True)
+  def test_get_default_static_dir_fallback_to_bzlmod_runfiles_dir(
+      self, mock_exists
+  ):
+    def side_effect(path):
+      return (
+          path
+          == '/fake/runfiles/_main/android_env/playground/frontend/index.html'
+      )
+
+    mock_exists.side_effect = side_effect
+    with (
+        mock.patch.object(server, '_get_resource_filename', return_value=''),
+        mock.patch.dict(
+            os.environ, {'RUNFILES_DIR': '/fake/runfiles'}, clear=True
+        ),
+    ):
+      static_dir = server.get_default_static_dir()
+      self.assertEqual(
+          static_dir, '/fake/runfiles/_main/android_env/playground/frontend'
+      )
 
   @mock.patch.object(os.path, 'exists', autospec=True)
   def test_get_default_static_dir_fallback_to_runfiles_dir(self, mock_exists):

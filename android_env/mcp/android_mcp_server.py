@@ -19,6 +19,7 @@ Provides a stdio FastMCP server entrypoint for AndroidEnv device management
 and interaction.
 
 Usage:
+  android-env-mcp --serial=emulator-5554
   python -m android_env.mcp.android_mcp_server --serial=emulator-5554
 """
 
@@ -60,5 +61,10 @@ def main(argv: Sequence[str]) -> None:
   mcp_server.run(transport='stdio')
 
 
-if __name__ == '__main__':
+def run() -> None:
+  """Console-script entry point for `android-env-mcp`."""
   app.run(main)
+
+
+if __name__ == '__main__':
+  run()

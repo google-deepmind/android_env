@@ -1,6 +1,9 @@
 load("@rules_python//python:defs.bzl", "py_binary")
 
-exports_files(["requirements.txt"])
+exports_files([
+    "README.md",
+    "requirements.txt",
+])
 
 alias(
     name = "android_env_wheel",

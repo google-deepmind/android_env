@@ -1,3 +1,4 @@
+load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
 load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 
@@ -24,11 +25,24 @@ ts_project(
     deps = [":node_modules/safevalues"],
 )
 
+esbuild(
+    name = "main_bin",
+    srcs = [
+        ":frontend_ts",
+        ":node_modules/safevalues",
+    ],
+    entry_point = "main.js",
+    format = "iife",
+    minify = True,
+    output = "main_bin.js",
+    target = "es2022",
+)
+
 filegroup(
     name = "frontend",
     srcs = [
         "index.html",
-        ":frontend_ts",
+        ":main_bin.js",
     ],
     visibility = ["//visibility:public"],
 )

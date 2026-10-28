@@ -41,8 +41,8 @@ py_test(
     ],
 )
 
-py_binary(
-    name = "android_mcp_server",
+py_library(
+    name = "android_mcp_server_lib",
     srcs = ["android_mcp_server.py"],
     deps = [
         ":android_mcp_tools",
@@ -50,5 +50,25 @@ py_binary(
         "//android_env/components:config_classes",
         "@pip//absl_py",
         "@pip//mcp",
+    ],
+)
+
+py_binary(
+    name = "android_mcp_server",
+    srcs = ["android_mcp_server.py"],
+    deps = [
+        ":android_mcp_server_lib",
+    ],
+)
+
+py_test(
+    name = "android_mcp_server_test",
+    srcs = ["android_mcp_server_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":android_mcp_server_lib",
+        "//android_env/components:android_device",
+        "//android_env/components:config_classes",
+        "@pip//absl_py",
     ],
 )

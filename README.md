@@ -82,7 +82,8 @@ Install AndroidEnv from PyPI:
 $ python3 -m pip install android-env
 ```
 
-Or clone the repository from `main` and build/test with Bazel:
+Or clone the repository from `main` and build/test with Bazel (ensure
+`ANDROID_HOME` points to a local Android SDK installation):
 
 ```shell
 $ git clone https://github.com/google-deepmind/android_env/
@@ -142,11 +143,17 @@ with android_device_loader.load_android_device(config) as device:
 ### 3. Launch the Interactive Web Playground
 
 Explore the device screen, inspect live accessibility trees, and run ADB
-commands from your browser:
+commands from your browser (after `pip install "android-env[playground]"`):
 
 ```shell
-$ bazel run //android_env/playground:launch -- \
-    --config=android_env/configs/emulator_config.py
+$ android-env-playground --serial=emulator-5554
+```
+
+Or launch a local AVD from a source checkout with Bazel:
+
+```shell
+$ bazel run //android_env/playground:playground -- \
+    --config=android_env/playground/configs/emulator_config.py
 ```
 
 ### 4. Reinforcement Learning (`dm_env`)

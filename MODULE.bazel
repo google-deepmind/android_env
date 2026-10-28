@@ -48,6 +48,7 @@ pip.parse(
 use_repo(pip, "pip")
 
 # Hermetic TypeScript and JavaScript Toolchain
+bazel_dep(name = "aspect_rules_esbuild", version = "0.25.1")
 bazel_dep(name = "aspect_rules_ts", version = "3.5.0")
 bazel_dep(name = "aspect_rules_js", version = "2.2.0")
 bazel_dep(name = "rules_nodejs", version = "6.3.3")

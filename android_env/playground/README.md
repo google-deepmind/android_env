@@ -37,7 +37,17 @@ bazel run //android_env/playground:playground -- \
 
 ### Option 2: Running with Python
 
-After installing AndroidEnv from source or via pip:
+After installing `android-env[playground]` via pip:
+
+```bash
+# Connect to an already-running emulator or physical device:
+android-env-playground --serial=emulator-5554 --port=8080
+
+# Or launch a local AVD directly by name:
+android-env-playground --avd_name=androidworld_avd --port=8080
+```
+
+Or run the module with a custom config file from a source checkout:
 
 ```bash
 python -m android_env.playground.playground \

@@ -4,6 +4,35 @@ load("@rules_python//python:packaging.bzl", "py_package", "py_wheel")
 package(default_visibility = ["//visibility:public"])
 
 py_library(
+    name = "android_env",
+    srcs = ["__init__.py"],
+    deps = [
+        ":env_interface",
+        ":loader",
+        "//android_env/components:android_device",
+        "//android_env/components:android_device_loader",
+        "//android_env/components:config_classes",
+        "//android_env/rl:environment",
+    ],
+)
+
+py_test(
+    name = "init_test",
+    srcs = ["init_test.py"],
+    legacy_create_init = False,
+    deps = [
+        ":android_env",
+        ":env_interface",
+        ":loader",
+        "//android_env/components:android_device",
+        "//android_env/components:android_device_loader",
+        "//android_env/components:config_classes",
+        "//android_env/rl:environment",
+        "@pip//absl_py",
+    ],
+)
+
+py_library(
     name = "env_interface",
     srcs = ["env_interface.py"],
     deps = [
@@ -49,10 +78,13 @@ py_package(
     name = "android_env_pkg",
     packages = ["android_env"],
     deps = [
+        ":android_env",
         ":loader",
         "//android_env/components:android_device_loader",
+        "//android_env/mcp:android_mcp_server_lib",
         "//android_env/mcp:android_mcp_tools",
         "//android_env/playground:playground_lib",
+        "//android_env/playground/configs:emulator_config",
         "//android_env/rl:environment",
         "//android_env/wrappers:discrete_action_wrapper",
         "//android_env/wrappers:flat_interface_wrapper",
@@ -70,13 +102,23 @@ py_package(
 py_wheel(
     name = "android_env_wheel",
     author = "DeepMind",
+    description_content_type = "text/markdown",
+    description_file = "//:README.md",
     distribution = "android_env",
+    entry_points = {
+        "console_scripts": [
+            "android-env-mcp = android_env.mcp.android_mcp_server:run",
+            "android-env-playground = android_env.playground.playground:run",
+        ],
+    },
     extra_requires = {
         "gym": ["gymnasium>=0.29.1"],
         "mcp": ["mcp>=1.26,<2"],
         "playground": ["ml-collections"],
     },
+    homepage = "https://github.com/google-deepmind/android_env",
     license = "Apache License, Version 2.0",
+    python_requires = ">=3.10",
     requires = [
         "absl-py>=2.1.0",
         "dm-env>=1.6",
@@ -87,7 +129,8 @@ py_wheel(
         "opencv-python-headless>=4.10.0",
         "websocket-client>=1.8.0",
     ],
-    summary = "AndroidEnv: A Gym/Gymnasium Environment for Android",
+    summary = "AndroidEnv: The Android Interaction & Learning Platform",
+    twine_binary = None,
     version = "2.0.0",
     deps = [":android_env_pkg"],
 )
