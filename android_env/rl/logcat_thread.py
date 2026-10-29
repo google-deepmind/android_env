@@ -21,7 +21,7 @@ import re
 import threading
 
 from absl import logging
-from android_env.components import log_stream as log_stream_lib
+from android_env.rl import log_stream as log_stream_lib
 
 
 @dataclasses.dataclass

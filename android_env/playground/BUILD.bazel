@@ -6,7 +6,6 @@ py_library(
     name = "actions",
     srcs = ["actions.py"],
     deps = [
-        "//android_env/components:action_type",
         "//android_env/proto:device_env_service_py_pb2",
         "@pip//numpy",
     ],
@@ -130,7 +129,6 @@ py_test(
     legacy_create_init = False,
     deps = [
         ":actions",
-        "//android_env/components:action_type",
         "@pip//absl_py",
     ],
 )

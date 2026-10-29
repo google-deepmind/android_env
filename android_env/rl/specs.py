@@ -24,7 +24,6 @@ from android_env.proto import task_pb2
 from dm_env import specs
 import numpy as np
 
-
 _PROTO_DTYPE_TO_NUMPY_DTYPE: Final[
     Mapping[task_pb2.ArraySpec.DataType.ValueType, np.dtype | type[Any]]
 ] = {
@@ -39,11 +38,11 @@ _PROTO_DTYPE_TO_NUMPY_DTYPE: Final[
     task_pb2.ArraySpec.DataType.UINT32: np.uint32,
     task_pb2.ArraySpec.DataType.UINT64: np.uint64,
     task_pb2.ArraySpec.DataType.BOOL: np.bool_,
-    task_pb2.ArraySpec.DataType.STRING_U1: np.dtype(('U1')),
-    task_pb2.ArraySpec.DataType.STRING_U16: np.dtype(('<U16')),
-    task_pb2.ArraySpec.DataType.STRING_U25: np.dtype(('<U25')),
-    task_pb2.ArraySpec.DataType.STRING_U250: np.dtype(('<U250')),
-    task_pb2.ArraySpec.DataType.STRING: np.dtype(('<U0')),
+    task_pb2.ArraySpec.DataType.STRING_U1: np.dtype('U1'),
+    task_pb2.ArraySpec.DataType.STRING_U16: np.dtype('<U16'),
+    task_pb2.ArraySpec.DataType.STRING_U25: np.dtype('<U25'),
+    task_pb2.ArraySpec.DataType.STRING_U250: np.dtype('<U250'),
+    task_pb2.ArraySpec.DataType.STRING: np.dtype('<U0'),
     task_pb2.ArraySpec.DataType.OBJECT: np.dtype('O'),
 }
 
@@ -126,20 +125,19 @@ def base_observation_spec(height: int, width: int) -> dict[str, specs.Array]:
   """
 
   return {
-      'pixels':
-          specs.BoundedArray(
-              shape=(height, width, 3),
-              dtype=np.uint8,
-              name='pixels',
-              minimum=0,
-              maximum=255),
-      'timedelta':
-          specs.Array(shape=(), dtype=np.int64, name='timedelta'),
-      'orientation':
-          specs.BoundedArray(
-              shape=np.array([4]),
-              dtype=np.uint8,
-              name='orientation',
-              minimum=0,
-              maximum=1),
+      'pixels': specs.BoundedArray(
+          shape=(height, width, 3),
+          dtype=np.uint8,
+          name='pixels',
+          minimum=0,
+          maximum=255,
+      ),
+      'timedelta': specs.Array(shape=(), dtype=np.int64, name='timedelta'),
+      'orientation': specs.BoundedArray(
+          shape=np.array([4]),
+          dtype=np.uint8,
+          name='orientation',
+          minimum=0,
+          maximum=1,
+      ),
   }

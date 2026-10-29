@@ -19,9 +19,9 @@ import re
 import threading
 
 from absl.testing import absltest
-from android_env.components import fake_log_stream
-from android_env.components import logcat_thread
 from android_env.proto import task_pb2
+from android_env.rl import fake_log_stream
+from android_env.rl import logcat_thread
 
 
 def make_stdout(data):

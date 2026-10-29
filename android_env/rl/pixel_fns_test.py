@@ -17,7 +17,7 @@ import timeit
 from absl import flags
 from absl.testing import absltest
 from absl.testing import parameterized
-from android_env.components import pixel_fns
+from android_env.rl import pixel_fns
 from dm_env import specs
 import numpy as np
 
@@ -35,9 +35,10 @@ class UtilsTest(parameterized.TestCase):
       ([0.25, 0.75], [320, 480], (80, 360)),
       ([0.0, 0.0], [320, 480], (0, 0)),
       ([1.0, 1.0], [320, 480], (319, 479)),
-      )
+  )
   def test_touch_position_to_pixel_position(
-      self, touch_pos, width_height, pixel_pos):
+      self, touch_pos, width_height, pixel_pos
+  ):
     self.assertEqual(
         pixel_fns.touch_position_to_pixel_position(
             np.array(touch_pos), width_height
@@ -83,7 +84,8 @@ class UtilsTest(parameterized.TestCase):
         dtype=np.int32,
         minimum=[0, 1, 10, -2],
         maximum=[5, 5, 20, 2],
-        name='bounded_array')
+        name='bounded_array',
+    )
     data = np.array([2, 2, 10, 0], dtype=np.int32)
     float_data = pixel_fns.convert_int_to_float(data, spec)
     np.testing.assert_equal(
@@ -92,21 +94,25 @@ class UtilsTest(parameterized.TestCase):
 
   def test_convert_int_to_float_bounded_array_broadcast(self):
     spec = specs.BoundedArray(
-        shape=(3,), dtype=np.int16, minimum=2, maximum=4, name='bounded_array')
+        shape=(3,), dtype=np.int16, minimum=2, maximum=4, name='bounded_array'
+    )
     data = np.array([2, 3, 4], dtype=np.int16)
     float_data = pixel_fns.convert_int_to_float(data, spec)
     np.testing.assert_equal(
-        np.array([0.0, 0.5, 1.0], dtype=np.float32), float_data)
+        np.array([0.0, 0.5, 1.0], dtype=np.float32), float_data
+    )
 
   def test_convert_int_to_float_no_bounds(self):
     spec = specs.Array(
         shape=(3,),
         dtype=np.int8,  # int8 implies min=-128, max=127
-        name='bounded_array')
+        name='bounded_array',
+    )
     data = np.array([-128, 0, 127], dtype=np.int16)
     float_data = pixel_fns.convert_int_to_float(data, spec)
     np.testing.assert_equal(
-        np.array([0.0, 128. / 255., 1.0], dtype=np.float32), float_data)
+        np.array([0.0, 128.0 / 255.0, 1.0], dtype=np.float32), float_data
+    )
 
 
 class PixelFnsBenchmark(absltest.TestCase):
@@ -129,7 +135,7 @@ class PixelFnsBenchmark(absltest.TestCase):
 
   def test_touch_position_to_pixel_position(self):
     setup = (
-        'from android_env.components import pixel_fns; import numpy as np; '
+        'from android_env.rl import pixel_fns; import numpy as np; '
         'touch_pos = np.array([0.5, 0.5]); width_height = [1080, 1920]'
     )
     stmt = 'pixel_fns.touch_position_to_pixel_position(touch_pos, width_height)'
@@ -144,7 +150,7 @@ class PixelFnsBenchmark(absltest.TestCase):
   def test_transpose_pixels(self):
     for size in [(320, 480), (1080, 1920)]:
       setup = (
-          'from android_env.components import pixel_fns; import numpy as np;'
+          'from android_env.rl import pixel_fns; import numpy as np;'
           f' img = np.zeros(({size[1]}, {size[0]}, 3), dtype=np.uint8)'
       )
       stmt = 'pixel_fns.transpose_pixels(img)'
@@ -166,7 +172,7 @@ class PixelFnsBenchmark(absltest.TestCase):
     for size in [(320, 480), (1080, 1920)]:
       for orientation in [1, 2, 3]:
         setup = (
-            'from android_env.components import pixel_fns; import numpy as np; '
+            'from android_env.rl import pixel_fns; import numpy as np; '
             f'img = np.zeros(({size[1]}, {size[0]}, 3), dtype=np.uint8); '
             f'orientation = {orientation}'
         )
@@ -188,7 +194,7 @@ class PixelFnsBenchmark(absltest.TestCase):
   def test_convert_int_to_float(self):
     for size in [(320, 480), (1080, 1920)]:
       setup = (
-          'from android_env.components import pixel_fns\nimport numpy as'
+          'from android_env.rl import pixel_fns\nimport numpy as'
           ' np\nfrom dm_env import specs\nspec ='
           f' specs.BoundedArray(shape=({size[1]}, {size[0]}, 3),'
           ' dtype=np.uint8, minimum=0, maximum=255)\ndata ='

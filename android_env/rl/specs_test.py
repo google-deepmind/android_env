@@ -13,12 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for specs.py."""
-
 from absl.testing import absltest
 from absl.testing import parameterized
-from android_env.components import specs
-from android_env.proto import task_pb2
+from android_env.rl import specs
 from dm_env import specs as dm_env_specs
 import numpy as np
 

@@ -23,10 +23,10 @@ from typing import Any
 from android_env import env_interface
 from android_env.components import adb_call_parser as adb_call_parser_lib
 from android_env.components import config_classes
-from android_env.components import log_stream as log_stream_lib
-from android_env.components import task_manager as task_manager_lib
 from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
+from android_env.rl import log_stream as log_stream_lib
+from android_env.rl import task_manager as task_manager_lib
 from android_env.wrappers import base_wrapper
 import dm_env
 import numpy as np

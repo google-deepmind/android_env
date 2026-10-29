@@ -70,7 +70,7 @@ class LoaderTest(absltest.TestCase):
 
   def test_load_unsupported_simulator_raises(self):
     config = config_classes.AndroidEnvConfig(
-        simulator=config_classes.SimulatorConfig()
+        simulator=None
     )
     with self.assertRaisesRegex(ValueError, 'Unsupported simulator config'):
       loader.load(config)

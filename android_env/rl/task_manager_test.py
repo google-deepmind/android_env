@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for android_env.components.task_manager.py."""
-
 import json
 import re
 from unittest import mock
@@ -23,12 +21,12 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from android_env.components import adb_call_parser as adb_call_parser_lib
 from android_env.components import config_classes
-from android_env.components import dumpsys_thread
-from android_env.components import log_stream
-from android_env.components import logcat_thread
 from android_env.components import setup_step_interpreter
-from android_env.components import task_manager
 from android_env.proto import task_pb2
+from android_env.rl import dumpsys_thread
+from android_env.rl import log_stream
+from android_env.rl import logcat_thread
+from android_env.rl import task_manager
 import numpy as np
 
 
@@ -39,7 +37,8 @@ class TaskManagerTest(parameterized.TestCase):
     self.addCleanup(mock.patch.stopall)  # Disable previous patches.
 
     self._setup_step_interpreter = mock.create_autospec(
-        setup_step_interpreter.SetupStepInterpreter)
+        setup_step_interpreter.SetupStepInterpreter
+    )
     self._dumpsys_thread = mock.create_autospec(dumpsys_thread.DumpsysThread)
     self._logcat_thread = mock.create_autospec(logcat_thread.LogcatThread)
     self._log_stream = mock.create_autospec(log_stream.LogStream)
@@ -47,16 +46,17 @@ class TaskManagerTest(parameterized.TestCase):
     mock.patch.object(
         setup_step_interpreter,
         'SetupStepInterpreter',
-        return_value=self._setup_step_interpreter).start()
+        return_value=self._setup_step_interpreter,
+    ).start()
     mock.patch.object(
-        dumpsys_thread, 'DumpsysThread',
-        return_value=self._dumpsys_thread).start()
+        dumpsys_thread, 'DumpsysThread', return_value=self._dumpsys_thread
+    ).start()
     mock.patch.object(
-        logcat_thread, 'LogcatThread',
-        return_value=self._logcat_thread).start()
+        logcat_thread, 'LogcatThread', return_value=self._logcat_thread
+    ).start()
     mock.patch.object(
-        log_stream, 'LogStream',
-        return_value=self._log_stream).start()
+        log_stream, 'LogStream', return_value=self._log_stream
+    ).start()
 
   def _assert_match(self, event: re.Pattern[str], text: str) -> re.Match[str]:
     self.assertRegex(text, event)
@@ -105,9 +105,9 @@ class TaskManagerTest(parameterized.TestCase):
       event_listener.handler_fn(event_listener.regexp, match)
 
     task = task_pb2.Task()
-    task.log_parsing_config.log_regexps.reward.extend([
-        '^[Rr]eward: ([-+]?[0-9]*\\.?[0-9]*)$'
-    ])
+    task.log_parsing_config.log_regexps.reward.extend(
+        ['^[Rr]eward: ([-+]?[0-9]*\\.?[0-9]*)$']
+    )
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
@@ -116,7 +116,8 @@ class TaskManagerTest(parameterized.TestCase):
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
-        })
+        }
+    )
     self.assertEqual(timestep.reward, 123.0)
     np.testing.assert_equal(timestep.observation['pixels'], np.array([1, 2, 3]))
 
@@ -137,13 +138,17 @@ class TaskManagerTest(parameterized.TestCase):
 
     task = task_pb2.Task()
     reward_event_1 = task_pb2.LogParsingConfig.LogRegexps.RewardEvent(
-        event='foo_1', reward=5.0)
+        event='foo_1', reward=5.0
+    )
     reward_event_2 = task_pb2.LogParsingConfig.LogRegexps.RewardEvent(
-        event='foo_2', reward=-1.0)
+        event='foo_2', reward=-1.0
+    )
     task.log_parsing_config.log_regexps.reward_event.extend(
-        [reward_event_1, reward_event_2])
+        [reward_event_1, reward_event_2]
+    )
     task.log_parsing_config.log_regexps.reward.extend(
-        ['^[Rr]eward: ([-+]?[0-9]*\\.?[0-9]*)$'])
+        ['^[Rr]eward: ([-+]?[0-9]*\\.?[0-9]*)$']
+    )
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
@@ -152,7 +157,8 @@ class TaskManagerTest(parameterized.TestCase):
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
-        })
+        }
+    )
     self.assertEqual(timestep.reward, 6.0)
 
   def test_get_current_reward_via_score(self):
@@ -174,7 +180,8 @@ class TaskManagerTest(parameterized.TestCase):
 
     task = task_pb2.Task()
     task.log_parsing_config.log_regexps.score = (
-        '^score: ([-+]?[0-9]*\\.?[0-9]*)$')
+        '^score: ([-+]?[0-9]*\\.?[0-9]*)$'
+    )
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
@@ -183,7 +190,8 @@ class TaskManagerTest(parameterized.TestCase):
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
-        })
+        }
+    )
     self.assertEqual(timestep.reward, 185.0)
 
   def test_get_current_extras(self):
@@ -211,9 +219,9 @@ class TaskManagerTest(parameterized.TestCase):
 
     # Setup the task and trigger the listener.
     task = task_pb2.Task()
-    task.log_parsing_config.log_regexps.extra.extend([
-        '^extra: (?P<name>[^ ]*)[ ]?(?P<extra>.*)$'
-    ])
+    task.log_parsing_config.log_regexps.extra.extend(
+        ['^extra: (?P<name>[^ ]*)[ ]?(?P<extra>.*)$']
+    )
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
@@ -223,16 +231,19 @@ class TaskManagerTest(parameterized.TestCase):
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
-        })
+        }
+    )
 
     # Check expectations.
     self.assertIn('extras', timestep.observation)
     extras = timestep.observation['extras']
-    np.testing.assert_almost_equal([[1, 2, 3], [4, 5, 6]],
-                                   extras.get('an_extra'))
+    np.testing.assert_almost_equal(
+        [[1, 2, 3], [4, 5, 6]], extras.get('an_extra')
+    )
     np.testing.assert_almost_equal([0.5], extras.get('another_extra'))
-    np.testing.assert_almost_equal([[[9, 8, 7], [6, 5, 4]]],
-                                   extras.get('multi_dimension_extra'))
+    np.testing.assert_almost_equal(
+        [[[9, 8, 7], [6, 5, 4]]], extras.get('multi_dimension_extra')
+    )
     np.testing.assert_equal([1], extras.get('boolean_extra'))
 
   def test_get_current_extras_json_format(self):
@@ -249,10 +260,8 @@ class TaskManagerTest(parameterized.TestCase):
       extra = {
           'extra_scalar': 0,
           'extra_list': [1, 2, 3, 4],
-          'extra_dict': {
-              'foo': 'bar'
-          },
-          'extra_string': 'a_string'
+          'extra_dict': {'foo': 'bar'},
+          'extra_string': 'a_string',
       }
       extra_update = {'extra_string': 'a_new_string', 'extra_float': 0.6}
       fn = event_listener.handler_fn
@@ -264,9 +273,9 @@ class TaskManagerTest(parameterized.TestCase):
 
     # Setup the task and trigger the listener.
     task = task_pb2.Task()
-    task.log_parsing_config.log_regexps.json_extra.extend([
-        '^json_extra: (?P<json_extra>.*)$'
-    ])
+    task.log_parsing_config.log_regexps.json_extra.extend(
+        ['^json_extra: (?P<json_extra>.*)$']
+    )
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
@@ -276,7 +285,8 @@ class TaskManagerTest(parameterized.TestCase):
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
-        })
+        }
+    )
 
     # Check expectations.
     self.assertIn('extras', timestep.observation)
@@ -284,11 +294,9 @@ class TaskManagerTest(parameterized.TestCase):
     expected_extra = {
         'extra_scalar': [0],
         'extra_list': [[1, 2, 3, 4]],
-        'extra_dict': [{
-            'foo': 'bar'
-        }],
+        'extra_dict': [{'foo': 'bar'}],
         'extra_string': ['a_string', 'a_new_string'],
-        'extra_float': [0.6]
+        'extra_float': [0.6],
     }
     with self.subTest(name='extra_scalar'):
       np.testing.assert_almost_equal(
@@ -347,9 +355,9 @@ class TaskManagerTest(parameterized.TestCase):
 
     # Setup the task and trigger the listener.
     task = task_pb2.Task()
-    task.log_parsing_config.log_regexps.extra.extend([
-        '^extra: (?P<name>[^ ]*)[ ]?(?P<extra>.*)$'
-    ])
+    task.log_parsing_config.log_regexps.extra.extend(
+        ['^extra: (?P<name>[^ ]*)[ ]?(?P<extra>.*)$']
+    )
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
     adb_call_parser = mock.create_autospec(adb_call_parser_lib.AdbCallParser)
@@ -359,13 +367,15 @@ class TaskManagerTest(parameterized.TestCase):
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
-        })
+        }
+    )
 
     # Check expectations.
     self.assertIn('extras', timestep.observation)
     extras = timestep.observation['extras']
-    np.testing.assert_almost_equal(extras.get('extra_with_malformed_1'),
-                                   [[1], [2]])
+    np.testing.assert_almost_equal(
+        extras.get('extra_with_malformed_1'), [[1], [2]]
+    )
     np.testing.assert_almost_equal(extras.get('extra_with_malformed_2'), [[1]])
     self.assertNotIn('extra_malformed_only', extras)
 
@@ -383,7 +393,7 @@ class TaskManagerTest(parameterized.TestCase):
     task = task_pb2.Task()
     task.log_parsing_config.log_regexps.reward.extend([
         '^[Rr]eward_1: ([-+]?[0-9]*\\.?[0-9]*)$',
-        '^[Rr]eward_2: ([-+]?[0-9]*\\.?[0-9]*)$'
+        '^[Rr]eward_2: ([-+]?[0-9]*\\.?[0-9]*)$',
     ])
     task_mgr = task_manager.TaskManager(task=task)
     self._logcat_thread.add_event_listener.side_effect = my_add_ev_listener
@@ -393,7 +403,8 @@ class TaskManagerTest(parameterized.TestCase):
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
-        })
+        }
+    )
     self.assertEqual(timestep.reward, 123.0)
 
   def test_multi_reward_regexp(self):
@@ -424,7 +435,8 @@ class TaskManagerTest(parameterized.TestCase):
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
-        })
+        }
+    )
     self.assertEqual(timestep.reward, 15.0)
 
   def test_determine_transition_fn(self):
@@ -449,7 +461,8 @@ class TaskManagerTest(parameterized.TestCase):
     timestep = task_mgr.rl_step(
         observation={
             'pixels': np.array([1, 2, 3]),
-        })
+        }
+    )
     self.assertTrue(timestep.last())
 
   def test_setup_task_before_start_raises_assertion(self):

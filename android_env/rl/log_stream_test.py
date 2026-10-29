@@ -16,7 +16,7 @@
 """Unit tests for log_stream, verifying filtering and pause/resume."""
 
 from absl.testing import absltest
-from android_env.components import fake_log_stream
+from android_env.rl import fake_log_stream
 
 
 def _create_fake_log_stream(filter_name: str) -> fake_log_stream.FakeLogStream:

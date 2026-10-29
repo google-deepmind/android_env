@@ -19,7 +19,7 @@ from unittest import mock
 
 from absl.testing import absltest
 from android_env.components import config_classes
-from android_env.components.simulators.emulator import tcp_ports
+from android_env.components import tcp_ports
 import portpicker
 
 

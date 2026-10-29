@@ -16,7 +16,6 @@
 """Action mapping functions for AndroidEnv Playground."""
 
 import dataclasses
-from android_env.components import action_type
 from android_env.proto import device_env_service_pb2
 import numpy as np
 
@@ -65,29 +64,6 @@ def coalesce_actions(actions: list[ClientAction]) -> list[ClientAction]:
     else:
       compressed.append(act)
   return compressed
-
-
-def map_action_type(act_str: str) -> action_type.ActionType:
-  """Maps client action string to AndroidEnv ActionType."""
-  match act_str:
-    case 'touch_down' | 'touch_move':
-      return action_type.ActionType.TOUCH
-    case 'touch_up':
-      return action_type.ActionType.LIFT
-    case 'text':
-      return action_type.ActionType.TEXT
-    case 'keydown':
-      return action_type.ActionType.KEYDOWN
-    case 'set_selection':
-      return action_type.ActionType.SET_SELECTION
-    case 'cut':
-      return action_type.ActionType.CUT
-    case 'copy':
-      return action_type.ActionType.COPY
-    case 'paste':
-      return action_type.ActionType.PASTE
-    case _:
-      return action_type.ActionType.REPEAT
 
 
 def map_client_action_to_proto(

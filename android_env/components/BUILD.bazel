@@ -84,21 +84,21 @@ py_library(
 )
 
 py_library(
-    name = "dumpsys_thread",
-    srcs = ["dumpsys_thread.py"],
+    name = "emulator_launcher",
+    srcs = ["emulator_launcher.py"],
     deps = [
-        ":app_screen_checker",
+        ":config_classes",
         "@pip//absl_py",
     ],
 )
 
 py_test(
-    name = "dumpsys_thread_test",
-    srcs = ["dumpsys_thread_test.py"],
+    name = "emulator_launcher_test",
+    srcs = ["emulator_launcher_test.py"],
     legacy_create_init = False,
     deps = [
-        ":app_screen_checker",
-        ":dumpsys_thread",
+        ":config_classes",
+        ":emulator_launcher",
         "@pip//absl_py",
     ],
 )
@@ -114,53 +114,6 @@ py_test(
     legacy_create_init = False,
     deps = [
         ":errors",
-        "@pip//absl_py",
-    ],
-)
-
-py_library(
-    name = "logcat_thread",
-    srcs = ["logcat_thread.py"],
-    deps = [
-        ":log_stream",
-        "@pip//absl_py",
-    ],
-)
-
-py_test(
-    name = "logcat_thread_test",
-    srcs = ["logcat_thread_test.py"],
-    legacy_create_init = False,
-    deps = [
-        ":fake_log_stream",
-        ":logcat_thread",
-        "//android_env/proto:task_py_pb2",
-        "@pip//absl_py",
-    ],
-)
-
-py_library(
-    name = "log_stream",
-    srcs = ["log_stream.py"],
-    deps = [
-        "@pip//absl_py",
-    ],
-)
-
-py_library(
-    name = "fake_log_stream",
-    srcs = ["fake_log_stream.py"],
-    deps = [
-        ":log_stream",
-    ],
-)
-
-py_test(
-    name = "log_stream_test",
-    srcs = ["log_stream_test.py"],
-    legacy_create_init = False,
-    deps = [
-        ":fake_log_stream",
         "@pip//absl_py",
     ],
 )
@@ -194,82 +147,24 @@ py_test(
 )
 
 py_library(
-    name = "specs",
-    srcs = ["specs.py"],
+    name = "tcp_ports",
+    srcs = ["tcp_ports.py"],
     deps = [
-        ":action_type",
-        "//android_env/proto:task_py_pb2",
-        "@pip//dm_env",
-        "@pip//numpy",
-    ],
-)
-
-py_test(
-    name = "specs_test",
-    srcs = ["specs_test.py"],
-    legacy_create_init = False,
-    deps = [
-        ":specs",
-        "//android_env/proto:task_py_pb2",
-        "@pip//absl_py",
-        "@pip//numpy",
-    ],
-)
-
-py_library(
-    name = "task_manager",
-    srcs = ["task_manager.py"],
-    deps = [
-        ":adb_call_parser",
-        ":app_screen_checker",
         ":config_classes",
-        ":dumpsys_thread",
-        ":log_stream",
-        ":logcat_thread",
-        ":setup_step_interpreter",
-        "//android_env/proto:task_py_pb2",
         "@pip//absl_py",
-        "@pip//dm_env",
-        "@pip//numpy",
+        "@pip//portpicker",
     ],
 )
 
 py_test(
-    name = "task_manager_test",
-    srcs = ["task_manager_test.py"],
+    name = "tcp_ports_test",
+    srcs = ["tcp_ports_test.py"],
     legacy_create_init = False,
     deps = [
-        ":adb_call_parser",
         ":config_classes",
-        ":dumpsys_thread",
-        ":log_stream",
-        ":logcat_thread",
-        ":setup_step_interpreter",
-        ":task_manager",
-        "//android_env/proto:task_py_pb2",
+        ":tcp_ports",
         "@pip//absl_py",
-        "@pip//numpy",
-    ],
-)
-
-py_library(
-    name = "pixel_fns",
-    srcs = ["pixel_fns.py"],
-    deps = [
-        "@pip//dm_env",
-        "@pip//numpy",
-    ],
-)
-
-py_test(
-    name = "pixel_fns_test",
-    srcs = ["pixel_fns_test.py"],
-    legacy_create_init = False,
-    deps = [
-        ":pixel_fns",
-        "@pip//absl_py",
-        "@pip//dm_env",
-        "@pip//numpy",
+        "@pip//portpicker",
     ],
 )
 
@@ -366,10 +261,10 @@ py_library(
         ":android_device",
         ":config_classes",
         ":device_connection",
+        ":emulator_launcher",
         ":errors",
         ":setup_step_interpreter",
-        "//android_env/components/simulators/emulator:emulator_launcher",
-        "//android_env/components/simulators/emulator:tcp_ports",
+        ":tcp_ports",
         "//android_env/proto:adb_py_pb2",
         "//android_env/proto:task_py_pb2",
         "@pip//absl_py",
@@ -389,10 +284,10 @@ py_test(
         ":android_device_loader",
         ":config_classes",
         ":device_connection",
+        ":emulator_launcher",
         ":errors",
         ":setup_step_interpreter",
-        "//android_env/components/simulators/emulator:emulator_launcher",
-        "//android_env/components/simulators/emulator:tcp_ports",
+        ":tcp_ports",
         "@pip//absl_py",
     ],
 )

@@ -43,18 +43,6 @@ class AdbControllerConfig:
   use_adb_server_port_from_os_env: bool = False
 
 
-@dataclasses.dataclass
-class SimulatorConfig:
-  """Base class for all simulator configs."""
-
-  # If true, the log stream of the simulator will be verbose.
-  verbose_logs: bool = False
-  # How often to (asynchronously) grab the screenshot from the simulator.
-  # If <= 0, stepping the environment blocks on fetching the screenshot (the
-  # environment is synchronous).
-  interaction_rate_sec: float = 0.0
-
-
 @enum.unique
 class GPUMode(enum.Enum):
   """Emulator GPU Mode."""
@@ -81,7 +69,7 @@ class EmulatorLauncherConfig:
   # Path to the KVM device.
   kvm_device: str = '/dev/kvm'
   # Path to directory which will hold temporary files.
-  tmp_dir: str = '/tmp/android_env/simulator/'
+  tmp_dir: str = '/tmp/android_env/emulator/'
   # GPU mode override.
   # Please see
   # https://developer.android.com/studio/run/emulator-acceleration#accel-graphics.
@@ -128,7 +116,7 @@ class DeviceConnectionConfig:
 
 
 @dataclasses.dataclass
-class AndroidDeviceConfig(SimulatorConfig):
+class AndroidDeviceConfig:
   """Config class for AndroidDevice (on-device Core server)."""
 
   device_connection: DeviceConnectionConfig = dataclasses.field(
@@ -188,6 +176,6 @@ class AndroidEnvConfig:
   task_manager: TaskManagerConfig = dataclasses.field(
       default_factory=TaskManagerConfig
   )
-  simulator: SimulatorConfig = dataclasses.field(
+  simulator: AndroidDeviceConfig = dataclasses.field(
       default_factory=AndroidDeviceConfig
   )

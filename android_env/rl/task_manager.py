@@ -33,11 +33,11 @@ from absl import logging
 from android_env.components import adb_call_parser as adb_call_parser_lib
 from android_env.components import app_screen_checker
 from android_env.components import config_classes
-from android_env.components import dumpsys_thread
-from android_env.components import log_stream as log_stream_lib
-from android_env.components import logcat_thread
 from android_env.components import setup_step_interpreter
 from android_env.proto import task_pb2
+from android_env.rl import dumpsys_thread
+from android_env.rl import log_stream as log_stream_lib
+from android_env.rl import logcat_thread
 import dm_env
 import numpy as np
 
@@ -397,6 +397,7 @@ class TaskManager:
         del event, match
         with self._lock:
           self._latest_values['reward'] += reward
+
       return _reward_event_handler
 
     return (

@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for android_env.components.emulator_launcher."""
-
 import builtins
 import os
 import subprocess
@@ -24,7 +22,7 @@ from unittest import mock
 from absl.testing import absltest
 from absl.testing import parameterized
 from android_env.components import config_classes
-from android_env.components.simulators.emulator import emulator_launcher
+from android_env.components import emulator_launcher
 
 
 class EmulatorLauncherTest(parameterized.TestCase):
@@ -57,8 +55,10 @@ class EmulatorLauncherTest(parameterized.TestCase):
 
     base_lib_dir = self._emulator_path[:-8] + 'lib64/'
     ld_library_path = ':'.join([
-        base_lib_dir + 'x11/', base_lib_dir + 'qt/lib/',
-        base_lib_dir + 'gles_swiftshader/', base_lib_dir
+        base_lib_dir + 'x11/',
+        base_lib_dir + 'qt/lib/',
+        base_lib_dir + 'gles_swiftshader/',
+        base_lib_dir,
     ])
 
     # Instantiate the config to extract default values.
@@ -209,16 +209,18 @@ class EmulatorLauncherTest(parameterized.TestCase):
     )
 
     expected_snapshot = [
-        '-snapshot', 'my_snapshot', '-feature',
-        'AllowSnapshotMigration,MigratableSnapshotSave'
+        '-snapshot',
+        'my_snapshot',
+        '-feature',
+        'AllowSnapshotMigration,MigratableSnapshotSave',
     ]
 
     expected_env_vars = self._expected_env_vars
     expected_env_vars['SHOW_PERF_STATS'] = '1' if show_perf_stats else '0'
 
     with mock.patch.object(
-        subprocess, 'Popen', autospec=True) as emulator_init, \
-        mock.patch.object(builtins, 'open', autospec=True) as f:
+        subprocess, 'Popen', autospec=True
+    ) as emulator_init, mock.patch.object(builtins, 'open', autospec=True) as f:
       f.return_value.__enter__ = f()
       launcher.launch_emulator_process()
       emulator_init.assert_called_once_with(
@@ -266,16 +268,18 @@ class EmulatorLauncherTest(parameterized.TestCase):
 
     expected_snapshot = ['-no-snapshot']
     expected_network_restrict = [
-        '-network-user-mode-options', 'restrict=y', '-wifi-user-mode-options',
-        'restrict=y'
+        '-network-user-mode-options',
+        'restrict=y',
+        '-wifi-user-mode-options',
+        'restrict=y',
     ]
 
     expected_env_vars = self._expected_env_vars
     expected_env_vars['SHOW_PERF_STATS'] = '1' if show_perf_stats else '0'
 
     with mock.patch.object(
-        subprocess, 'Popen', autospec=True) as emulator_init, \
-        mock.patch.object(builtins, 'open', autospec=True) as f:
+        subprocess, 'Popen', autospec=True
+    ) as emulator_init, mock.patch.object(builtins, 'open', autospec=True) as f:
       f.return_value.__enter__ = f()
       launcher.launch_emulator_process()
       emulator_init.assert_called_once_with(

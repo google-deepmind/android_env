@@ -27,10 +27,10 @@ from android_env import env_interface
 from android_env.components import action_type
 from android_env.components import android_device
 from android_env.components import telemetry
-from android_env.components.specs import base_action_spec
-from android_env.components.specs import base_observation_spec
 from android_env.proto import adb_pb2
 from android_env.proto import device_env_service_pb2
+from android_env.rl.specs import base_action_spec
+from android_env.rl.specs import base_observation_spec
 import dm_env
 from dm_env import specs
 import numpy as np

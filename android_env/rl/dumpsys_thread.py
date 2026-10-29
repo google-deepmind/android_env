@@ -41,13 +41,13 @@ class DumpsysThread:
 
     Args:
       app_screen_checker: The class that actually determines if the current
-          screen matches the expected screen.
+        screen matches the expected screen.
       check_frequency: Integer. We only call dumpsys 1/check_frequency times in
-          each iteration of the while loop below.
+        each iteration of the while loop below.
       max_failed_current_activity: Integer. We try to fetch the current activity
-          but sometimes it fails. If it fails more than
-          `max_failed_current_activity` consecutive times, we declare that the
-          user has exited `expected_activity`.
+        but sometimes it fails. If it fails more than
+        `max_failed_current_activity` consecutive times, we declare that the
+        user has exited `expected_activity`.
     """
 
     self._app_screen_checker = app_screen_checker
@@ -55,7 +55,7 @@ class DumpsysThread:
     self._check_frequency = check_frequency
     self._max_failed_activity_extraction = max_failed_current_activity
     self._num_failed_activity_extraction = 0
-    self._latest_check: concurrent.futures.Future | None = None
+    self._latest_check: concurrent.futures.Future[bool] | None = None
 
   def check_user_exited(self, timeout: float | None = None) -> bool:
     """Returns True if the user is not in the expected screen.
@@ -72,8 +72,10 @@ class DumpsysThread:
 
     # Update and check loop_counter against check_frequency.
     self._main_loop_counter += 1
-    if (self._check_frequency <= 0 or
-        self._main_loop_counter < self._check_frequency):
+    if (
+        self._check_frequency <= 0
+        or self._main_loop_counter < self._check_frequency
+    ):
       return False
     self._main_loop_counter = 0
 
@@ -99,10 +101,14 @@ class DumpsysThread:
     # We were unable to determine the current activity.
     if outcome == _Outcome.FAILED_ACTIVITY_EXTRACTION:
       self._num_failed_activity_extraction += 1
-      logging.info('self._num_failed_activity_extraction: %s',
-                   self._num_failed_activity_extraction)
-      if (self._num_failed_activity_extraction >=
-          self._max_failed_activity_extraction):
+      logging.info(
+          'self._num_failed_activity_extraction: %s',
+          self._num_failed_activity_extraction,
+      )
+      if (
+          self._num_failed_activity_extraction
+          >= self._max_failed_activity_extraction
+      ):
         logging.error('Maximum number of failed activity extraction reached.')
         self._num_failed_activity_extraction = 0
         return True
@@ -110,8 +116,10 @@ class DumpsysThread:
       self._num_failed_activity_extraction = 0
 
     # The current app screen matches all expectations.
-    if (outcome == _Outcome.SUCCESS or
-        outcome == _Outcome.EMPTY_EXPECTED_ACTIVITY):
+    if (
+        outcome == _Outcome.SUCCESS
+        or outcome == _Outcome.EMPTY_EXPECTED_ACTIVITY
+    ):
       return False
 
     # Player has exited the app. Terminate the episode.

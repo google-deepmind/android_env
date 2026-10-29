@@ -17,7 +17,6 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from android_env.components import action_type
 from android_env.playground import actions as actions_lib
 from android_env.proto import device_env_service_pb2
 import numpy as np
@@ -75,21 +74,6 @@ class ActionsTest(parameterized.TestCase):
         actions[3],
     ]
     self.assertEqual(actions_lib.coalesce_actions(actions), expected)
-
-  @parameterized.parameters(
-      ('touch_down', action_type.ActionType.TOUCH),
-      ('touch_move', action_type.ActionType.TOUCH),
-      ('touch_up', action_type.ActionType.LIFT),
-      ('text', action_type.ActionType.TEXT),
-      ('keydown', action_type.ActionType.KEYDOWN),
-      ('set_selection', action_type.ActionType.SET_SELECTION),
-      ('cut', action_type.ActionType.CUT),
-      ('copy', action_type.ActionType.COPY),
-      ('paste', action_type.ActionType.PASTE),
-      ('random', action_type.ActionType.REPEAT),
-  )
-  def test_map_action_type(self, act_str, expected):
-    self.assertEqual(actions_lib.map_action_type(act_str), expected)
 
   @parameterized.parameters(
       (

@@ -20,9 +20,9 @@ from unittest import mock
 
 from absl.testing import absltest
 from android_env import env_interface
-from android_env.components import fake_log_stream
 from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
+from android_env.rl import fake_log_stream
 from android_env.wrappers import task_wrapper
 import dm_env
 import numpy as np

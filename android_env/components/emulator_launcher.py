@@ -45,11 +45,11 @@ class EmulatorLauncher:
     # Note: this will be deleted once EmulatorLauncher instance is cleaned up.
     os.makedirs(config.tmp_dir, exist_ok=True)
     self._local_tmp_dir_handle = tempfile.TemporaryDirectory(
-        dir=config.tmp_dir, prefix='simulator_instance_'
+        dir=config.tmp_dir, prefix='emulator_instance_'
     )
     self._local_tmp_dir = self._local_tmp_dir_handle.name
     self._logfile_path = os.path.join(self._local_tmp_dir, 'emulator_output')
-    logging.info('Simulator local_tmp_dir: %s', self._local_tmp_dir)
+    logging.info('Emulator local_tmp_dir: %s', self._local_tmp_dir)
 
   def logfile_path(self) -> str:
     return self._logfile_path
@@ -62,8 +62,10 @@ class EmulatorLauncher:
     # Set necessary environment variables.
     base_lib_dir = self._config.emulator_path[:-8] + 'lib64/'
     ld_library_path = ':'.join([
-        base_lib_dir + 'x11/', base_lib_dir + 'qt/lib/',
-        base_lib_dir + 'gles_swiftshader/', base_lib_dir
+        base_lib_dir + 'x11/',
+        base_lib_dir + 'qt/lib/',
+        base_lib_dir + 'gles_swiftshader/',
+        base_lib_dir,
     ])
     extra_env_vars = {
         'ANDROID_HOME': '',
@@ -80,8 +82,10 @@ class EmulatorLauncher:
         'ANDROID_EMU_ENABLE_CRASH_REPORTING': '1',
         'SHOW_PERF_STATS': str(1 if self._config.show_perf_stats else 0),
     }
-    logging.info('extra_env_vars: %s',
-                 ' '.join(f'{k}={v}' for k, v in extra_env_vars.items()))
+    logging.info(
+        'extra_env_vars: %s',
+        ' '.join(f'{k}={v}' for k, v in extra_env_vars.items()),
+    )
     env_vars = dict(os.environ).copy()
     env_vars.update(extra_env_vars)
 
@@ -106,8 +110,10 @@ class EmulatorLauncher:
     ]
     snapshot = snapshot if self._config.snapshot_name else ['-no-snapshot']
     restrict_network_args = [
-        '-network-user-mode-options', 'restrict=y', '-wifi-user-mode-options',
-        'restrict=y'
+        '-network-user-mode-options',
+        'restrict=y',
+        '-wifi-user-mode-options',
+        'restrict=y',
     ]
     network_args = (
         restrict_network_args if self._config.restrict_network else []
@@ -140,7 +146,8 @@ class EmulatorLauncher:
         command,
         env=env_vars,
         stdout=self._emulator_output,
-        stderr=self._emulator_output)
+        stderr=self._emulator_output,
+    )
 
   def confirm_shutdown(self) -> None:
     """Shuts down the emulator process."""
@@ -152,7 +159,8 @@ class EmulatorLauncher:
         logging.exception(
             'The emulator process did not finish after 30s. '
             'returncode: %s. Will now try to kill() it.',
-            self._emulator.returncode)
+            self._emulator.returncode,
+        )
         self._emulator.kill()
       self._emulator = None
 

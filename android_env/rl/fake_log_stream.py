@@ -17,7 +17,7 @@
 
 from collections.abc import Callable, Generator, Iterable, Sequence
 import queue
-from android_env.components import log_stream
+from android_env.rl import log_stream
 
 
 class FakeLogStream(log_stream.LogStream):

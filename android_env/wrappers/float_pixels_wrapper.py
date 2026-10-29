@@ -16,7 +16,7 @@
 """Converts pixel observation to from int to float32 between 0.0 and 1.0."""
 
 from android_env import env_interface
-from android_env.components import pixel_fns
+from android_env.rl import pixel_fns
 from android_env.wrappers import base_wrapper
 import dm_env
 from dm_env import specs

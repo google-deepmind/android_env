@@ -13,13 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for android_env.components.dumpsys_thread."""
-
 from unittest import mock
 
 from absl.testing import absltest
 from android_env.components import app_screen_checker as screen_checker
-from android_env.components import dumpsys_thread
+from android_env.rl import dumpsys_thread
 
 
 class DumpsysThreadTest(absltest.TestCase):
@@ -27,11 +25,13 @@ class DumpsysThreadTest(absltest.TestCase):
   def setUp(self):
     super().setUp()
     self._app_screen_checker = mock.create_autospec(
-        screen_checker.AppScreenChecker)
+        screen_checker.AppScreenChecker
+    )
 
   def test_unexpected_activity(self):
     dumpsys = dumpsys_thread.DumpsysThread(
-        app_screen_checker=self._app_screen_checker, check_frequency=1)
+        app_screen_checker=self._app_screen_checker, check_frequency=1
+    )
     outcome = screen_checker.AppScreenChecker.Outcome.UNEXPECTED_ACTIVITY
     self._app_screen_checker.matches_current_app_screen.return_value = outcome
     # The first time that `check_user_exited()` is called, it'll only trigger
@@ -42,7 +42,8 @@ class DumpsysThreadTest(absltest.TestCase):
 
   def test_unexpected_view_hierarchy(self):
     dumpsys = dumpsys_thread.DumpsysThread(
-        app_screen_checker=self._app_screen_checker, check_frequency=1)
+        app_screen_checker=self._app_screen_checker, check_frequency=1
+    )
     outcome = screen_checker.AppScreenChecker.Outcome.UNEXPECTED_VIEW_HIERARCHY
     self._app_screen_checker.matches_current_app_screen.return_value = outcome
     self.assertFalse(dumpsys.check_user_exited(timeout=1.0))
@@ -50,7 +51,8 @@ class DumpsysThreadTest(absltest.TestCase):
 
   def test_success(self):
     dumpsys = dumpsys_thread.DumpsysThread(
-        app_screen_checker=self._app_screen_checker, check_frequency=1)
+        app_screen_checker=self._app_screen_checker, check_frequency=1
+    )
     outcome = screen_checker.AppScreenChecker.Outcome.SUCCESS
     self._app_screen_checker.matches_current_app_screen.return_value = outcome
     self.assertFalse(dumpsys.check_user_exited(timeout=1.0))
@@ -58,10 +60,11 @@ class DumpsysThreadTest(absltest.TestCase):
 
   def test_skipped(self):
     dumpsys = dumpsys_thread.DumpsysThread(
-        app_screen_checker=self._app_screen_checker, check_frequency=5)
+        app_screen_checker=self._app_screen_checker, check_frequency=5
+    )
     self._app_screen_checker.matches_current_app_screen.side_effect = [
         screen_checker.AppScreenChecker.Outcome.SUCCESS,
-        screen_checker.AppScreenChecker.Outcome.FAILED_ACTIVITY_EXTRACTION
+        screen_checker.AppScreenChecker.Outcome.FAILED_ACTIVITY_EXTRACTION,
     ]
 
     for _ in range(17):
@@ -81,7 +84,8 @@ class DumpsysThreadTest(absltest.TestCase):
     expected_call_count = 2
     self.assertEqual(
         self._app_screen_checker.matches_current_app_screen.call_count,
-        expected_call_count)
+        expected_call_count,
+    )
 
 
 if __name__ == '__main__':

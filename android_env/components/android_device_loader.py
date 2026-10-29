@@ -25,10 +25,10 @@ from android_env.components import adb_controller
 from android_env.components import android_device
 from android_env.components import config_classes
 from android_env.components import device_connection
+from android_env.components import emulator_launcher
 from android_env.components import errors
 from android_env.components import setup_step_interpreter
-from android_env.components.simulators.emulator import emulator_launcher
-from android_env.components.simulators.emulator import tcp_ports
+from android_env.components import tcp_ports
 from android_env.proto import adb_pb2
 from android_env.proto import task_pb2
 from google.protobuf import text_format
