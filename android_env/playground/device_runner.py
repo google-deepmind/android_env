@@ -469,7 +469,7 @@ def setup_device(
 
   # Extract device config if wrapped in an AndroidEnvConfig.
   if isinstance(config, config_classes.AndroidEnvConfig):
-    device_config = config.simulator
+    device_config = config.device
   else:
     device_config = config
 

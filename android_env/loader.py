@@ -46,12 +46,12 @@ def load(
 ) -> env_interface.AndroidEnvInterface:
   """Loads an AndroidEnv instance."""
 
-  if isinstance(config.simulator, config_classes.AndroidDeviceConfig):
-    device = android_device_loader.load_android_device(config.simulator)
+  if isinstance(config.device, config_classes.AndroidDeviceConfig):
+    device = android_device_loader.load_android_device(config.device)
     env = rl_environment.AndroidEnv(device=device)
     if config.task != config_classes.TaskConfig():
       task = _load_task(config.task)
       env = task_wrapper.TaskWrapper(env, task=task, config=config.task_manager)
     return env
 
-  raise ValueError(f'Unsupported simulator config: {config.simulator}')
+  raise ValueError(f'Unsupported device config: {config.device}')

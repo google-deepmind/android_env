@@ -120,7 +120,8 @@ $ bazel run //android_env/playground:playground -- \
 
 ### 4. 强化学习接入 (`dm_env`)
 
-如需定义包含奖励机制与回合重置的 MDP 任务，请参阅[任务指南](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md)、[示例任务库](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md)以及[详细操作说明](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/instructions.md)。
+如需定义包含奖励机制与回合重置的 MDP 任务（通过 `pip install "android-env[rl]"`
+安装后），请参阅[任务指南](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md)、[示例任务库](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md)以及[详细操作说明](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/instructions.md)。
 
 ## 关于 AndroidEnv (About)
 

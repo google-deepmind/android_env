@@ -19,7 +19,7 @@ from unittest import mock
 
 from absl.testing import absltest
 from android_env import env_interface
-from android_env.components import action_type as action_type_lib
+from android_env.rl import action_type as action_type_lib
 from android_env.wrappers import discrete_action_wrapper
 from dm_env import specs
 import numpy as np

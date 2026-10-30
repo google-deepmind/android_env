@@ -42,7 +42,7 @@ class LogcatThread:
     info on `logcat`.
 
     Args:
-      log_stream: Stream of logs from simulator.
+      log_stream: Stream of logs from the Android device.
     """
 
     self._log_stream = log_stream

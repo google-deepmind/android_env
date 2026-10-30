@@ -176,6 +176,6 @@ class AndroidEnvConfig:
   task_manager: TaskManagerConfig = dataclasses.field(
       default_factory=TaskManagerConfig
   )
-  simulator: AndroidDeviceConfig = dataclasses.field(
+  device: AndroidDeviceConfig = dataclasses.field(
       default_factory=AndroidDeviceConfig
   )

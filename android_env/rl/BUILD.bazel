@@ -3,6 +3,11 @@ load("@rules_python//python:defs.bzl", "py_library", "py_test")
 package(default_visibility = ["//visibility:public"])
 
 py_library(
+    name = "action_type",
+    srcs = ["action_type.py"],
+)
+
+py_library(
     name = "dumpsys_thread",
     srcs = ["dumpsys_thread.py"],
     deps = [
@@ -26,9 +31,9 @@ py_library(
     name = "environment",
     srcs = ["environment.py"],
     deps = [
+        ":action_type",
         ":specs",
         "//android_env:env_interface",
-        "//android_env/components:action_type",
         "//android_env/components:android_device",
         "//android_env/components:telemetry",
         "//android_env/proto:adb_py_pb2",
@@ -44,8 +49,8 @@ py_test(
     srcs = ["environment_test.py"],
     legacy_create_init = False,
     deps = [
+        ":action_type",
         ":environment",
-        "//android_env/components:action_type",
         "//android_env/components:android_device",
         "//android_env/components:config_classes",
         "//android_env/components:device_connection",
@@ -129,7 +134,7 @@ py_library(
     name = "specs",
     srcs = ["specs.py"],
     deps = [
-        "//android_env/components:action_type",
+        ":action_type",
         "//android_env/proto:task_py_pb2",
         "@pip//dm_env",
         "@pip//numpy",

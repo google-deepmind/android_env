@@ -532,7 +532,7 @@ class DeviceRunnerTest(absltest.TestCase):
 
     state = state_lib.PlaygroundState()
     config = config_classes.AndroidEnvConfig(
-        simulator=config_classes.AndroidDeviceConfig()
+        device=config_classes.AndroidDeviceConfig()
     )
 
     dev, orientation, pixels = device_runner.setup_device(state, config)

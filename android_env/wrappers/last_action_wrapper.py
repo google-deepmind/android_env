@@ -17,7 +17,7 @@
 
 from typing import cast
 from android_env import env_interface
-from android_env.components import action_type
+from android_env.rl import action_type
 from android_env.rl import pixel_fns
 from android_env.wrappers import base_wrapper
 import dm_env

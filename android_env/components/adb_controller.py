@@ -72,7 +72,7 @@ class AdbController:
     """Initialize the ADB server deamon on the given port.
 
     This function should be called immediately after initializing the first
-    adb_controller, and before launching the simulator.
+    adb_controller, and before launching the emulator or connecting to a device.
 
     Args:
       timeout: A timeout to use for this operation. If not set the default

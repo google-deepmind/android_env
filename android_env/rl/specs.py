@@ -19,8 +19,8 @@ from __future__ import annotations
 
 from typing import Any, Final, Mapping
 
-from android_env.components import action_type
 from android_env.proto import task_pb2
+from android_env.rl import action_type
 from dm_env import specs
 import numpy as np
 

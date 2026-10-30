@@ -158,7 +158,8 @@ $ bazel run //android_env/playground:playground -- \
 
 ### 4. Reinforcement Learning (`dm_env`)
 
-To define MDP tasks with rewards and episode resets, see the
+To define MDP tasks with rewards and episode resets (after
+`pip install "android-env[rl]"`), see the
 [Tasks guide](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md),
 [Example tasks](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/example_tasks.md),
 and

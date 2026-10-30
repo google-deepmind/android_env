@@ -19,7 +19,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any, cast
 
 from android_env import env_interface
-from android_env.components import action_type
+from android_env.rl import action_type
 from android_env.wrappers import base_wrapper
 import dm_env
 from dm_env import specs

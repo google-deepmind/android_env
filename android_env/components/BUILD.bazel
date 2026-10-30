@@ -3,11 +3,6 @@ load("@rules_python//python:defs.bzl", "py_library", "py_test")
 package(default_visibility = ["//visibility:public"])
 
 py_library(
-    name = "action_type",
-    srcs = ["action_type.py"],
-)
-
-py_library(
     name = "adb_call_parser",
     srcs = ["adb_call_parser.py"],
     deps = [

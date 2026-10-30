@@ -4,35 +4,6 @@ load("@rules_python//python:packaging.bzl", "py_package", "py_wheel")
 package(default_visibility = ["//visibility:public"])
 
 py_library(
-    name = "android_env",
-    srcs = ["__init__.py"],
-    deps = [
-        ":env_interface",
-        ":loader",
-        "//android_env/components:android_device",
-        "//android_env/components:android_device_loader",
-        "//android_env/components:config_classes",
-        "//android_env/rl:environment",
-    ],
-)
-
-py_test(
-    name = "init_test",
-    srcs = ["init_test.py"],
-    legacy_create_init = False,
-    deps = [
-        ":android_env",
-        ":env_interface",
-        ":loader",
-        "//android_env/components:android_device",
-        "//android_env/components:android_device_loader",
-        "//android_env/components:config_classes",
-        "//android_env/rl:environment",
-        "@pip//absl_py",
-    ],
-)
-
-py_library(
     name = "env_interface",
     srcs = ["env_interface.py"],
     deps = [
@@ -78,7 +49,6 @@ py_package(
     name = "android_env_pkg",
     packages = ["android_env"],
     deps = [
-        ":android_env",
         ":loader",
         "//android_env/components:android_device_loader",
         "//android_env/mcp:android_mcp_server_lib",
@@ -112,16 +82,19 @@ py_wheel(
         ],
     },
     extra_requires = {
-        "gym": ["gymnasium>=0.29.1"],
+        "gym": [
+            "dm-env>=1.6",
+            "gymnasium>=0.29.1",
+        ],
         "mcp": ["mcp>=1.26,<2"],
         "playground": ["ml-collections"],
+        "rl": ["dm-env>=1.6"],
     },
     homepage = "https://github.com/google-deepmind/android_env",
     license = "Apache License, Version 2.0",
     python_requires = ">=3.10",
     requires = [
         "absl-py>=2.1.0",
-        "dm-env>=1.6",
         "numpy>=2.1.0",
         "portpicker>=1.6.0",
         "pillow>=10.4.0",

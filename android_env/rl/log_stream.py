@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Abstract class for handling a stream of logs from a simulator."""
+"""Abstract class for handling a stream of logs from an Android device."""
 
 import abc
 from collections.abc import Generator, Sequence
@@ -22,7 +22,7 @@ from absl import logging
 
 
 class LogStream(metaclass=abc.ABCMeta):
-  """Manages the stream of logs output by a simulator."""
+  """Manages the stream of logs output by an Android device."""
 
   def __init__(self, verbose: bool = False):
     self._verbose = verbose

@@ -24,10 +24,7 @@ class ErrorsTest(parameterized.TestCase):
 
   @parameterized.parameters(
       (errors.ReadObservationError, 1),
-      (errors.CoordinatorError, 2),
-      (errors.TooManyRestartsError, 3),
       (errors.AdbControllerError, 4),
-      (errors.SimulatorError, 5),
       (errors.SendActionError, 6),
       (errors.StepCommandError, 7),
       (errors.WaitForAppScreenError, 8),
@@ -42,10 +39,7 @@ class ErrorsTest(parameterized.TestCase):
     error_codes = set()
     errors_list = (
         errors.ReadObservationError,
-        errors.CoordinatorError,
-        errors.TooManyRestartsError,
         errors.AdbControllerError,
-        errors.SimulatorError,
         errors.SendActionError,
         errors.StepCommandError,
         errors.WaitForAppScreenError,
@@ -57,10 +51,7 @@ class ErrorsTest(parameterized.TestCase):
 
   @parameterized.parameters([
       errors.ReadObservationError(),
-      errors.CoordinatorError(),
-      errors.TooManyRestartsError(),
       errors.AdbControllerError(),
-      errors.SimulatorError(),
       errors.SendActionError(),
       errors.StepCommandError(),
       errors.WaitForAppScreenError(),
@@ -86,10 +77,7 @@ class ErrorsTest(parameterized.TestCase):
       (0, errors.AndroidEnvError, 'hello'),
       (0, errors.AndroidEnvError, ''),
       (1, errors.ReadObservationError, 'Could not read obs.'),
-      (2, errors.CoordinatorError, 'Some error'),
-      (3, errors.TooManyRestartsError, 'Too many already...'),
       (4, errors.AdbControllerError, 'Some adb error...'),
-      (5, errors.SimulatorError, 'Simulator is not coping.'),
       (6, errors.SendActionError, 'Could not send action.'),
       (7, errors.StepCommandError, 'Some issue setting up the task.'),
       (8, errors.WaitForAppScreenError, 'Waited for too long!'),

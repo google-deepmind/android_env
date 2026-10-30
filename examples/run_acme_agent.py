@@ -32,7 +32,7 @@ from android_env.wrappers import image_rescale_wrapper
 from android_env.wrappers import tap_action_wrapper
 import haiku as hk
 
-# Simulator args
+# Device / Emulator args
 flags.DEFINE_string('avd_name', None, 'Name of AVD to use.')
 flags.DEFINE_string('android_avd_home', '~/.android/avd', 'Path to AVD.')
 flags.DEFINE_string('android_sdk_root', '~/Android/Sdk', 'Path to SDK.')
@@ -88,7 +88,7 @@ def main(_):
     del seed
     config = config_classes.AndroidEnvConfig(
         task=config_classes.FilesystemTaskConfig(path=FLAGS.task_path),
-        simulator=config_classes.AndroidDeviceConfig(
+        device=config_classes.AndroidDeviceConfig(
             emulator_launcher=config_classes.EmulatorLauncherConfig(
                 emulator_path=FLAGS.emulator_path,
                 android_sdk_root=FLAGS.android_sdk_root,

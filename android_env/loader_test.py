@@ -34,10 +34,10 @@ class LoaderTest(absltest.TestCase):
   @mock.patch.object(rl_environment, 'AndroidEnv', autospec=True)
   def test_load_android_device(self, mock_android_env, mock_loader):
     config = config_classes.AndroidEnvConfig(
-        simulator=config_classes.AndroidDeviceConfig()
+        device=config_classes.AndroidDeviceConfig()
     )
     env = loader.load(config)
-    mock_loader.assert_called_once_with(config.simulator)
+    mock_loader.assert_called_once_with(config.device)
     mock_android_env.assert_called_once_with(device=mock_loader.return_value)
     self.assertEqual(env, mock_android_env.return_value)
 
@@ -54,11 +54,11 @@ class LoaderTest(absltest.TestCase):
     mock_open.return_value.read.return_value = 'id: "device_task"'
     config = config_classes.AndroidEnvConfig(
         task=config_classes.FilesystemTaskConfig(path='~/some/path.textproto'),
-        simulator=config_classes.AndroidDeviceConfig(),
+        device=config_classes.AndroidDeviceConfig(),
     )
     env = loader.load(config)
     mock_open.assert_any_call(os.path.expanduser('~/some/path.textproto'), 'r')
-    mock_loader.assert_called_once_with(config.simulator)
+    mock_loader.assert_called_once_with(config.device)
     mock_android_env.assert_called_once_with(device=mock_loader.return_value)
     expected_task = task_pb2.Task(id='device_task')
     mock_task_wrapper.assert_called_once_with(
@@ -68,11 +68,11 @@ class LoaderTest(absltest.TestCase):
     )
     self.assertEqual(env, mock_task_wrapper.return_value)
 
-  def test_load_unsupported_simulator_raises(self):
+  def test_load_unsupported_config_raises(self):
     config = config_classes.AndroidEnvConfig(
-        simulator=None
+        device=None
     )
-    with self.assertRaisesRegex(ValueError, 'Unsupported simulator config'):
+    with self.assertRaisesRegex(ValueError, 'Unsupported .* config'):
       loader.load(config)
 
 

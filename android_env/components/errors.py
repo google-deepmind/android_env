@@ -25,33 +25,15 @@ class AndroidEnvError(Exception):
 
 
 class ReadObservationError(AndroidEnvError):
-  """When the environment is unable to obtain an observation from a simulator."""
+  """When the environment is unable to obtain an observation from the device."""
 
   ERROR_CODE = 1
-
-
-class CoordinatorError(AndroidEnvError):
-  """Error raised by the Coordinator."""
-
-  ERROR_CODE = 2
-
-
-class TooManyRestartsError(CoordinatorError):
-  """The number of restarts has exceeded _MAX_RESTART_TRIES."""
-
-  ERROR_CODE = 3
 
 
 class AdbControllerError(AndroidEnvError):
   """Errors that can be raised by ADBController."""
 
   ERROR_CODE = 4
-
-
-class SimulatorError(AndroidEnvError):
-  """Errors that can be raised by a simulator."""
-
-  ERROR_CODE = 5
 
 
 class SendActionError(AndroidEnvError):
@@ -90,10 +72,7 @@ def from_code(code: int, msg: str = '') -> AndroidEnvError | None:
   code_to_error = {
       0: AndroidEnvError,
       1: ReadObservationError,
-      2: CoordinatorError,
-      3: TooManyRestartsError,
       4: AdbControllerError,
-      5: SimulatorError,
       6: SendActionError,
       7: StepCommandError,
       8: WaitForAppScreenError,

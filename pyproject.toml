@@ -8,15 +8,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "android-env"
 version = "2.0.0"
-description = "AndroidEnv environment and library for training agents."
+description = "AndroidEnv: The Android Interaction & Learning Platform"
 authors = [{name = "DeepMind"}]
 license = {file = "LICENSE"}
-readme = {text = "Read the README at https://github.com/google-deepmind/android_env for more information.", content-type = "text/plain"}
+readme = "README.md"
 keywords = ["Android", "OS", "reinforcement-learning"]
 requires-python = ">=3.10"
 dependencies = [
     "absl-py>=2.1.0",
-    "dm_env>=1.6",
     "numpy>=2.1.0",
     "portpicker>=1.6.0",
     "protobuf>=6,<8",
@@ -27,17 +26,28 @@ dependencies = [
 
 [project.optional-dependencies]
 testing = [
+    "dm-env>=1.6",
     "gymnasium",
     "pytype",
 ]
-acme = ["dm-acme"]
-gym = ["gymnasium>=0.29.1"]
+acme = [
+    "dm-acme",
+    "dm-env>=1.6",
+]
+gym = [
+    "dm-env>=1.6",
+    "gymnasium>=0.29.1",
+]
 mcp = ["mcp>=1.26,<2"]
 playground = ["ml-collections"]
+rl = ["dm-env>=1.6"]
 
 [project.scripts]
 android-env-mcp = "android_env.mcp.android_mcp_server:run"
 android-env-playground = "android_env.playground.playground:run"
+
+[tool.setuptools.packages.find]
+include = ["android_env*"]
 
 [tool.setuptools.package-data]
 "android_env.apps.java.com.google.androidenv.core" = ["*.apk"]
