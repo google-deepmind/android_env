@@ -136,7 +136,9 @@ depending on their trajectory and timing:
 
 For Reinforcement Learning workloads that require a standard
 [`dm_env.Environment`](https://github.com/google-deepmind/dm_env) loop
-(`reset()`, `step(action)`), `android_env.rl.environment.AndroidEnv` adapts an
+(`reset()`, `step(action)`), install the optional RL extra
+(`pip install "android-env[rl]"`) and use
+`android_env.rl.environment.AndroidEnv` (or `loader.load(config)`) to adapt an
 `AndroidDevice` into array-based observation and action specs:
 
 *   **Observations**: A dictionary containing:
@@ -149,9 +151,9 @@ For Reinforcement Learning workloads that require a standard
         `(N, 2)` `int16` PCM frames when `DEVICE_SIGNAL_AUDIO_OUTPUT` is
         subscribed).
 *   **Action Spec**: A dictionary containing:
-    *   `'action_type'`: Discrete `ActionType` value (`TOUCH`, `LIFT`, `REPEAT`,
-        `KEYDOWN`, `KEYUP`, plus accessibility `TEXT`, `SET_SELECTION`, `CUT`,
-        `COPY`, `PASTE`).
+    *   `'action_type'`: Discrete `action_type.ActionType` value (`TOUCH`,
+        `LIFT`, `REPEAT`, `KEYDOWN`, `KEYUP`, plus accessibility `TEXT`,
+        `SET_SELECTION`, `CUT`, `COPY`, `PASTE`).
     *   `'touch_position'`: Continuous `[x, y]` float array in `[0.0, 1.0]`.
     *   `'keycode'`: Android `KeyEvent` integer (used with `KEYDOWN`; optional
         `'text'` and `'selection'` keys are also accepted by `step()` for

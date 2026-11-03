@@ -19,7 +19,7 @@ how to put these into code.
 *   `id`: An ID used to identify the task.
 
 *   `setup_steps`: These are steps the environment will perform right after
-    launching the simulator. Possible steps include:
+    connecting to the device. Possible steps include:
 
     *   `install_apk`: Installs an application from a specified path to the APK
         file.

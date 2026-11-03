@@ -36,13 +36,13 @@ Agent -> AndroidDevice -> WebSocket (Protobuf) -> On-Device Core Server
 ```
 
 > **Breaking Changes in AndroidEnv 2.0.0:** As of v2.0.0, the legacy v1 host
-> stack (`Coordinator`, `BaseSimulator`, `EmulatorSimulator`,
-> `A11yGrpcWrapper`, and `state.proto` `load_state` / `save_state`) has been
-> removed from the open-source package. If you still require a standard
-> `dm_env.Environment` interface with MDP rewards and episode resets,
-> `android_env.load(config)` and `android_env.rl.environment.AndroidEnv` wrap
-> `AndroidDevice` directly (+ optional `TaskWrapper`) without the legacy
-> `Coordinator` stack.
+> stack (`Coordinator`, `BaseSimulator`, `EmulatorSimulator`, `A11yGrpcWrapper`,
+> and `state.proto` `load_state` / `save_state`) has been removed from the
+> open-source package. If you still require a standard `dm_env.Environment`
+> interface with MDP rewards and episode resets, install the optional RL extra
+> (`pip install "android-env[rl]"`) and use `loader.load(config)` (or wrap
+> `AndroidDevice` directly with `android_env.rl.environment.AndroidEnv` and
+> `TaskWrapper`) without the legacy `Coordinator` stack.
 
 --------------------------------------------------------------------------------
 

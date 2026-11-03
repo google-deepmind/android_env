@@ -152,9 +152,16 @@ Open `http://localhost:8080` in your browser to interact with the device.
 
 ## 4. Running Reinforcement Learning Tasks (`dm_env`)
 
+If installing via `pip`, include the optional `rl` extra:
+
+```shell
+pip install "android-env[rl]"
+```
+
 To train RL agents with Markov Decision Process (MDP) rewards, episode step
-limits, and automated reset steps, wrap `AndroidDevice` with
-`android_env.rl.environment.AndroidEnv` and `TaskWrapper`:
+limits, and automated reset steps, pass an `AndroidEnvConfig` to
+`loader.load(config)` (or wrap `AndroidDevice` directly with
+`android_env.rl.environment.AndroidEnv` and `TaskWrapper`):
 
 *   For ready-made RL tasks (Vokram, Pong, DroidFish, Blockinger, 2048, and
     more), see [Available tasks](example_tasks.md).
@@ -162,20 +169,15 @@ limits, and automated reset steps, wrap `AndroidDevice` with
     [Tasks guide](tasks_guide.md).
 
 ```python
-from android_env.components import android_device_loader
+from android_env import loader
 from android_env.components import config_classes
-from android_env.proto import task_pb2
-from android_env.rl import environment
-from android_env.wrappers import task_wrapper
-from google.protobuf import text_format
 
-device = android_device_loader.load_android_device(device_config)
-base_env = environment.AndroidEnv(device)
+config = config_classes.AndroidEnvConfig(
+    task=config_classes.FilesystemTaskConfig(path='path/to/my_task.textproto'),
+    device=device_config,
+)
 
-with open('path/to/my_task.textproto', 'r') as f:
-  task_proto = text_format.Parse(f.read(), task_pb2.Task())
-
-with task_wrapper.TaskWrapper(base_env, task=task_proto) as env:
+with loader.load(config) as env:
   timestep = env.reset()
   while not timestep.last():
     action = select_action(timestep.observation)
