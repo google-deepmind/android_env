@@ -21,47 +21,38 @@ from absl import logging
 from android_env import loader
 from android_env.components import config_classes
 from dm_env import specs
+from ml_collections import config_flags
 import numpy as np
 
-FLAGS = flags.FLAGS
 
-# Device / Emulator args.
-flags.DEFINE_string('avd_name', None, 'Name of AVD to use.')
-flags.DEFINE_string('android_avd_home', '~/.android/avd', 'Path to AVD.')
-flags.DEFINE_string('android_sdk_root', '~/Android/Sdk', 'Path to SDK.')
-flags.DEFINE_string('emulator_path',
-                    '~/Android/Sdk/emulator/emulator', 'Path to emulator.')
-flags.DEFINE_string('adb_path',
-                    '~/Android/Sdk/platform-tools/adb', 'Path to ADB.')
-flags.DEFINE_bool('run_headless', False,
-                  'Whether to display the emulator window.')
-
-# Environment args.
-flags.DEFINE_string('task_path', None, 'Path to task textproto file.')
-
-# Experiment args.
-flags.DEFINE_integer('num_steps', 1000, 'Number of steps to take.')
-
-
-def main(_):
-
-  config = config_classes.AndroidEnvConfig(
-      task=config_classes.FilesystemTaskConfig(path=FLAGS.task_path),
+def _default_config() -> config_classes.AndroidEnvConfig:
+  """Returns the default configuration for AndroidEnv."""
+  return config_classes.AndroidEnvConfig(
+      task=config_classes.FilesystemTaskConfig(),
       device=config_classes.AndroidDeviceConfig(
           emulator_launcher=config_classes.EmulatorLauncherConfig(
-              emulator_path=FLAGS.emulator_path,
-              android_sdk_root=FLAGS.android_sdk_root,
-              android_avd_home=FLAGS.android_avd_home,
-              avd_name=FLAGS.avd_name,
-              run_headless=FLAGS.run_headless,
+              emulator_path='~/Android/Sdk/emulator/emulator',
+              android_sdk_root='~/Android/Sdk',
+              android_avd_home='~/.android/avd',
+              run_headless=False,
           ),
           adb_controller=config_classes.AdbControllerConfig(
-              adb_path=FLAGS.adb_path
+              adb_path='~/Android/Sdk/platform-tools/adb'
           ),
       ),
   )
-  with loader.load(config) as env:
 
+
+_CONFIG = config_flags.DEFINE_config_dataclass(
+    'config',
+    _default_config(),
+    'AndroidEnv configuration.',
+)
+_NUM_STEPS = flags.DEFINE_integer('num_steps', 1000, 'Number of steps to take.')
+
+
+def main(_):
+  with loader.load(_CONFIG.value) as env:
     action_spec = env.action_spec()
 
     def get_random_action() -> dict[str, np.ndarray]:
@@ -76,7 +67,7 @@ def main(_):
 
     _ = env.reset()
 
-    for step in range(FLAGS.num_steps):
+    for step in range(_NUM_STEPS.value):
       action = get_random_action()
       timestep = env.step(action=action)
       reward = timestep.reward
@@ -86,5 +77,4 @@ def main(_):
 if __name__ == '__main__':
   logging.set_verbosity('info')
   logging.set_stderrthreshold('info')
-  flags.mark_flags_as_required(['avd_name', 'task_path'])
   app.run(main)

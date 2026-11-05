@@ -31,26 +31,35 @@ from android_env.wrappers import float_pixels_wrapper
 from android_env.wrappers import image_rescale_wrapper
 from android_env.wrappers import tap_action_wrapper
 import haiku as hk
+from ml_collections import config_flags
 
-# Device / Emulator args
-flags.DEFINE_string('avd_name', None, 'Name of AVD to use.')
-flags.DEFINE_string('android_avd_home', '~/.android/avd', 'Path to AVD.')
-flags.DEFINE_string('android_sdk_root', '~/Android/Sdk', 'Path to SDK.')
-flags.DEFINE_string('emulator_path',
-                    '~/Android/Sdk/emulator/emulator', 'Path to emulator.')
-flags.DEFINE_string('adb_path',
-                    '~/Android/Sdk/platform-tools/adb', 'Path to ADB.')
-flags.DEFINE_bool(
-    'run_headless', False, 'Whether to display the emulator window.'
+
+def _default_config() -> config_classes.AndroidEnvConfig:
+  """Returns the default configuration for AndroidEnv."""
+  return config_classes.AndroidEnvConfig(
+      task=config_classes.FilesystemTaskConfig(),
+      device=config_classes.AndroidDeviceConfig(
+          emulator_launcher=config_classes.EmulatorLauncherConfig(
+              emulator_path='~/Android/Sdk/emulator/emulator',
+              android_sdk_root='~/Android/Sdk',
+              android_avd_home='~/.android/avd',
+              run_headless=False,
+          ),
+          adb_controller=config_classes.AdbControllerConfig(
+              adb_path='~/Android/Sdk/platform-tools/adb'
+          ),
+      ),
+  )
+
+
+_CONFIG = config_flags.DEFINE_config_dataclass(
+    'config',
+    _default_config(),
+    'AndroidEnv configuration.',
 )
-
-# Environment args
-flags.DEFINE_string('task_path', None, 'Path to task textproto file.')
-
-# Experiment args
-flags.DEFINE_integer('num_steps', 1000, 'Number of steps to train.')
-
-FLAGS = flags.FLAGS
+_NUM_STEPS = flags.DEFINE_integer(
+    'num_steps', 1000, 'Number of steps to train.'
+)
 
 
 def apply_wrappers(env):
@@ -86,22 +95,7 @@ def main(_):
 
   def env_factory(seed):
     del seed
-    config = config_classes.AndroidEnvConfig(
-        task=config_classes.FilesystemTaskConfig(path=FLAGS.task_path),
-        device=config_classes.AndroidDeviceConfig(
-            emulator_launcher=config_classes.EmulatorLauncherConfig(
-                emulator_path=FLAGS.emulator_path,
-                android_sdk_root=FLAGS.android_sdk_root,
-                android_avd_home=FLAGS.android_avd_home,
-                avd_name=FLAGS.avd_name,
-                run_headless=FLAGS.run_headless,
-            ),
-            adb_controller=config_classes.AdbControllerConfig(
-                adb_path=FLAGS.adb_path
-            ),
-        ),
-    )
-    env = loader.load(config)
+    env = loader.load(_CONFIG.value)
     env = apply_wrappers(env)
     return env
 
@@ -130,7 +124,7 @@ def main(_):
       environment_factory=env_factory,
       network_factory=make_network,
       seed=1,
-      max_num_actor_steps=FLAGS.num_steps,
+      max_num_actor_steps=_NUM_STEPS.value,
   )
 
   experiments.run_experiment(experiment_config)
@@ -139,5 +133,4 @@ def main(_):
 if __name__ == '__main__':
   logging.set_verbosity('info')
   logging.set_stderrthreshold('info')
-  flags.mark_flags_as_required(['task_path', 'avd_name'])
   app.run(main)
