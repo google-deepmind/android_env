@@ -37,7 +37,7 @@ AndroidEnv instance with the given task.
 | [SGT Puzzles - Cube](#sgt-puzzles-cube)             | Tapping              | No             | Yes (3 levels)                | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/sgtpuzzles.tar.gz)  |
 | [SGT Puzzles - Dominosa](#sgt-puzzles-dominosa)     | Tapping              | No             | Yes (5 levels)                | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/sgtpuzzles.tar.gz)  |
 | [SGT Puzzles - Fifteen](#sgt-puzzles-fifteen)       | Tapping              | No             | Yes (4 levels)                | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/sgtpuzzles.tar.gz) |
-| [SGT Puzzles - Flip](#sgt-puzzles-flip)             | Tapping              | No             | Yes (3 levels)                | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/apple_flinger.tar.gz) |
+| [SGT Puzzles - Flip](#sgt-puzzles-flip)             | Tapping              | No             | Yes (3 levels)                | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/sgtpuzzles.tar.gz) |
 | [SGT Puzzles - Flood](#sgt-puzzles-flood)           | Tapping              | No             | Yes (3 levels)                | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/sgtpuzzles.tar.gz) |
 | [SGT Puzzles - Galaxies](#sgt-puzzles-galaxies)     | Tapping              | No             | Yes (6 sizes)                 | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/sgtpuzzles.tar.gz) |
 | [SGT Puzzles - Guess](#sgt-puzzles-guess)           | Tapping              | No             | Yes (4 levels)                | Sparse     | Yes          | [Download](https://storage.googleapis.com/android_env-tasks/sgtpuzzles.tar.gz) |
@@ -109,7 +109,7 @@ different colors.
 ## Apple Flinger
 
 A clone of Angry Birds. Even though the game offers many levels, we currently
-expose six levels. See the original github repo for more info:
+expose six levels. See the original GitHub repo for more info:
 https://gitlab.com/ar-/apple-flinger.
 
 <details>
@@ -128,7 +128,7 @@ https://gitlab.com/ar-/apple-flinger.
 ## Blockinger
 
 This is a Tetris clone implemented with on-screen controls. See the original
-github repo for more info: https://github.com/tasioleiva/Blockinger.git.
+GitHub repo for more info: https://github.com/tasioleiva/Blockinger.git.
 
 <details>
   <summary>Extras returned</summary>
@@ -183,7 +183,7 @@ Classic Catch game.
 ## Classic 2048
 
 This is an Android implementation of a popular game in the 2010s. See the
-original github repo for more info: https://github.com/tpcstld/2048.git.
+original GitHub repo for more info: https://github.com/tpcstld/2048.git.
 
 <details>
   <summary>Extras returned</summary>
@@ -229,7 +229,7 @@ Standard chess game. You can choose whether to play as a specific player
 each episode. The numbers 1, 10 and 100 indicate the level of difficulty. Take a
 look at a few sample moves below to get an idea of roughly how well the bot
 plays for each level of difficulty. You can see that the 1% and 10% bots often
-make very obvious mistakes. See the original github repo for more info:
+make very obvious mistakes. See the original GitHub repo for more info:
 https://github.com/peterosterlund2/droidfish.
 
 <details>
@@ -337,7 +337,7 @@ on the screen.
 
 Shoot the coloured bubbles in a direction of your choice. Groups of bubbles with
 the same colour will drop. Remove all bubbles from the board before the time
-runs out. See the original github repo for more info:
+runs out. See the original GitHub repo for more info:
 https://github.com/robinst/frozen-bubble-android.git.
 
 <details>
@@ -349,7 +349,7 @@ https://github.com/robinst/frozen-bubble-android.git.
 
 ## Memory Game
 
-Classic memory game. Find the pairs of images. See the original github repo for
+Classic memory game. Find the pairs of images. See the original GitHub repo for
 more info: https://github.com/sromku/memory-game/.
 
 <details>
@@ -389,7 +389,7 @@ more info: https://github.com/sromku/memory-game/.
 ## Minesweeper
 
 This is an Android implementation of a popular game on Desktop in the 1990s. See
-the original github repo for more info: https://gitlab.com/ar-/apple-flinger.
+the original GitHub repo for more info: https://gitlab.com/ar-/apple-flinger.
 
 <details>
   <summary>Extras returned</summary>
@@ -448,14 +448,14 @@ However, the interface is very different. The observation is given as a 2D view
 from the top with no perspective and the touchscreen determines the position
 that the car should move to (sideways).
 
-**nostaligc_racer**                                            | **nostalgic_racer_2d**
+**nostalgic_racer**                                            | **nostalgic_racer_2d**
 -------------------------------------------------------------- | ----------------------
 ![Screenshot of 'nostalgic_racer'](images/nostalgic_racer.gif) | ![Screenshot of 'nostalgic_racer_2d'](images/nostalgic_racer_2d.gif)
 
 ## Open Sudoku
 
 Classic Sudoku game with different levels of difficulty. The board is randomised
-over a set of 30 boards for each level. See the original github repo for more
+over a set of 30 boards for each level. See the original GitHub repo for more
 info: https://github.com/ogarcia/opensudoku.
 
 <details>
@@ -494,9 +494,10 @@ Drag the items corresponding to the targets with the same shape.
 
 </details>
 
-**perfection_1_circle_static**                                                       | **perfection_1_cube_static**                                                         | **perfection_1_plus_static**                                                     | **perfection_1_triangle_static**
------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- | --------------------------------
-![Screenshot of 'perfection_1_circle_static'](images/perfection_1_circle_static.gif) | ![Screenshot of 'perfection_1_square_static'](images/perfection_1_square_static.gif) | ![Screenshot of 'perfection_1_plus_static'](images/perfection_1_plus_static.gif) | ![Screenshot of 'perfection_1_triangle_static'](images/perfection_1_triangle_static.gif)
+| **perfection_1_circle_static**                                       | **perfection_1_square_static**                                       | **perfection_1_plus_static**                                     | **perfection_1_triangle_static**                                         |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| ![Screenshot of                                                      | ![Screenshot of                                                      | ![Screenshot of                                                  | ![Screenshot of                                                          |
+: 'perfection_1_circle_static'](images/perfection_1_circle_static.gif) : 'perfection_1_square_static'](images/perfection_1_square_static.gif) : 'perfection_1_plus_static'](images/perfection_1_plus_static.gif) : 'perfection_1_triangle_static'](images/perfection_1_triangle_static.gif) :
 
 **perfection_default**                                               | **perfection_4_colors_square_static**                                                              | **perfection_4_pieces_static**
 -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------
@@ -578,7 +579,7 @@ The balls affect the travel of the laser beam in the following way:
 
 Once the player has placed the given number of balls on the screen, a green dot
 appears that allows the player to check if their solution was correct. See the
-original github repo for more info: https://github.com/chrisboyle/sgtpuzzles.
+original GitHub repo for more info: https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
   <summary>Extras returned</summary>
@@ -619,7 +620,7 @@ original github repo for more info: https://github.com/chrisboyle/sgtpuzzles.
 Connect nodes on the board so that each number denotes the degree of the given
 vertex. Edges are not allowed to cross each other and the graph has to be
 connected. Edges have to be horizontal or vertical, and there can be at most two
-parallel bridges between any pair of nodes. See the original github repo for
+parallel bridges between any pair of nodes. See the original GitHub repo for
 more info: https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
@@ -650,7 +651,7 @@ There are six coloured squares that you have to collect with a moving cube. If
 the cube rolls on top of a coloured cell, the colour gets attached to that side
 of the cube; and if a coloured side of the cube rolls on an empty cell, the
 colour is removed from the cube. The goal is to have all six sides of the cube
-coloured. See the original github repo for more info:
+coloured. See the original GitHub repo for more info:
 https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
@@ -692,7 +693,7 @@ https://github.com/chrisboyle/sgtpuzzles.
 Place 2x1 size dominoes on the board such that the full board is covered, making
 sure that no two dominoes have the same pair of numbers on them. There needs to
 be exactly one of (0, 0), (0, 1) (0, 2), ... (1, 1), (1, 2) etc. See the
-original github repo for more info: https://github.com/chrisboyle/sgtpuzzles.
+original GitHub repo for more info: https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
   <summary>Extras returned</summary>
@@ -705,7 +706,7 @@ original github repo for more info: https://github.com/chrisboyle/sgtpuzzles.
     -   Letters representing the dominoes currently placed on the board.
     -   'R=right, L=left, T=top, B=bottom'
     -   Returned whenever the grid changes.
-    -   Has `shape=[height, with], dtype=INT32`.
+    -   Has `shape=[height, width], dtype=INT32`.
 *   `clash`:
     -   Represents clashes on the board (i.e. if two dominoes have the same
         pair)
@@ -722,7 +723,7 @@ original github repo for more info: https://github.com/chrisboyle/sgtpuzzles.
 ## SGT Puzzles - Fifteen
 
 Order the tiles in increasing order, starting from the top left corner. See the
-original github repo for more info: https://github.com/chrisboyle/sgtpuzzles.
+original GitHub repo for more info: https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
   <summary>Extras returned</summary>
@@ -750,7 +751,7 @@ original github repo for more info: https://github.com/chrisboyle/sgtpuzzles.
 
 Clicking on a cell will flip the colour of some of its neighbours, which are
 determined by the symbol in the cell. The goal is to make all the cells have the
-same colour. See the original github repo for more info:
+same colour. See the original GitHub repo for more info:
 https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
@@ -776,7 +777,7 @@ https://github.com/chrisboyle/sgtpuzzles.
     -   The grid matrix of square neighbours (-1 = outside, 1 = neighbour, 0 =
         not neighbour)
     -   Returned whenever the grid changes.
-    -   Has `shape=[grid_size, grid_size, 3, 3s], dtype=INT32`.
+    -   Has `shape=[grid_size, grid_size, 3, 3], dtype=INT32`.
 
 </details>
 
@@ -794,7 +795,7 @@ squares that have the same color, thus expanding the active region. The active
 region starts as a single square at the top-left corner of the board. The game
 gives a single reward at the end of the game if the player manages to fill the
 entire board with the same color within the maximum number steps, otherwise the
-reward is just zero. See the original github repo for more info:
+reward is just zero. See the original GitHub repo for more info:
 https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
@@ -816,7 +817,7 @@ https://github.com/chrisboyle/sgtpuzzles.
 ## SGT Puzzles - Galaxies
 
 Split the grid up into centrally symmetric areas. The centre of symmetry for
-each area is denoted by a dot on the grid. See the original github repo for more
+each area is denoted by a dot on the grid. See the original GitHub repo for more
 info: https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
@@ -849,7 +850,7 @@ the top row with colours of your choice, and wait for the computer to give you
 feedback about your sequence. It will show a black dot for each colour that is
 placed in the correct position, and a white dot for each that is present in the
 hidden sequence, but not at the position your guess. Try to figure out the
-hidden sequence before you run out of guesses! See the original github repo for
+hidden sequence before you run out of guesses! See the original GitHub repo for
 more info: https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
@@ -878,7 +879,7 @@ can move the ball in the 8 main directions (including the diagonals). The ball
 will keep on moving in that direction until it hits a wall, a bomb, a diamond or
 a circle. Circles and diamonds have grip, i.e. it will stop the ball from
 continuing to move in the direction it was going towards. See the original
-github repo for more info: https://github.com/chrisboyle/sgtpuzzles.
+GitHub repo for more info: https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
   <summary>Extras returned</summary>
@@ -909,7 +910,7 @@ some of the walls are numbered. Your aim is to *light up* all the empty squares
 by placing light bulbs in some of them. The numbers denote how many bulbs' light
 hits these directly in a straight sight. Meanwhile, no two bulbs should light up
 each other (i.e. only one bulb allowed in straight sight). See the original
-github repo for more info: https://github.com/chrisboyle/sgtpuzzles.
+GitHub repo for more info: https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
   <summary>Extras returned</summary>
@@ -931,7 +932,7 @@ github repo for more info: https://github.com/chrisboyle/sgtpuzzles.
 
 Draw a closed loop along the edges of the grid. A number in a cell denotes the
 number of edges adjacent to that cell. The loop cannot intersect itself. See the
-original github repo for more info: https://github.com/chrisboyle/sgtpuzzles.
+original GitHub repo for more info: https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
   <summary>Extras returned</summary>
@@ -957,7 +958,7 @@ There are a number of light bulbs, wires and a single light source in the
 middle. Connect the wires such that all bulbs are lit up, without loose ends or
 loops in the wiring. You can rotate the tiles by clicking on them. If the task
 name has a *w* suffix in it then it is allowed to connect wires on opposing
-edges of the grid. See the original github repo for more info:
+edges of the grid. See the original GitHub repo for more info:
 https://github.com/chrisboyle/sgtpuzzles.
 
 <details>
@@ -992,7 +993,7 @@ Shattered Pixel Dungeon is a Roguelike RPG, with pixel art graphics and lots of
 variety and replayability. Every game is unique, with four different playable
 characters, randomized levels and enemies, and over 150 items to collect and
 use. The game is simple to get into, but has lots of depth. Strategy is required
-if you want to win! See the original github repo for more info:
+if you want to win! See the original GitHub repo for more info:
 https://github.com/00-Evan/shattered-pixel-dungeon.git.
 
 <details>
@@ -1003,7 +1004,7 @@ https://github.com/00-Evan/shattered-pixel-dungeon.git.
     -   Returned whenever an action is taken.
     -   Has `shape=[1], dtype=STRING_U25`.
 *   `dst`:
-    -   TThe destination of the action.
+    -   The destination of the action.
     -   Returned whenever an action is taken.
     -   Has `shape=[1], dtype=INT32`.
 *   `level`:
@@ -1095,7 +1096,7 @@ This is an Android implementation of
 [Solitaire](https://en.wikipedia.org/wiki/Solitaire) card games. We currently
 support 19 variants listed here in alphabetical order. Note that the full
 task_IDs take the form `simple_solitaire_aces_up`,
-`simple_solitaire_calculation` etc. See the original github repo for more info:
+`simple_solitaire_calculation` etc. See the original GitHub repo for more info:
 https://github.com/TobiasBielefeld/Simple-Solitaire.git.
 
 <details>
@@ -1160,7 +1161,7 @@ Classic Snake game.
 ## Vector Pinball
 
 A simple vector-based Pinball game with realistic physics. See the original
-github repo for more info: https://github.com/dozingcat/Vector-Pinball.
+GitHub repo for more info: https://github.com/dozingcat/Vector-Pinball.
 
 <details>
   <summary>Extras returned</summary>

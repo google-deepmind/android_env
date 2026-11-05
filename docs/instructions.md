@@ -193,3 +193,13 @@ The `examples/` directory contains starter scripts for RL agents:
 *   [`run_acme_agent.py`](https://github.com/google-deepmind/android_env/blob/main/examples/run_acme_agent.py):
     Trains an [Acme](https://github.com/google-deepmind/acme) DQN agent on an
     AndroidEnv RL task.
+
+Both scripts expose an `AndroidEnvConfig` dataclass via `fancyflags`, so any
+nested field can be configured from the command line:
+
+```shell
+python3 examples/run_random_agent.py \
+  --config.task.path=/path/to/my_task.textproto \
+  --config.device.emulator_launcher.avd_name=my_avd \
+  --num_steps=1000
+```

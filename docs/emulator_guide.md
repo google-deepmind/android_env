@@ -24,8 +24,8 @@ macOS - `~/Library/Android/sdk`). You can always find the SDK location in
 Android Studio under **Preferences** > **Appearance & Behavior** > **System
 Settings** > **Android SDKs** > _Android SDK Location_.
 
-If you set the the custom `Android SDK Location`, make note of it - you will
-need it for connecting AndroidEnv to your AVD.
+If you set a custom `Android SDK Location`, make note of it - you will need it
+for connecting AndroidEnv to your AVD.
 
 ![Screenshot of 'android_studio_0'](images/android_studio/android_studio_0.png)
 
@@ -47,7 +47,7 @@ step-by-step instructions).
 
 ![Screenshot of 'android_studio_4'](images/android_studio/android_studio_4.png)
 
-Name your AVD and take note of this value. It will be neccessary for connecting
+Name your AVD and take note of this value. It will be necessary for connecting
 AndroidEnv to this virtual device.
 
 ![Screenshot of 'android_studio_6'](images/android_studio/android_studio_6.png)
@@ -57,7 +57,7 @@ Click on **View details** to inspect some of its properties.
 
 ![Screenshot of 'android_studio_8'](images/android_studio/android_studio_8.png)
 
-Take note of the `AVD Path`. This value will be neccessary for connecting
+Take note of the `AVD Path`. This value will be necessary for connecting
 AndroidEnv to this device. We recommend that you set this to be your home
 directory (for instance, on Linux or macOS it may be `~/.android/avd`).
 

@@ -100,7 +100,7 @@ setup_steps: [
       }
     }
   },
-  # Orient the screen in portait mode
+  # Orient the screen in portrait mode
   { adb_request: { rotate: { orientation: PORTRAIT_0 } } }
 ]
 
@@ -195,7 +195,7 @@ conversely, make sure the textproto matches the format you specified here). For
 example:
 
 ```java
-// Make sure thet LOG_FILTER matches 'filters' in the textproto
+// Make sure that LOG_FILTER matches 'filters' in the textproto
 public static final String LOG_FILTER = "AndroidRLTask";
 
 // Make sure that the corresponding part of 'log_regexps' will match this string
@@ -209,7 +209,7 @@ tasks (see the section below).
 
 Along with the environment implementation we provide a set of example task
 definitions. These were chosen so that they would demonstrate the large variety
-of different challenges (e.g. app navigtion, puzzle games, time-reactive games,
+of different challenges (e.g. app navigation, puzzle games, time-reactive games,
 adventure games, card games...) and corresponding interfaces (e.g. button
 pressing, swiping, drag-and-drop...) available in AndroidEnv. You can find a
 list and detailed description of each of these tasks in
