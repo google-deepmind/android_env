@@ -28,7 +28,8 @@ dependencies = [
 testing = [
     "dm-env>=1.6",
     "gymnasium",
-    "pytype",
+    "portpicker>=1.6.0",
+    "psutil>=5.9.8",
 ]
 acme = [
     "dm-acme",

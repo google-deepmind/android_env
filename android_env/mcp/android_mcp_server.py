@@ -33,7 +33,7 @@ from android_env.mcp import android_mcp_tools
 from mcp.server import fastmcp
 
 _SERIAL = flags.DEFINE_string(
-    'serial', None, 'ADB serial number of target device.'
+    'serial', '', 'ADB serial number of target device.'
 )
 _WEBSOCKET_PORT = flags.DEFINE_integer(
     'websocket_port', 8000, 'On-device WebSocket port.'
@@ -46,7 +46,7 @@ def main(argv: Sequence[str]) -> None:
     raise app.UsageError('Too many command-line arguments.')
 
   config = config_classes.AndroidDeviceConfig(
-      serial=_SERIAL.value,  # pyrefly: ignore[bad-argument-type]
+      serial=_SERIAL.value,
       auto_setup=True,
       device_connection=config_classes.DeviceConnectionConfig(
           host=_HOST.value,

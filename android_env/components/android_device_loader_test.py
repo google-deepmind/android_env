@@ -158,6 +158,34 @@ class AndroidDeviceLoaderTest(absltest.TestCase):
     self.assertEqual(config.adb_path, expected_adb)
 
   @mock.patch.object(android_device_loader, '_wait_for_boot', autospec=True)
+  @mock.patch.object(android_device_loader, '_prep_device', autospec=True)
+  def test_load_emulator_preserves_existing_adb_controller_and_overrides_adb_path(
+      self, mock_prep, mock_wait_boot
+  ):
+    del mock_prep, mock_wait_boot
+    self._mock_pick_ports.side_effect = lambda cfg: setattr(
+        cfg, 'adb_port', 5555
+    )
+    adb_ctrl_cfg = config_classes.AdbControllerConfig(
+        adb_path='~/default/adb',
+        adb_server_port=5038,
+    )
+    config = config_classes.AndroidDeviceConfig(
+        emulator_launcher=config_classes.EmulatorLauncherConfig(
+            avd_name='test_avd',
+        ),
+        adb_path='~/override/adb',
+        adb_controller=adb_ctrl_cfg,
+    )
+
+    android_device_loader.load_android_device(config)
+
+    expected_adb = os.path.expanduser('~/override/adb')
+    self.assertEqual(adb_ctrl_cfg.adb_path, expected_adb)
+    self.assertEqual(adb_ctrl_cfg.adb_server_port, 5038)
+    self._mock_adb_cls.assert_called_with(adb_ctrl_cfg)
+
+  @mock.patch.object(android_device_loader, '_wait_for_boot', autospec=True)
   def test_emulator_launch_failure_closes_launcher(self, mock_wait_boot):
     mock_wait_boot.side_effect = RuntimeError('Boot timeout')
     config = config_classes.AndroidDeviceConfig(

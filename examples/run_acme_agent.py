@@ -39,14 +39,12 @@ def _default_config() -> config_classes.AndroidEnvConfig:
   return config_classes.AndroidEnvConfig(
       task=config_classes.FilesystemTaskConfig(),
       device=config_classes.AndroidDeviceConfig(
+          adb_path='~/Android/Sdk/platform-tools/adb',
           emulator_launcher=config_classes.EmulatorLauncherConfig(
               emulator_path='~/Android/Sdk/emulator/emulator',
               android_sdk_root='~/Android/Sdk',
               android_avd_home='~/.android/avd',
               run_headless=False,
-          ),
-          adb_controller=config_classes.AdbControllerConfig(
-              adb_path='~/Android/Sdk/platform-tools/adb'
           ),
       ),
   )

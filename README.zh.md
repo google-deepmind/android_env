@@ -73,7 +73,6 @@ $ bazel build //:android_env_wheel
 对于无需强化学习回合循环（Episode loops）的 UI 智能体、大模型评测与自动化脚本：
 
 ```python
-import numpy as np
 from android_env.components import android_device_loader
 from android_env.components import config_classes
 from android_env.proto import device_env_service_pb2

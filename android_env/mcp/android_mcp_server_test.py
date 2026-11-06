@@ -72,6 +72,36 @@ class AndroidMcpServerTest(absltest.TestCase):
     )
     mock_fastmcp_cls.return_value.run.assert_called_once_with(transport='stdio')
 
+  @mock.patch.object(
+      android_mcp_server.android_mcp_tools, 'AndroidMcpTools', autospec=True
+  )
+  @mock.patch.object(android_mcp_server.fastmcp, 'FastMCP', autospec=True)
+  @mock.patch.object(
+      android_mcp_server.android_device_loader,
+      'load_android_device',
+      autospec=True,
+  )
+  def test_main_uses_default_flags_when_unspecified(
+      self, mock_load_device, unused_mock_fastmcp_cls, unused_mock_tools_cls
+  ):
+    mock_load_device.return_value = mock.create_autospec(
+        android_device.AndroidDevice, instance=True
+    )
+
+    with flagsaver.flagsaver():
+      android_mcp_server.main(['android_mcp_server'])
+
+    mock_load_device.assert_called_once_with(
+        config_classes.AndroidDeviceConfig(
+            serial='',
+            auto_setup=True,
+            device_connection=config_classes.DeviceConnectionConfig(
+                host='localhost',
+                websocket_port=8000,
+            ),
+        )
+    )
+
   @mock.patch.object(android_mcp_server.app, 'run', autospec=True)
   def test_run_invokes_app_run(self, mock_app_run):
     android_mcp_server.run()

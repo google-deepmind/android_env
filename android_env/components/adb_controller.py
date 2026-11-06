@@ -64,7 +64,7 @@ class AdbController:
         self._config.adb_path,
         *adb_port_args,
     ]
-    if include_device_name:
+    if include_device_name and self._config.device_name:
       command_prefix.extend(['-s', self._config.device_name])
     return command_prefix
 

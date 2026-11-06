@@ -82,6 +82,10 @@ py_wheel(
         ],
     },
     extra_requires = {
+        "acme": [
+            "dm-acme",
+            "dm-env>=1.6",
+        ],
         "gym": [
             "dm-env>=1.6",
             "gymnasium>=0.29.1",
@@ -89,6 +93,12 @@ py_wheel(
         "mcp": ["mcp>=1.26,<2"],
         "playground": ["ml-collections"],
         "rl": ["dm-env>=1.6"],
+        "testing": [
+            "dm-env>=1.6",
+            "gymnasium",
+            "portpicker>=1.6.0",
+            "psutil>=5.9.8",
+        ],
     },
     homepage = "https://github.com/google-deepmind/android_env",
     license = "Apache License, Version 2.0",

@@ -268,6 +268,19 @@ class AdbControllerTest(absltest.TestCase):
         timeout=_TIMEOUT,
     )
 
+  def test_command_prefix_omits_empty_device_name(self):
+    adb_controller = adb_controller_lib.AdbController(
+        config_classes.AdbControllerConfig(
+            adb_path='my_adb',
+            device_name='',
+            use_adb_server_port_from_os_env=True,
+        )
+    )
+    self.assertEqual(
+        adb_controller.command_prefix(include_device_name=True),
+        ['my_adb'],
+    )
+
 
 class AdbControllerInitTest(absltest.TestCase):
 

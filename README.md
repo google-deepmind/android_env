@@ -110,7 +110,6 @@ For UI agents, foundation model evaluations, and automation scripts that do not
 need RL episode loops:
 
 ```python
-import numpy as np
 from android_env.components import android_device_loader
 from android_env.components import config_classes
 from android_env.proto import device_env_service_pb2

@@ -42,8 +42,8 @@ def _prepare_emulator_configs(
   assert config.emulator_launcher is not None
   if config.adb_controller is None:
     config.adb_controller = config_classes.AdbControllerConfig()
-    if config.adb_path != 'adb':
-      config.adb_controller.adb_path = config.adb_path
+  if config.adb_path != 'adb':
+    config.adb_controller.adb_path = config.adb_path
 
   launcher_config = config.emulator_launcher
   launcher_config.android_avd_home = os.path.expanduser(
@@ -120,12 +120,11 @@ def load_android_device(
     config.auto_setup = True
 
   try:
-    adb = adb_controller.AdbController(
-        config_classes.AdbControllerConfig(
-            adb_path=config.adb_path,
-            device_name=config.serial,
-        )
+    adb_config = config.adb_controller or config_classes.AdbControllerConfig(
+        adb_path=config.adb_path,
+        device_name=config.serial,
     )
+    adb = adb_controller.AdbController(adb_config)
 
     parser = adb_call_parser.AdbCallParser(adb)
     if config.auto_setup and config.device_connection.host in (
