@@ -20,7 +20,7 @@ ml-collections>=1.1
 # Transitive dependencies (pinned; Bazel pip.parse installs with --no-deps).
 annotated-types==0.8.0
 anyio==4.15.1
-certifi==2026.7.22
+certifi==2026.10.18
 cffi==2.1.1
 click==8.5.0
 cloudpickle==3.1.2
@@ -44,7 +44,7 @@ python-multipart==0.0.32
 pyyaml==6.0.3
 referencing==0.37.0
 rpds-py==2026.9.1
-setuptools==84.0.0
+setuptools==84.1.0
 sse-starlette==3.5.0
 starlette==1.7.0
 typing-inspection==0.4.4
