@@ -12,7 +12,9 @@
 
 *   **`AndroidDevice`（直接设备控制与遥测）**：一个免任务（task-free）轻量句柄，通过 WebSockets 连接到设备端的 Kotlin Core 守护服务，在注入触摸手势、按键事件、文本输入和 ADB 命令的同时，流式传输屏幕截图、无障碍树（Accessibility Trees）、系统日志与传感器数据。
 *   **`AndroidEnv` 与 `TaskWrapper`（强化学习层）**：构建在 `AndroidDevice` 之上的可选 [`dm_env`](https://github.com/google-deepmind/dm_env) 封装层，通过[任务定义文件](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md)引入马尔可夫决策过程（MDP）语义（包括 `step()`、`reset()`、奖励函数与回合终止判定）。
-*   **AndroidEnv Playground**：一个基于 Web 的高响应度交互式工作台，支持实时屏幕交互、无障碍树检查以及 ADB 命令执行。
+*   **AndroidEnv Playground 与 MCP 服务**：基于 Web 的高响应度交互式工作台（支持
+    实时屏幕交互、无障碍树检查与 ADB 命令执行），以及面向大模型智能体的 `stdio`
+    模型上下文协议（MCP）服务（`android-env-mcp`）。
 
 [![tests](https://github.com/google-deepmind/android_env/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/google-deepmind/android_env/actions/workflows/tests.yml)
 [![PyPI version](https://badge.fury.io/py/android-env.svg)](https://badge.fury.io/py/android-env)
@@ -115,6 +117,13 @@ $ android-env-playground --serial=emulator-5554
 ```shell
 $ bazel run //android_env/playground:playground -- \
     --config=android_env/playground/configs/emulator_config.py
+```
+
+如需将设备作为 `stdio` 模型上下文协议（MCP）服务暴露给大模型客户端（通过
+`pip install "android-env[mcp]"` 安装后）：
+
+```shell
+$ android-env-mcp --serial=emulator-5554
 ```
 
 ### 4. 强化学习接入 (`dm_env`)

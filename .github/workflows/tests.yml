@@ -11,9 +11,13 @@ on:
         description: Git Ref (Optional)
         required: false
 
+permissions: {}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       TEST_TMPDIR: '/tmp'
     strategy:
@@ -21,22 +25,25 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
+        with:
+          persist-credentials: false
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Configure MODULE.bazel python version
+        env:
+          MATRIX_VER: ${{ matrix.python-version }}
         run: |
-          MATRIX_VER="${{ matrix.python-version }}"
           VER_UNDERSCORE="${MATRIX_VER//./_}"
           sed -i "s/python_version = \"3.11\"/python_version = \"$MATRIX_VER\"/g" MODULE.bazel
           sed -i "s/python_3_11/python_$VER_UNDERSCORE/g" MODULE.bazel
 
       - name: Setup Bazel
-        uses: bazel-contrib/setup-bazel@0.19.0
+        uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86  # 0.19.0
         with:
           bazelisk-cache: true
           disk-cache: true
@@ -45,9 +52,14 @@ jobs:
       - name: Run tests
         run: |
           bazel test //...
+
+      - name: Build package wheel
+        run: |
+          bazel build //:android_env_wheel
+
       - name: Upload test logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: test-logs-${{ matrix.python-version }}
           path: bazel-testlogs/

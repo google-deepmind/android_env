@@ -31,9 +31,8 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 
 /**
- * Main activity that orchestrates permissions (Accessibility and MediaProjection) and starts either
- * the WebSocket server (PoC 1) or the In-Process Agent (PoC 2). Can be controlled via Intents for
- * headless automation.
+ * Main activity that orchestrates permissions (Accessibility and MediaProjection) and starts the
+ * on-device WebSocket server. Can be controlled via Intents for headless automation.
  */
 @SuppressLint("SetTextI18n")
 class MainActivity : ComponentActivity() {
@@ -56,14 +55,14 @@ class MainActivity : ComponentActivity() {
     }
 
   override fun onCreate(savedInstanceState: Bundle?) {
-    Log.e("CRITICAL_DEBUG", "MainActivity onCreate called!!!")
+    Log.d(TAG, "onCreate")
     super.onCreate(savedInstanceState)
 
     if (savedInstanceState != null) {
       val actionName = savedInstanceState.getString("PENDING_ACTION")
       if (actionName != null) {
         pendingAction = PendingAction.valueOf(actionName)
-        Log.e("CRITICAL_DEBUG", "Restored pendingAction: $pendingAction")
+        Log.d(TAG, "Restored pendingAction: $pendingAction")
       }
     }
 
@@ -107,7 +106,7 @@ class MainActivity : ComponentActivity() {
     isResumed = true
     updateAccessibilityStatus()
     updateServerUIStatus()
-    Log.e("CRITICAL_DEBUG", "onResume: pendingCommand=$pendingCommand")
+    Log.d(TAG, "onResume: pendingCommand=$pendingCommand")
     pendingCommand?.let {
       executeCommand(it)
       pendingCommand = null
@@ -127,7 +126,7 @@ class MainActivity : ComponentActivity() {
   override fun onSaveInstanceState(outState: Bundle) {
     super.onSaveInstanceState(outState)
     outState.putString("PENDING_ACTION", pendingAction.name)
-    Log.e("CRITICAL_DEBUG", "Saved pendingAction: ${pendingAction.name}")
+    Log.d(TAG, "Saved pendingAction: ${pendingAction.name}")
   }
 
   private fun handleIntent(intent: Intent?) {
@@ -139,13 +138,13 @@ class MainActivity : ComponentActivity() {
         executeCommand(command)
       } else {
         pendingCommand = command
-        Log.e("CRITICAL_DEBUG", "Set pendingCommand to $command")
+        Log.d(TAG, "Set pendingCommand to $command")
       }
     }
   }
 
   private fun executeCommand(command: String) {
-    Log.e("CRITICAL_DEBUG", "executeCommand: $command")
+    Log.d(TAG, "executeCommand: $command")
     when (command) {
       "START_SERVER" -> triggerAction(PendingAction.START_SERVER)
       "STOP" -> stopWebSocketServer()
@@ -192,15 +191,15 @@ class MainActivity : ComponentActivity() {
       return
     }
 
-    Log.e("CRITICAL_DEBUG", "triggerAction: action=$action, current pendingAction=$pendingAction")
+    Log.d(TAG, "triggerAction: action=$action, current pendingAction=$pendingAction")
     pendingAction = action
     val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
     screenCaptureLauncher.launch(manager.createScreenCaptureIntent())
   }
 
   private fun onScreenCaptureResult(result: ActivityResult) {
-    Log.e(
-      "CRITICAL_DEBUG",
+    Log.d(
+      TAG,
       "onScreenCaptureResult: result=${result.resultCode}, pendingAction=$pendingAction",
     )
     if (result.resultCode != Activity.RESULT_OK) {

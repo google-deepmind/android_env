@@ -23,10 +23,8 @@ import enum
 class AdbControllerConfig:
   """Settings for instatiating an `AdbController` instance."""
 
-  # Filesystem path to the `adb` binary.
-  # NOTE: This must be a full path and must not contain environment variables
-  # or user folder shorthands (e.g. `~/some/path/to/adb`) since they will not be
-  # expanded internally by AndroidEnv.
+  # Filesystem path to the `adb` binary. User folder shorthands (e.g. `~/...`)
+  # and environment variables are expanded automatically by `AdbController`.
   adb_path: str = '~/Android/Sdk/platform-tools/adb'
   # Port for adb server.
   adb_server_port: int = 5037

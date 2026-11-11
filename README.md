@@ -26,8 +26,10 @@ Learning task definitions:
     `AndroidDevice` that adds Markov Decision Process (MDP) semantics (`step()`,
     `reset()`, rewards, and episode terminations) via
     [task definitions](https://github.com/google-deepmind/android_env/blob/gh-pages/docs/tasks_guide.md).
-*   **AndroidEnv Playground**: A responsive web workbench for live screen
-    interaction, accessibility tree inspection, and ADB command execution.
+*   **AndroidEnv Playground & MCP Server**: A responsive web workbench for live
+    screen interaction, accessibility tree inspection, and ADB command
+    execution, plus a `stdio` Model Context Protocol (MCP) server
+    (`android-env-mcp`) for LLM agents.
 
 [![tests](https://github.com/google-deepmind/android_env/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/google-deepmind/android_env/actions/workflows/tests.yml)
 [![PyPI version](https://badge.fury.io/py/android-env.svg)](https://badge.fury.io/py/android-env)
@@ -153,6 +155,13 @@ Or launch a local AVD from a source checkout with Bazel:
 ```shell
 $ bazel run //android_env/playground:playground -- \
     --config=android_env/playground/configs/emulator_config.py
+```
+
+To expose the device as a `stdio` Model Context Protocol (MCP) server for LLM
+clients (after `pip install "android-env[mcp]"`):
+
+```shell
+$ android-env-mcp --serial=emulator-5554
 ```
 
 ### 4. Reinforcement Learning (`dm_env`)

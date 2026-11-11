@@ -16,32 +16,8 @@ syntax = "proto3";
 
 package android_env;
 
-import "android_env/proto/a11y/android_accessibility_forest.proto";
-
 option java_multiple_files = true;
 option java_package = "com.google.androidenv.accessibilityforwarder";
-
-// A service to send Accessibility information to a remote server.
-//
-// The client is assumed to be running inside an Android device (e.g. emulator
-// or real device) while the server is assumed to be running outside (e.g. in a
-// Python process).
-service A11yService {
-  // Sends a forest of Accessibility trees to a server.
-  rpc SendForest(AndroidAccessibilityForest) returns (ForestResponse) {}
-  // Sends an a11y event to a server.
-  rpc SendEvent(EventRequest) returns (EventResponse) {}
-
-  // Long-lived bidirection communication between the client and the server.
-  rpc Bidi(stream ClientToServer) returns (stream ServerToClient) {}
-}
-
-// TODO(b/334952387): Remove `ForestResponse`, `EventRequest` and
-// `EventResponse` once bidi communication is in-place.
-message ForestResponse {
-  // The error if anything.
-  string error = 1;
-}
 
 // An Accessibility event.
 message EventRequest {
@@ -52,29 +28,4 @@ message EventRequest {
 // A list of Accessibility events.
 message EventRequestList {
   repeated EventRequest events = 1;
-}
-
-message EventResponse {
-  // The error if anything.
-  string error = 1;
-}
-
-// The message sent from the Android device to the server running outside of the
-// device.
-message ClientToServer {
-  oneof payload {
-    EventRequest event = 1;
-    AndroidAccessibilityForest forest = 2;
-  }
-}
-
-// The message sent from the server running outside of the device to the Android
-// device.
-message ServerToClient {
-  // A request to obtain the Accessibility forest.
-  message GetA11yForest {}
-
-  oneof payload {
-    GetA11yForest get_forest = 1;
-  }
 }

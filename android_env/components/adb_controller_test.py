@@ -281,6 +281,19 @@ class AdbControllerTest(absltest.TestCase):
         ['my_adb'],
     )
 
+  def test_command_prefix_expands_user_and_env_vars_in_adb_path(self):
+    adb_controller = adb_controller_lib.AdbController(
+        config_classes.AdbControllerConfig(
+            adb_path='~/Android/Sdk/platform-tools/adb',
+            device_name='emulator-5554',
+            use_adb_server_port_from_os_env=True,
+        )
+    )
+    self.assertEqual(
+        adb_controller.command_prefix(include_device_name=True),
+        ['/some/path//Android/Sdk/platform-tools/adb', '-s', 'emulator-5554'],
+    )
+
 
 class AdbControllerInitTest(absltest.TestCase):
 

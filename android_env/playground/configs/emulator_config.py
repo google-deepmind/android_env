@@ -40,14 +40,12 @@ def get_config(
   )
 
   return config_classes.AndroidDeviceConfig(
+      adb_path=os.path.join(android_home, 'platform-tools', 'adb'),
       emulator_launcher=config_classes.EmulatorLauncherConfig(
           avd_name=avd_name,
           android_avd_home=android_avd_home,
           android_sdk_root=android_home,
           emulator_path=os.path.join(android_home, 'emulator', 'emulator'),
           run_headless=True,
-      ),
-      adb_controller=config_classes.AdbControllerConfig(
-          adb_path=os.path.join(android_home, 'platform-tools', 'adb'),
       ),
   )

@@ -20,10 +20,12 @@ and interaction.
 
 Usage:
   android-env-mcp --serial=emulator-5554
+  android-env-mcp --avd_name=my_avd
   python -m android_env.mcp.android_mcp_server --serial=emulator-5554
 """
 
 from collections.abc import Sequence
+import os
 
 from absl import app
 from absl import flags
@@ -35,30 +37,65 @@ from mcp.server import fastmcp
 _SERIAL = flags.DEFINE_string(
     'serial', '', 'ADB serial number of target device.'
 )
+_AVD_NAME = flags.DEFINE_string(
+    'avd_name', '', 'Local Android Virtual Device (AVD) name to launch.'
+)
+_ADB_PATH = flags.DEFINE_string(
+    'adb_path', 'adb', 'Filesystem path to the adb binary.'
+)
 _WEBSOCKET_PORT = flags.DEFINE_integer(
     'websocket_port', 8000, 'On-device WebSocket port.'
 )
 _HOST = flags.DEFINE_string('host', 'localhost', 'On-device WebSocket host.')
 
 
+def _build_config() -> config_classes.AndroidDeviceConfig:
+  """Builds an AndroidDeviceConfig from command-line flags."""
+  if _SERIAL.value and _AVD_NAME.value:
+    raise app.UsageError('Specify at most one of --serial or --avd_name.')
+
+  device_connection = config_classes.DeviceConnectionConfig(
+      host=_HOST.value,
+      websocket_port=_WEBSOCKET_PORT.value,
+  )
+  if not _AVD_NAME.value:
+    return config_classes.AndroidDeviceConfig(
+        serial=_SERIAL.value,
+        adb_path=_ADB_PATH.value,
+        auto_setup=True,
+        device_connection=device_connection,
+    )
+
+  android_home = os.environ.get('ANDROID_HOME', '~/Android/Sdk')
+  android_avd_home = os.environ.get('ANDROID_AVD_HOME', '~/.android/avd')
+  adb_path = (
+      _ADB_PATH.value
+      if _ADB_PATH.value != 'adb'
+      else os.path.join(android_home, 'platform-tools', 'adb')
+  )
+  return config_classes.AndroidDeviceConfig(
+      adb_path=adb_path,
+      auto_setup=True,
+      device_connection=device_connection,
+      emulator_launcher=config_classes.EmulatorLauncherConfig(
+          avd_name=_AVD_NAME.value,
+          android_avd_home=android_avd_home,
+          android_sdk_root=android_home,
+          emulator_path=os.path.join(android_home, 'emulator', 'emulator'),
+      ),
+  )
+
+
 def main(argv: Sequence[str]) -> None:
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
 
-  config = config_classes.AndroidDeviceConfig(
-      serial=_SERIAL.value,
-      auto_setup=True,
-      device_connection=config_classes.DeviceConnectionConfig(
-          host=_HOST.value,
-          websocket_port=_WEBSOCKET_PORT.value,
-      ),
-  )
-
-  device = android_device_loader.load_android_device(config)
-  mcp_server = fastmcp.FastMCP(name='android_mcp_server')
-  tools_handler = android_mcp_tools.AndroidMcpTools(device)
-  tools_handler.register_tools(mcp_server)
-  mcp_server.run(transport='stdio')
+  config = _build_config()
+  with android_device_loader.load_android_device(config) as device:
+    mcp_server = fastmcp.FastMCP(name='android_mcp_server')
+    tools_handler = android_mcp_tools.AndroidMcpTools(device)
+    tools_handler.register_tools(mcp_server)
+    mcp_server.run(transport='stdio')
 
 
 def run() -> None:

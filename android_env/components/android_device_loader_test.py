@@ -16,6 +16,7 @@
 """Unit tests for android_device_loader."""
 
 import contextlib
+import itertools
 import os
 import time
 from unittest import mock
@@ -81,6 +82,31 @@ class AndroidDeviceLoaderTest(absltest.TestCase):
     )
     self._mock_launcher_cls.assert_not_called()
     mock_prep.assert_not_called()
+
+  @mock.patch.object(android_device_loader, '_prep_device', autospec=True)
+  def test_load_physical_device_normalizes_custom_adb_controller(
+      self, mock_prep
+  ):
+    del mock_prep
+    adb_ctrl_cfg = config_classes.AdbControllerConfig(
+        adb_path='~/default/adb',
+        adb_server_port=5038,
+    )
+    config = config_classes.AndroidDeviceConfig(
+        serial='device-42',
+        adb_path='~/override/adb',
+        adb_controller=adb_ctrl_cfg,
+        auto_setup=False,
+    )
+
+    android_device_loader.load_android_device(config)
+
+    self.assertEqual(
+        adb_ctrl_cfg.adb_path, os.path.expanduser('~/override/adb')
+    )
+    self.assertEqual(adb_ctrl_cfg.device_name, 'device-42')
+    self.assertEqual(adb_ctrl_cfg.adb_server_port, 5038)
+    self._mock_adb_cls.assert_called_once_with(adb_ctrl_cfg)
 
   @mock.patch.object(android_device_loader, '_wait_for_boot', autospec=True)
   @mock.patch.object(android_device_loader, '_prep_device', autospec=True)
@@ -261,6 +287,24 @@ class AndroidDeviceLoaderTest(absltest.TestCase):
     ][0]
     self.assertIn('tcp:12345', forward_step.adb_request.generic.args)
 
+  def test_connect_to_device_polls_before_restarting_activity(self):
+    self._mock_conn_init.side_effect = [
+        RuntimeError('Connection refused'),
+        self._mock_conn,
+    ]
+    config = config_classes.AndroidDeviceConfig(
+        auto_setup=True,
+    )
+    with mock.patch.object(
+        time, 'time', side_effect=itertools.count(100.0, 0.5)
+    ):
+      with mock.patch.object(time, 'sleep', autospec=True) as mock_sleep:
+        conn = android_device_loader._connect_to_device(config, self._mock_adb)
+    self.assertEqual(conn, self._mock_conn)
+    self.assertEqual(self._mock_conn_init.call_count, 2)
+    mock_sleep.assert_called_once_with(0.5)
+    self._mock_adb.execute_command.assert_not_called()
+
   def test_connect_to_device_retries_and_starts_service(self):
     self._mock_conn_init.side_effect = [
         RuntimeError('Connection refused'),
@@ -269,16 +313,21 @@ class AndroidDeviceLoaderTest(absltest.TestCase):
     config = config_classes.AndroidDeviceConfig(
         auto_setup=True,
     )
-    conn = android_device_loader._connect_to_device(config, self._mock_adb)
+    conn = android_device_loader._connect_to_device(
+        config, self._mock_adb, retry_timeout_sec=0.0
+    )
     self.assertEqual(conn, self._mock_conn)
     self.assertEqual(self._mock_conn_init.call_count, 2)
     self._mock_adb.execute_command.assert_called_once_with([
         'shell',
         'am',
-        'startservice',
-        '-a',
-        'com.google.androidenv.core.START',
-        'com.google.androidenv.core/.AndroidEnvService',
+        'start',
+        '-W',
+        '-n',
+        'com.google.androidenv.core/.MainActivity',
+        '--es',
+        'COMMAND',
+        'START_SERVER',
     ])
 
   def test_connect_to_device_fails_after_max_retries(self):
@@ -286,7 +335,7 @@ class AndroidDeviceLoaderTest(absltest.TestCase):
     config = config_classes.AndroidDeviceConfig(auto_setup=False)
     with self.assertRaisesRegex(RuntimeError, 'Connection failed'):
       android_device_loader._connect_to_device(
-          config, self._mock_adb, max_retries=2
+          config, self._mock_adb, max_retries=2, retry_timeout_sec=0.0
       )
     self.assertEqual(self._mock_conn_init.call_count, 2)
 
@@ -387,10 +436,22 @@ class AndroidDeviceLoaderTest(absltest.TestCase):
         ),
         adb_controller=config_classes.AdbControllerConfig(device_name=''),
     )
-    with mock.patch.object(android_device_loader, '_wait_for_boot'):
-      with mock.patch.object(android_device_loader, '_prep_device'):
-        with self.assertRaises(errors.AdbControllerError):
-          android_device_loader.load_android_device(config)
+    with contextlib.ExitStack() as stack:
+      stack.enter_context(
+          mock.patch.object(android_device_loader, '_wait_for_boot')
+      )
+      stack.enter_context(
+          mock.patch.object(android_device_loader, '_prep_device')
+      )
+      stack.enter_context(
+          mock.patch.object(
+              time,
+              'time',
+              side_effect=itertools.count(100.0, 10.0),
+          )
+      )
+      with self.assertRaises(errors.AdbControllerError):
+        android_device_loader.load_android_device(config)
 
     self._mock_launcher.close.assert_called_once()
 
@@ -403,7 +464,9 @@ class AndroidDeviceLoaderTest(absltest.TestCase):
         'Start service error'
     )
     config = config_classes.AndroidDeviceConfig(auto_setup=True)
-    conn = android_device_loader._connect_to_device(config, self._mock_adb)
+    conn = android_device_loader._connect_to_device(
+        config, self._mock_adb, retry_timeout_sec=0.0
+    )
     self.assertEqual(conn, self._mock_conn)
 
   def test_connect_to_device_raises_runtime_error_if_max_retries_zero(self):

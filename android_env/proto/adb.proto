@@ -17,7 +17,7 @@ syntax = "proto3";
 package android_env;
 
 message AdbRequest {
-  // Installs an APK into the simulator.
+  // Installs an APK into the device.
   message InstallApk {
 
     // A location in the filesystem.

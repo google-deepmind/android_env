@@ -49,6 +49,9 @@ class AdbController:
         {'HOME': os.path.expandvars(self._os_env_vars.get('HOME', ''))}
     )
     logging.info('self._os_env_vars: %r', self._os_env_vars)
+    self._adb_path = os.path.expandvars(
+        os.path.expanduser(self._config.adb_path)
+    )
 
   def command_prefix(self, include_device_name: bool = True) -> list[str]:
     """The command for instantiating an adb client to this server."""
@@ -61,7 +64,7 @@ class AdbController:
       # port explicitly.
       adb_port_args = ['-P', str(self._config.adb_server_port)]
     command_prefix = [
-        self._config.adb_path,
+        self._adb_path,
         *adb_port_args,
     ]
     if include_device_name and self._config.device_name:

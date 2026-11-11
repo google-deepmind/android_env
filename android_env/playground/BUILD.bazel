@@ -75,6 +75,7 @@ py_library(
         ":frame_processing",
         ":state",
         ":websocket",
+        "//android_env/components:adb_call_parser",
         "//android_env/components:android_device",
         "//android_env/components:android_device_loader",
         "//android_env/components:config_classes",

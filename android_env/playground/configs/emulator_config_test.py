@@ -48,7 +48,7 @@ class EmulatorConfigTest(absltest.TestCase):
       config = emulator_config.get_config()
       self.assertIsInstance(config, config_classes.AndroidDeviceConfig)
       self.assertIsNotNone(config.emulator_launcher)
-      self.assertIsNotNone(config.adb_controller)
+      self.assertIsNone(config.adb_controller)
       launcher = config.emulator_launcher
       self.assertEqual(launcher.android_sdk_root, '/custom/android/home')
       self.assertEqual(launcher.android_avd_home, '/custom/avd/home')
@@ -56,7 +56,7 @@ class EmulatorConfigTest(absltest.TestCase):
           launcher.emulator_path, '/custom/android/home/emulator/emulator'
       )
       self.assertEqual(
-          config.adb_controller.adb_path,
+          config.adb_path,
           '/custom/android/home/platform-tools/adb',
       )
 

@@ -60,6 +60,25 @@ def _prepare_emulator_configs(
   )
 
 
+def _resolve_adb_config(
+    config: config_classes.AndroidDeviceConfig,
+) -> config_classes.AdbControllerConfig:
+  """Normalizes and returns the AdbControllerConfig for `config`."""
+  if config.adb_controller is None:
+    return config_classes.AdbControllerConfig(
+        adb_path=config.adb_path,
+        device_name=config.serial,
+    )
+  if config.adb_path != 'adb':
+    config.adb_controller.adb_path = config.adb_path
+  config.adb_controller.adb_path = os.path.expanduser(
+      config.adb_controller.adb_path
+  )
+  if not config.adb_controller.device_name and config.serial:
+    config.adb_controller.device_name = config.serial
+  return config.adb_controller
+
+
 def load_android_device(
     config: config_classes.AndroidDeviceConfig,
 ) -> android_device.AndroidDevice:
@@ -120,10 +139,7 @@ def load_android_device(
     config.auto_setup = True
 
   try:
-    adb_config = config.adb_controller or config_classes.AdbControllerConfig(
-        adb_path=config.adb_path,
-        device_name=config.serial,
-    )
+    adb_config = _resolve_adb_config(config)
     adb = adb_controller.AdbController(adb_config)
 
     parser = adb_call_parser.AdbCallParser(adb)
@@ -265,11 +281,20 @@ def _connect_to_device(
     config: config_classes.AndroidDeviceConfig,
     adb: adb_controller.AdbController,
     max_retries: int = 3,
+    retry_timeout_sec: float = 5.0,
+    poll_interval_sec: float = 0.5,
 ) -> device_connection.DeviceConnection:
   """Establishes WebSocket connection to device with retries."""
   for attempt in range(max_retries):
     try:
-      return device_connection.DeviceConnection(config.device_connection)
+      deadline = time.time() + retry_timeout_sec
+      while True:
+        try:
+          return device_connection.DeviceConnection(config.device_connection)
+        except (errors.AdbControllerError, RuntimeError, OSError):
+          if time.time() >= deadline:
+            raise
+          time.sleep(poll_interval_sec)
     except (errors.AdbControllerError, RuntimeError, OSError) as e:
       logging.warning(
           'Attempt %d/%d failed to connect: %s', attempt + 1, max_retries, e
@@ -284,10 +309,13 @@ def _connect_to_device(
           adb.execute_command([
               'shell',
               'am',
-              'startservice',
-              '-a',
-              'com.google.androidenv.core.START',
-              'com.google.androidenv.core/.AndroidEnvService',
+              'start',
+              '-W',
+              '-n',
+              'com.google.androidenv.core/.MainActivity',
+              '--es',
+              'COMMAND',
+              'START_SERVER',
           ])
         except errors.AdbControllerError:
           pass

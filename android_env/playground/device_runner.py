@@ -22,6 +22,7 @@ import tempfile
 import time
 from typing import Any
 from absl import logging
+from android_env.components import adb_call_parser
 from android_env.components import android_device
 from android_env.components import android_device_loader
 from android_env.components import config_classes
@@ -190,23 +191,24 @@ def _load_task_proto(task_id: str, tmp_dir: str) -> task_pb2.Task:
   return task
 
 
+class _AdbParserAdapter(adb_call_parser.AdbCallParser):
+  """Adapts AndroidDevice.execute_adb_call to AdbCallParser interface."""
+
+  def __init__(self, dev: android_device.AndroidDevice):
+    self._dev = dev
+
+  def parse(self, request: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
+    return self._dev.execute_adb_call(request)
+
+
 def _get_interpreter_for_device(
     device: android_device.AndroidDevice,
 ) -> setup_step_interpreter.SetupStepInterpreter:
   """Creates a SetupStepInterpreter configured for the given AndroidDevice."""
   parser = getattr(device, '_adb_call_parser', None)
   if parser is None:
-
-    class _AdbParserAdapter:
-
-      def __init__(self, dev: android_device.AndroidDevice):
-        self._dev = dev
-
-      def parse(self, call: adb_pb2.AdbRequest) -> adb_pb2.AdbResponse:
-        return self._dev.execute_adb_call(call)
-
     parser = _AdbParserAdapter(device)
-  return setup_step_interpreter.SetupStepInterpreter(parser)  # pyrefly: ignore[bad-argument-type]
+  return setup_step_interpreter.SetupStepInterpreter(parser)
 
 
 def _handle_task_reload(
