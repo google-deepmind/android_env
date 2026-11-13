@@ -1,8 +1,8 @@
 # AndroidEnv - Running AndroidDevice, Playground, and RL Agents
 
 This guide covers how to set up an Android device, interact with it directly
-using `AndroidDevice`, launch the interactive web **Playground**, and run
-Reinforcement Learning (RL) tasks.
+using `AndroidDevice`, launch the interactive web **Playground** or **MCP
+server**, and run Reinforcement Learning (RL) tasks.
 
 > Upgrading from AndroidEnv v1? See the
 > [AndroidDevice (v2) Migration Guide](migrating_to_android_device.md).
@@ -202,4 +202,36 @@ python3 examples/run_random_agent.py \
   --config.task.path=/path/to/my_task.textproto \
   --config.device.emulator_launcher.avd_name=my_avd \
   --num_steps=1000
+```
+
+--------------------------------------------------------------------------------
+
+## 5. Run the Model Context Protocol (MCP) Server
+
+AndroidEnv provides a `stdio`
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server
+(`android_env.mcp`) that exposes screenshot capture, accessibility tree
+inspection, touch/key/text actions, and ADB execution as MCP tools for LLM
+clients.
+
+Install the `mcp` extra via `pip`:
+
+```shell
+pip install "android-env[mcp]"
+```
+
+Then start the server against an already-running device or a local AVD:
+
+```shell
+# Connect to a running emulator or physical device:
+android-env-mcp --serial=emulator-5554
+
+# Or launch a local AVD by name:
+android-env-mcp --avd_name=my_avd
+```
+
+From a source checkout, you can also run it via Bazel:
+
+```shell
+bazel run //android_env/mcp:android_mcp_server -- --serial=emulator-5554
 ```
