@@ -33,6 +33,24 @@ register_toolchains("@toolchains_protoc_hub//:all")
 
 # Hermetic Python Toolchain
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+
+# rules_python 2.2.0 (last version compatible with Bazel 7.4.0) maps "3.15" to
+# pre-release 3.15.0a8, which is ABI-incompatible with stable cp315 wheels.
+# Register stable CPython 3.15.2 until Bazel and rules_python are upgraded.
+python.single_version_override(
+    python_version = "3.15.2",
+    sha256 = {
+        "aarch64-apple-darwin": "1b1b03fca8aa351698403f3d100ee83db7a5d99748fc7707681ac31a6a846ad9",
+        "aarch64-pc-windows-msvc": "8218fe27434a1d69d54deea9caa338cd2351f65aaf2b409bcb6b25d009f53258",
+        "aarch64-unknown-linux-gnu": "0f23351c03b39beb880de668976074fcc3c082d9c3b03d0b43185632b2b270a0",
+        "x86_64-apple-darwin": "6ec04346b578656b5d5597144cbe0f4773acea6af6048cb8fe0cac3e92c702ac",
+        "x86_64-pc-windows-msvc": "02e532b60e720aa3d77e757c349ae9cc945441c05851fa646336fc9ff0403041",
+        "x86_64-unknown-linux-gnu": "7b03163a980c607ba8194709d4a4086735a7a9c488cc475b098157306927b36b",
+    },
+    urls = [
+        "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-{python_version}+20261026-{platform}-install_only_stripped.tar.gz",
+    ],
+)
 python.toolchain(
     python_version = "3.11",
 )

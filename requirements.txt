@@ -1,6 +1,7 @@
 absl-py>=2.1.0
 dm-env>=1.6
-numpy>=2.1.0,<2.5
+numpy>=2.1.0,<2.5 ; python_version < "3.15"
+numpy>=2.5.2 ; python_version >= "3.15"
 portpicker>=1.6.0
 pillow>=10.4.0
 gymnasium>=0.29.1
@@ -35,8 +36,8 @@ idna==3.20
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 pycparser==3.11
-pydantic==2.13.5
-pydantic-core==2.46.5
+pydantic==2.14.3
+pydantic-core==2.50.4
 pydantic-settings==2.15.0
 pyjwt==2.15.1
 python-dotenv==1.2.4
