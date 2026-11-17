@@ -81,17 +81,19 @@ using `device.update_subscriptions({...})`:
     current foreground activity.
 *   **`DEVICE_SIGNAL_SYSTEM_LOGS`** (`system_logs`): Recent `logcat` lines
     captured on the device.
-*   **`DEVICE_SIGNAL_RUNNING_PROCESSES`** (`running_processes`): List of active
-    process names.
-*   **`DEVICE_SIGNAL_DEVICE_SETTINGS`** (`device_settings`): Map of system
-    settings (e.g., brightness, volume).
-*   **`DEVICE_SIGNAL_LOCATION_GPS`** (`location_gps`): Latitude, longitude, and
-    altitude coordinates.
 *   **`DEVICE_SIGNAL_AUDIO_OUTPUT`** (`audio_output`): PCM audio frames captured
     from device output.
+*   **`DEVICE_SIGNAL_BATTERY_POWER`** (`battery_power`): Battery and power
+    metrics (charge level, current, voltage, power, temperature, charging
+    status, and thermal status).
 *   **`DEVICE_SIGNAL_SENSOR_*`** (`accelerometer`, `gyroscope`, `magnetometer`,
-    `barometer`, `ambient_temp`, `light_level`, `proximity`, `heart_rate`):
-    Hardware sensor streams.
+    `barometer`, `ambient_temp`, `light_level`, `proximity`): Hardware sensor
+    streams.
+
+> Note: `device_env_service.proto` also reserves
+> `DEVICE_SIGNAL_RUNNING_PROCESSES`, `DEVICE_SIGNAL_DEVICE_SETTINGS`,
+> `DEVICE_SIGNAL_LOCATION_GPS`, and `DEVICE_SIGNAL_SENSOR_HEART_RATE`, which are
+> not yet implemented in the on-device server.
 
 --------------------------------------------------------------------------------
 
@@ -102,14 +104,11 @@ using `device.update_subscriptions({...})`:
 Agents control the device by passing `device_env_service_pb2.Action` protobufs
 to `device.send_action(action)`:
 
-*   **Touch & Multi-Touch (`ACTION_TYPE_TOUCH_DOWN`, `ACTION_TYPE_TOUCH_MOVE`,
+*   **Touch (`ACTION_TYPE_TOUCH_DOWN`, `ACTION_TYPE_TOUCH_MOVE`,
     `ACTION_TYPE_TOUCH_UP`)**:
     *   `touch_position`: Normalized `Point(x, y)` coordinates in `[0.0, 1.0]`
         where `(0.0, 0.0)` is the top-left corner and `(1.0, 1.0)` is the
-        bottom-right corner.
-    *   `pointer_id`: Optional finger index in `[0, 9]` (defaults to `0`),
-        enabling multi-touch gestures such as pinch-to-zoom and two-finger
-        rotations.
+        bottom-right corner. Single-pointer touch is currently supported.
 *   **Hardware Keys (`ACTION_TYPE_KEY_EVENT`)**:
     *   `keycode`: Standard Android `KeyEvent` integer (e.g., `4` for `BACK`,
         `3` for `HOME`, `66` for `ENTER`).
@@ -125,10 +124,9 @@ to `device.send_action(action)`:
 Individual touch events compose naturally into human touchscreen gestures
 depending on their trajectory and timing:
 
-| Tap                                      | Double Tap                                             | Touch & Hold                                             | Flick Left                                             | Flick Right                                              | Scroll (H)                                                           | Scroll (V)                                                       | Drag & Drop                                |
-| ---------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------ |
-| ![Screenshot of                          | ![Screenshot of                                        | ![Screenshot of                                          | ![Screenshot of                                        | ![Screenshot of                                          | ![Screenshot of                                                      | ![Screenshot of                                                  | ![Screenshot of                            |
-: 'tap'](images/gestures/1-Finger-Tap.gif) : 'double_tap'](images/gestures/1-Finger-Double-Tap.gif) : 'touch_hold'](images/gestures/1-Finger-Touch-&-Hold.gif) : 'flick_left'](images/gestures/1-Finger-Flick-Left.gif) : 'flick_right'](images/gestures/1-Finger-Flick-Right.gif) : 'horizontal_scroll'](images/gestures/1-Finger-Horizontal-Scroll.gif) : 'vertical_scroll'](images/gestures/1-Finger-Vertical-Scroll.gif) : 'move'](images/gestures/1-Finger-Move.gif) :
+Tap                                      | Double Tap                                             | Touch & Hold                                                 | Flick Left                                             | Flick Right                                              | Scroll (H)                                                           | Scroll (V)                                                       | Drag & Drop
+---------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------ | -------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------- | -----------
+![Tap](images/gestures/1-Finger-Tap.gif) | ![Double-tap](images/gestures/1-Finger-Double-Tap.gif) | ![Touch-and-hold](images/gestures/1-Finger-Touch-&-Hold.gif) | ![Flick-left](images/gestures/1-Finger-Flick-Left.gif) | ![Flick-right](images/gestures/1-Finger-Flick-Right.gif) | ![Horizontal-scroll](images/gestures/1-Finger-Horizontal-Scroll.gif) | ![Vertical-scroll](images/gestures/1-Finger-Vertical-Scroll.gif) | ![Drag-and-drop](images/gestures/1-Finger-Move.gif)
 
 --------------------------------------------------------------------------------
 
