@@ -13,7 +13,7 @@ authors = [{name = "DeepMind"}]
 license = {file = "LICENSE"}
 readme = "README.md"
 keywords = ["Android", "OS", "reinforcement-learning"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "absl-py>=2.1.0",
     "numpy>=2.1.0",

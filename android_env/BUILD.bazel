@@ -102,7 +102,7 @@ py_wheel(
     },
     homepage = "https://github.com/google-deepmind/android_env",
     license = "Apache License, Version 2.0",
-    python_requires = ">=3.10",
+    python_requires = ">=3.11",
     requires = [
         "absl-py>=2.1.0",
         "numpy>=2.1.0",
