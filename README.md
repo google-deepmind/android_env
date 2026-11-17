@@ -57,13 +57,14 @@ Learning task definitions:
     *   **Accessibility Trees**: Full `AndroidAccessibilityForest` window and UI
         node hierarchies streamed directly from the on-device
         `AccessibilityService`.
-    *   **System & Sensor Streams**: Foreground package/activity, logcat
-        streams, device settings, GPS location, audio output, and IMU sensors
-        (accelerometer, gyroscope, magnetometer, barometer, light, proximity).
+    *   **System & Sensor Streams**: Foreground package/activity, accessibility
+        events, logcat streams, audio output, battery & power metrics, and
+        hardware sensors (accelerometer, gyroscope, magnetometer, barometer,
+        ambient temperature, light, proximity).
 *   **Expressive Action Interface (`Action`)**:
-    *   **Touch & Multi-Touch Gestures**: Normalized `(x, y)` coordinates in
-        `[0.0, 1.0]` with `TOUCH_DOWN`, `TOUCH_MOVE`, and `TOUCH_UP` across
-        multiple `pointer_id` fingers for taps, swipes, scrolls, and pinches.
+    *   **Touch Gestures**: Normalized `(x, y)` coordinates in `[0.0, 1.0]` with
+        `TOUCH_DOWN`, `TOUCH_MOVE`, and `TOUCH_UP` for taps, swipes, scrolls,
+        and drags.
     *   **Hardware Keys & Native Text Entry**: Inject Android keycodes (`BACK`,
         `HOME`, `ENTER`), set text directly on focused UI nodes
         (`ACTION_TYPE_SET_TEXT`), or trigger clipboard actions (`CUT`, `COPY`,

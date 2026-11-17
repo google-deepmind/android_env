@@ -35,9 +35,11 @@
 *   **丰富且基于订阅的遥测数据 (`DeviceState`)**：可按需订阅智能体所需的遥测信号：
     *   **屏幕截图 (Screenshots)**：高帧率、已解码的 RGB 图像帧缓冲区（`width`, `height`, `raw_pixels`）。
     *   **无障碍树 (Accessibility Trees)**：直接从设备端 `AccessibilityService` 流式传输完整的 `AndroidAccessibilityForest` 窗口与 UI 节点层级树。
-    *   **系统与传感器流**：前台应用包名/Activity、logcat 系统日志流、设备系统设置、GPS 地理位置、音频输出以及 IMU 惯性测量单元传感器（加速度计、陀螺仪、磁力计、气压计、光线传感器、近距离传感器）。
+    *   **系统与传感器流**：前台应用包名/Activity、无障碍事件、logcat
+        系统日志流、音频输出、电池与功耗指标以及硬件传感器（加速度计、陀螺仪、磁力计、气压计、环境温度传感器、光线传感器、近距离传感器）。
 *   **表现力极强的动作接口 (`Action`)**：
-    *   **触摸与多点触控手势**：归一化在 `[0.0, 1.0]` 范围内的 `(x, y)` 坐标，支持跨多个手指 `pointer_id` 的 `TOUCH_DOWN`、`TOUCH_MOVE` 与 `TOUCH_UP`，轻松模拟点击、滑动、滚动和双指捏合缩放。
+    *   **触摸手势**：归一化在 `[0.0, 1.0]` 范围内的 `(x, y)` 坐标，支持 `TOUCH_DOWN`、`TOUCH_MOVE`
+        与 `TOUCH_UP`，轻松模拟点击、滑动、滚动和拖拽。
     *   **硬件按键与原生文本输入**：注入 Android 物理按键代码（`BACK`, `HOME`, `ENTER` 等），在获得焦点的 UI 节点上直接设置文本内容（`ACTION_TYPE_SET_TEXT`），或触发剪贴板操作（`CUT`, `COPY`, `PASTE`）。
     *   **直接 ADB 命令执行**：通过 `device.execute_adb_call()` 运行结构化或通用的 `AdbRequest` 指令。
 *   **可组合的强化学习层**：训练 RL 策略时，只需使用 `android_env.rl.environment.AndroidEnv` 和 `TaskWrapper` 包装 `AndroidDevice`，即可直接复用自定义的 `.textproto` 任务定义、奖励解析器以及 `dm_env` / Gymnasium 包装器。
@@ -157,4 +159,5 @@ $ android-env-mcp --serial=emulator-5554
 ---
 
 > **翻译说明（Translation Disclaimer）**
-> 本文档由社区志愿者（[@JasonYeYuhe](https://github.com/JasonYeYuhe)）人工翻译并维护，旨在降低中文开发者的阅读门槛。最后同步日期：2026年10月22日。若译文与英文原版存在任何出入或滞后，请以 [英文原版 (README.md)](README.md) 为准。欢迎通过 PR 协助改进译文！
+> 本文档由社区志愿者（[@JasonYeYuhe](https://github.com/JasonYeYuhe)）人工翻译并维护，旨在降低中文开发者的阅读门槛。最后同步日期：2026年11月16日。若译文与英文原版存在任何出入或滞后，请以
+> [英文原版 (README.md)](README.md) 为准。欢迎通过 PR 协助改进译文！
