@@ -81,9 +81,10 @@ class AdbCallParserTest(parameterized.TestCase):
     adb.execute_command.assert_called_once_with(
         ['install', '-r', '-t', '-g', '/my/home/game.apk'], None)
 
+  @mock.patch.object(os, 'remove', autospec=True)
   @mock.patch.object(tempfile, 'NamedTemporaryFile', autospec=True)
-  def test_install_apk_from_blob(self, mock_tempfile):
-    """Should succeed installing APK from blob."""
+  def test_install_apk_from_blob(self, mock_tempfile, mock_remove):
+    """Should write the blob, close the file, install it, then delete it."""
     adb = mock.create_autospec(adb_controller.AdbController)
     parser = adb_call_parser.AdbCallParser(adb)
     request = adb_pb2.AdbRequest()
@@ -91,24 +92,43 @@ class AdbCallParserTest(parameterized.TestCase):
     request.install_apk.blob.contents = blob_content
     mock_tempfile.return_value.__enter__.return_value.name = '/my/home/test.apk'
     mock_tempfile.return_value.__enter__.return_value.write.return_value = None
+    calls = mock.Mock()
+    calls.attach_mock(mock_tempfile, 'tempfile')
+    calls.attach_mock(adb.execute_command, 'execute_command')
+    calls.attach_mock(mock_remove, 'remove')
 
     response = parser.parse(request)
     self.assertEqual(response.status, adb_pb2.AdbResponse.Status.OK)
     self.assertEmpty(response.error_message)
-    adb.execute_command.assert_called_once_with(
-        ['install', '-r', '-t', '-g', '/my/home/test.apk'], None
-    )
-    expected_tempfile_kwargs = (
-        {'suffix': '.apk', 'delete_on_close': False}
-        if sys.version_info > (3, 12)
-        else {'suffix': '.apk'}
-    )
-    mock_tempfile.assert_has_calls([
-        mock.call(**expected_tempfile_kwargs),  # Constructor
-        mock.call().__enter__(),  # Enter context
-        mock.call().__enter__().write(blob_content),  # Call write function
-        mock.call().__exit__(None, None, None),  # Exit context
+    # The file is closed (context exited) before adb reads it, and is removed
+    # afterwards.
+    calls.assert_has_calls([
+        mock.call.tempfile(suffix='.apk', delete=False),
+        mock.call.tempfile().__enter__(),
+        mock.call.tempfile().__enter__().write(blob_content),
+        mock.call.tempfile().__exit__(None, None, None),
+        mock.call.execute_command(
+            ['install', '-r', '-t', '-g', '/my/home/test.apk'], None
+        ),
+        mock.call.remove('/my/home/test.apk'),
     ])
+
+  @mock.patch.object(os, 'remove', autospec=True)
+  @mock.patch.object(tempfile, 'NamedTemporaryFile', autospec=True)
+  def test_install_apk_from_blob_removes_file_on_error(
+      self, mock_tempfile, mock_remove
+  ):
+    """The temporary file is deleted even when the install raises."""
+    adb = mock.create_autospec(adb_controller.AdbController)
+    adb.execute_command.side_effect = RuntimeError('adb crashed')
+    parser = adb_call_parser.AdbCallParser(adb)
+    request = adb_pb2.AdbRequest()
+    request.install_apk.blob.contents = b'A fake blob content'
+    mock_tempfile.return_value.__enter__.return_value.name = '/my/home/test.apk'
+
+    with self.assertRaises(RuntimeError):
+      parser.parse(request)
+    mock_remove.assert_called_once_with('/my/home/test.apk')
 
   def test_start_activity_empty_full_activity(self):
     """A start_activity command should always have a nonempty activity."""
