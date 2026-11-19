@@ -281,20 +281,18 @@ class AdbCallParser:
         )
       case 'blob':
 
-        # `delete_on_close` was only added in Python 3.12 so we add a switch
-        # here to still support previous Python versions.
-        if sys.version_info >= (3, 12):
-          kwargs = {'suffix': '.apk', 'delete_on_close': False}
-        else:
-          kwargs = {'suffix': '.apk'}
-
-        with tempfile.NamedTemporaryFile(**kwargs) as f:
+        # Close the file before `adb` reads it: on Windows, a file opened by
+        # `NamedTemporaryFile` with the default `delete=True` cannot be opened
+        # by another process, and closing it also flushes what was written.
+        with tempfile.NamedTemporaryFile(suffix='.apk', delete=False) as f:
           fpath = f.name
           f.write(install_apk.blob.contents)
-
+        try:
           response, _ = self._execute_command(
               ['install', '-r', '-t', '-g', fpath], timeout=timeout
           )
+        finally:
+          os.remove(fpath)
       case _:
         response.status = adb_pb2.AdbResponse.Status.FAILED_PRECONDITION
         response.error_message = (
