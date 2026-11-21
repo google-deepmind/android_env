@@ -23,7 +23,7 @@ option java_multiple_files = true;
 option java_package = "com.google.androidenv.accessibilityforwarder";
 
 // An Android AccessibilityWindowInfo.
-// Next index: 12
+// Next index: 15
 message AndroidAccessibilityWindowInfo {
   // Type of the window.
   // Next index: 8
@@ -87,4 +87,15 @@ message AndroidAccessibilityWindowInfo {
 
   // The associated accessibility tree for this window.
   AndroidAccessibilityTree tree = 11;
+
+  // The touchable region of this window in screen coordinates. This corresponds
+  // to the AccessibilityWindowInfo#getRegionInScreen() method.
+  // NOTE: This will not be populated for devices on API level < 30.
+  intelligence.dbw.proto.geometry.Region region_in_screen = 12;
+
+  // The ID of the window control for this window, if any.
+  int32 window_control_id = 13;
+
+  // The IDs of the windows controlled by this window, if any.
+  repeated int32 controlled_window_ids = 14;
 }
